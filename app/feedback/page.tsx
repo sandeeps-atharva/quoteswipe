@@ -1,0 +1,303 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Send, Loader2, CheckCircle, MessageSquare, Bug, Lightbulb, HelpCircle, Wrench } from 'lucide-react';
+import Link from 'next/link';
+import { useTheme } from '@/contexts/ThemeContext';
+import toast from 'react-hot-toast';
+
+const categories = [
+  { id: 'general', label: 'General Feedback', icon: MessageSquare, color: 'blue' },
+  { id: 'bug', label: 'Report a Bug', icon: Bug, color: 'red' },
+  { id: 'feature', label: 'Feature Request', icon: Lightbulb, color: 'yellow' },
+  { id: 'improvement', label: 'Improvement', icon: Wrench, color: 'green' },
+  { id: 'question', label: 'Question', icon: HelpCircle, color: 'purple' },
+];
+
+export default function Feedback() {
+  const { theme } = useTheme();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    category: 'general',
+    message: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+          setFormData(prev => ({
+            ...prev,
+            name: data.user.name,
+            email: data.user.email
+          }));
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.message.trim()) {
+      toast.error('Please enter your feedback');
+      return;
+    }
+    
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setIsSubmitted(true);
+        toast.success('Feedback submitted successfully!');
+      } else {
+        toast.error(data.error || 'Failed to submit feedback');
+      }
+    } catch (error) {
+      toast.error('Something went wrong');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const selectedCategory = categories.find(c => c.id === formData.category);
+
+  if (isSubmitted) {
+    return (
+      <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50'}`}>
+        <div className="max-w-2xl mx-auto px-4 py-12">
+          <div className={`rounded-2xl p-8 text-center ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-xl`}>
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center">
+              <CheckCircle className="w-10 h-10 text-white" />
+            </div>
+            <h1 className={`text-2xl font-bold mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Thank You! 🎉
+            </h1>
+            <p className={`mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+              Your feedback has been submitted successfully. We truly appreciate you taking the time to help us improve QuoteSwipe!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-pink-600 text-white rounded-xl font-medium hover:opacity-90 transition-all"
+              >
+                Back to Quotes
+              </Link>
+              <button
+                onClick={() => {
+                  setIsSubmitted(false);
+                  setFormData(prev => ({ ...prev, category: 'general', message: '' }));
+                }}
+                className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                  theme === 'dark' 
+                    ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Submit More Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50'}`}>
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link
+            href="/"
+            className={`p-2 rounded-xl transition-all ${
+              theme === 'dark' 
+                ? 'bg-gray-800 hover:bg-gray-700 text-white' 
+                : 'bg-white hover:bg-gray-50 text-gray-700 shadow-sm'
+            }`}
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              Send Feedback
+            </h1>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              Help us improve QuoteSwipe
+            </p>
+          </div>
+        </div>
+
+        {/* Form */}
+        <div className={`rounded-2xl p-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-xl`}>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name & Email */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  disabled={!!user}
+                  className={`w-full px-4 py-3 rounded-xl border transition-all ${
+                    theme === 'dark'
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                      : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
+                  placeholder="John Doe"
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  disabled={!!user}
+                  className={`w-full px-4 py-3 rounded-xl border transition-all ${
+                    theme === 'dark'
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                      : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
+                  placeholder="john@example.com"
+                />
+              </div>
+            </div>
+
+            {/* Category Selection */}
+            <div>
+              <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                Feedback Type
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {categories.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = formData.category === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, category: cat.id }))}
+                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                        isSelected
+                          ? theme === 'dark'
+                            ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                            : 'border-blue-500 bg-blue-50 text-blue-600'
+                          : theme === 'dark'
+                            ? 'border-gray-700 hover:border-gray-600 text-gray-400'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-xs font-medium">{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Message */}
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                Your Feedback
+              </label>
+              <textarea
+                name="message"
+                value={formData.message}
+                onChange={handleChange}
+                required
+                rows={5}
+                className={`w-full px-4 py-3 rounded-xl border transition-all resize-none ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
+                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                placeholder={
+                  formData.category === 'bug'
+                    ? 'Please describe the bug you encountered. Include steps to reproduce if possible...'
+                    : formData.category === 'feature'
+                    ? 'Describe the feature you\'d like to see...'
+                    : formData.category === 'question'
+                    ? 'What would you like to know?'
+                    : 'Share your thoughts, suggestions, or feedback...'
+                }
+              />
+            </div>
+
+            {/* Info Box */}
+            <div className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-700/50' : 'bg-blue-50'}`}>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-blue-700'}`}>
+                💡 Your feedback is private and goes directly to our team. We read every message and use your input to improve QuoteSwipe.
+              </p>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-pink-600 text-white font-medium rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-70"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  Send Feedback
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Want to write a review? */}
+          <div className={`mt-6 pt-6 border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} text-center`}>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              Love QuoteSwipe?{' '}
+              <Link href="/review" className="text-blue-500 hover:text-blue-600 font-medium">
+                Write a public review →
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

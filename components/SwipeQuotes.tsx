@@ -1,0 +1,2180 @@
+'use client';
+
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
+import { Menu, Info, Mail, Shield, MessageSquare, Search, Palette, Moon, Sun, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
+import toast from 'react-hot-toast';
+import Sidebar from './Sidebar';
+import QuoteCard from './QuoteCard';
+import ControlButtons, { ActionButtons } from './ControlButtons';
+import LanguageSelector from './LanguageSelector';
+import { useVisitorTracking } from '@/hooks/useVisitorTracking';
+import { useTheme } from '@/contexts/ThemeContext';
+import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
+
+// Lazy load modals for better initial bundle size
+const AuthModal = lazy(() => import('./AuthModal'));
+const ShareModal = lazy(() => import('./ShareModal'));
+const InstagramFollowModal = lazy(() => import('./InstagramFollowModal'));
+const SearchModal = lazy(() => import('./SearchModal'));
+const CardCustomization = lazy(() => import('./CardCustomization'));
+const CreateQuoteModal = lazy(() => import('./CreateQuoteModal'));
+
+// Modal loading fallback
+const ModalLoader = () => (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl">
+      <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
+    </div>
+  </div>
+);
+
+interface Quote {
+  id: number;
+  text: string;
+  author: string;
+  category: string;
+  category_icon?: string;
+  likes_count?: number;
+  dislikes_count?: number;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  icon: string;
+  count: number;
+}
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role?: 'user' | 'admin';
+  auth_provider?: 'google' | 'email';
+}
+
+interface UserQuote {
+  id: number;
+  text: string;
+  author: string;
+  theme_id?: string;
+  font_id?: string;
+  background_id?: string;
+  category_id?: number;
+  category?: string;
+  category_icon?: string;
+  is_public?: number;
+  created_at?: string;
+}
+
+// Client-side cache utilities for rarely-changing data
+const CACHE_PREFIX = 'qs_cache_';
+const QUOTES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CATEGORIES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+function getFromCache<T>(key: string, maxAge: number): T | null {
+  try {
+    const cached = sessionStorage.getItem(CACHE_PREFIX + key);
+    if (!cached) return null;
+    
+    const entry: CacheEntry<T> = JSON.parse(cached);
+    if (Date.now() - entry.timestamp > maxAge) {
+      sessionStorage.removeItem(CACHE_PREFIX + key);
+      return null;
+    }
+    return entry.data;
+  } catch {
+    return null;
+  }
+}
+
+function setToCache<T>(key: string, data: T): void {
+  try {
+    const entry: CacheEntry<T> = { data, timestamp: Date.now() };
+    sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
+  } catch {
+    // Ignore storage errors (quota exceeded, etc.)
+  }
+}
+
+function clearUserCache(): void {
+  try {
+    // Clear user-specific cache on logout
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith(CACHE_PREFIX + 'quotes_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+  } catch {
+    // Ignore errors
+  }
+}
+
+export default function SwipeQuotes() {
+  // Track visitor on page load
+  useVisitorTracking();
+  
+  // Theme toggle with user sync
+  const { theme, toggleTheme, setIsAuthenticated: setThemeAuth } = useTheme();
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showInstagramModal, setShowInstagramModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [swipeCount, setSwipeCount] = useState(0); // For unauthenticated users
+  const [authenticatedSwipeCount, setAuthenticatedSwipeCount] = useState(0); // For authenticated users
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [totalCategories, setTotalCategories] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [swipeHistory, setSwipeHistory] = useState<Array<{ index: number; direction: 'left' | 'right' }>>([]); // Track previous indices and directions
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false); // For programmatic animations
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isLoadingQuotes, setIsLoadingQuotes] = useState(false);
+  const [isChangingCategories, setIsChangingCategories] = useState(false);
+  const [likedQuotes, setLikedQuotes] = useState<Quote[]>([]);
+  const [dislikedQuotes, setDislikedQuotes] = useState<Quote[]>([]);
+  const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
+  const [lastLikedQuote, setLastLikedQuote] = useState<Quote | null>(null);
+  const startPos = useRef({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+  const [isAppReady, setIsAppReady] = useState(false); // Prevent flickering - show content only when ready
+  const isInitialLoad = useRef(true);
+  const isRestoringFromUrl = useRef(false);
+  const isLoadingPreferences = useRef(false); // Prevent saving while loading preferences
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false); // Track if preferences have been loaded
+  const initStarted = useRef(false); // Prevent double initialization
+  
+  // Card Customization
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false);
+  const [cardTheme, setCardTheme] = useState<CardTheme>(CARD_THEMES[0]);
+  const [fontStyle, setFontStyle] = useState<FontStyle>(FONT_STYLES[0]);
+  const [backgroundImage, setBackgroundImage] = useState<BackgroundImage>(BACKGROUND_IMAGES[0]);
+  
+  // User Quotes
+  const [showCreateQuoteModal, setShowCreateQuoteModal] = useState(false);
+  const [userQuotes, setUserQuotes] = useState<UserQuote[]>([]);
+  const [editingQuote, setEditingQuote] = useState<UserQuote | null>(null);
+  const [viewingUserQuote, setViewingUserQuote] = useState<UserQuote | null>(null);
+  
+  // Quote to share (can be either regular quote or user quote)
+  const [shareQuote, setShareQuote] = useState<{
+    id: number | string;
+    text: string;
+    author: string;
+    category: string;
+    category_icon?: string;
+    likes_count?: number;
+    isUserQuote?: boolean;
+    is_public?: number | boolean;
+  } | null>(null);
+  
+  // Pre-generated image for sharing (used when sharing from viewing modal)
+  const [preGeneratedShareImage, setPreGeneratedShareImage] = useState<string | null>(null);
+
+  // Sync authentication state with theme context for user-specific theme
+  useEffect(() => {
+    setThemeAuth(isAuthenticated);
+  }, [isAuthenticated, setThemeAuth]);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Single initialization on mount - prevents multiple fetches and flickering
+  useEffect(() => {
+    if (initStarted.current) return;
+    initStarted.current = true;
+    
+    const initializeApp = async () => {
+      try {
+        // Check URL for quote ID (regular quotes)
+        const pathMatch = window.location.pathname.match(/^\/quote\/(\d+)$/);
+        const urlParams = new URLSearchParams(window.location.search);
+        const quoteIdParam = urlParams.get('quote');
+        
+        // Check URL for user quote ID
+        const userQuotePathMatch = window.location.pathname.match(/^\/user-quote\/(\d+)$/);
+        const userQuoteIdParam = urlParams.get('user_quote');
+        
+        // Convert query param to path format for regular quotes
+        if (quoteIdParam && !pathMatch) {
+          const quoteId = parseInt(quoteIdParam, 10);
+          if (!isNaN(quoteId)) {
+            window.history.replaceState({ quoteId }, '', `/quote/${quoteId}`);
+          }
+        }
+        
+        // Convert query param to path format for user quotes
+        if (userQuoteIdParam && !userQuotePathMatch) {
+          const userQuoteId = parseInt(userQuoteIdParam, 10);
+          if (!isNaN(userQuoteId)) {
+            window.history.replaceState({ userQuoteId }, '', `/user-quote/${userQuoteId}`);
+          }
+        }
+        
+        if (pathMatch || quoteIdParam || userQuotePathMatch || userQuoteIdParam) {
+          isInitialLoad.current = true;
+          isRestoringFromUrl.current = true;
+        }
+        
+        // Check auth first to know if we need to fetch preferences
+        const authResponse = await fetch('/api/auth/me');
+        let isUserAuthenticated = false;
+        let userData = null;
+        
+        if (authResponse.ok) {
+          const data = await authResponse.json();
+          isUserAuthenticated = true;
+          userData = data.user;
+        }
+        
+        // Batch state update for auth
+        setIsAuthenticated(isUserAuthenticated);
+        setUser(userData);
+        
+        // Fetch categories (response differs based on auth cookie)
+        const categoriesResponse = await fetch('/api/categories', { credentials: 'include' });
+        let categoriesData: Category[] = [];
+        let totalCats = 0;
+        
+        if (categoriesResponse.ok) {
+          const data = await categoriesResponse.json();
+          categoriesData = data.categories || [];
+          totalCats = data.totalCategories || categoriesData.length;
+          setCategories(categoriesData);
+          setTotalCategories(totalCats);
+          setToCache(`categories_${isUserAuthenticated ? 'auth' : 'guest'}`, {
+            categories: categoriesData,
+            totalCategories: totalCats,
+          });
+        }
+        
+        // For authenticated users, fetch preferences and user data in parallel
+        if (isUserAuthenticated) {
+          isLoadingPreferences.current = true;
+          
+          const [prefsResponse, likesRes, dislikesRes, savedRes, cardStyleRes, userQuotesRes] = await Promise.all([
+            fetch('/api/user/preferences', { credentials: 'include' }),
+            fetch('/api/user/likes', { credentials: 'include' }),
+            fetch('/api/user/dislikes', { credentials: 'include' }),
+            fetch('/api/user/saved', { credentials: 'include' }),
+            fetch('/api/user/card-style', { credentials: 'include' }),
+            fetch('/api/user/quotes', { credentials: 'include' }),
+          ]);
+          
+          // Handle preferences
+          let userCategories: string[] = [];
+          if (prefsResponse.ok) {
+            const prefsData = await prefsResponse.json();
+            if (prefsData.selectedCategories && Array.isArray(prefsData.selectedCategories)) {
+              userCategories = prefsData.selectedCategories;
+            }
+          }
+          setSelectedCategories(userCategories);
+          
+          // Handle user data
+          if (likesRes.ok) {
+            const likesData = await likesRes.json();
+            setLikedQuotes(likesData.quotes || []);
+          }
+          if (dislikesRes.ok) {
+            const dislikesData = await dislikesRes.json();
+            setDislikedQuotes(dislikesData.quotes || []);
+          }
+          if (savedRes.ok) {
+            const savedData = await savedRes.json();
+            setSavedQuotes(savedData.quotes || []);
+          }
+          
+          // Handle card style preferences
+          if (cardStyleRes.ok) {
+            const cardStyleData = await cardStyleRes.json();
+            const savedTheme = CARD_THEMES.find(t => t.id === cardStyleData.themeId);
+            const savedFont = FONT_STYLES.find(f => f.id === cardStyleData.fontId);
+            
+            // Handle background - check for custom image (multiple images supported)
+            let savedBg: BackgroundImage | undefined;
+            const bgId = cardStyleData.backgroundId;
+            
+            if (bgId && (bgId === 'custom' || bgId.startsWith('custom_'))) {
+              // Try to load custom image from localStorage
+              try {
+                // Check new multiple images format first
+                const customImagesJson = localStorage.getItem('quoteswipe_custom_images');
+                if (customImagesJson) {
+                  const customImages = JSON.parse(customImagesJson);
+                  const customImage = customImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
+                  if (customImage) {
+                    savedBg = {
+                      id: customImage.id,
+                      name: customImage.name,
+                      url: customImage.url,
+                      thumbnail: customImage.url,
+                      overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                      textColor: '#ffffff',
+                      authorColor: '#e5e5e5',
+                      categoryBg: 'rgba(255,255,255,0.15)',
+                      categoryText: '#ffffff',
+                    };
+                  }
+                }
+                
+                // Fallback to old single image format for backward compatibility
+                if (!savedBg) {
+                  const customImageUrl = localStorage.getItem('quoteswipe_custom_bg');
+                  if (customImageUrl) {
+                    savedBg = {
+                      id: 'custom',
+                      name: 'My Photo',
+                      url: customImageUrl,
+                      thumbnail: customImageUrl,
+                      overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                      textColor: '#ffffff',
+                      authorColor: '#e5e5e5',
+                      categoryBg: 'rgba(255,255,255,0.15)',
+                      categoryText: '#ffffff',
+                    };
+                  }
+                }
+              } catch (e) {
+                console.error('Failed to load custom background:', e);
+              }
+            } else {
+              savedBg = BACKGROUND_IMAGES.find(b => b.id === bgId);
+            }
+            
+            // Use found theme/font/background or fallback to defaults
+            setCardTheme(savedTheme || CARD_THEMES[0]);
+            setFontStyle(savedFont || FONT_STYLES[0]);
+            setBackgroundImage(savedBg || BACKGROUND_IMAGES[0]);
+          }
+          
+          // Handle user quotes
+          if (userQuotesRes.ok) {
+            const userQuotesData = await userQuotesRes.json();
+            setUserQuotes(userQuotesData.quotes || []);
+          }
+          
+          setPreferencesLoaded(true);
+          setTimeout(() => {
+            isLoadingPreferences.current = false;
+          }, 100);
+        } else {
+          // For guests, mark preferences as loaded immediately
+          setPreferencesLoaded(true);
+        }
+        
+        // App is ready to show
+        setIsAppReady(true);
+        
+      } catch (error) {
+        console.error('App initialization error:', error);
+        setIsAppReady(true); // Show app even on error
+        setPreferencesLoaded(true);
+      }
+    };
+    
+    initializeApp();
+  }, []);
+
+  // Refetch categories only when auth changes AFTER initial load
+  useEffect(() => {
+    if (!isAppReady) return; // Skip during initial load
+    fetchCategories();
+  }, [isAuthenticated]);
+
+  // Save user preferences when selectedCategories changes (debounced)
+  useEffect(() => {
+    // Only save if authenticated, not currently loading, and we've loaded preferences at least once
+    if (isAuthenticated && !isLoadingPreferences.current && preferencesLoaded) {
+      // Debounce save to avoid too many API calls
+      const timeoutId = setTimeout(() => {
+        saveUserPreferences(selectedCategories);
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedCategories, isAuthenticated, preferencesLoaded]);
+
+  // Fetch quotes when categories change (after app is ready)
+  useEffect(() => {
+    // Wait for app to be ready
+    if (!isAppReady) return;
+    
+    // Wait for categories to be loaded before fetching quotes
+    if (!isAuthenticated && categories.length === 0) return;
+    
+    // For authenticated users, wait until preferences have been loaded
+    if (isAuthenticated && !preferencesLoaded) return;
+    
+    fetchQuotes(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategories, isAppReady]);
+
+  // Find and set quote index when quotes are loaded from URL (on reload)
+  useEffect(() => {
+    if (!isAppReady || quotes.length === 0) return;
+    
+    // Check if URL is in /quote/[id] format (regular quotes)
+    const pathMatch = window.location.pathname.match(/^\/quote\/(\d+)$/);
+    const quoteIdFromPath = pathMatch ? parseInt(pathMatch[1], 10) : null;
+    
+    // Check if URL is in /user-quote/[id] format (user quotes)
+    const userQuotePathMatch = window.location.pathname.match(/^\/user-quote\/(\d+)$/);
+    const userQuoteIdFromPath = userQuotePathMatch ? userQuotePathMatch[1] : null;
+    
+    // Also check query parameters for backward compatibility
+    const urlParams = new URLSearchParams(window.location.search);
+    const quoteIdParam = urlParams.get('quote');
+    const quoteIdFromQuery = quoteIdParam ? parseInt(quoteIdParam, 10) : null;
+    const userQuoteIdParam = urlParams.get('user_quote');
+    
+    // Determine if this is a user quote
+    const isUserQuote = !!(userQuotePathMatch || userQuoteIdParam);
+    const userQuoteId = userQuoteIdFromPath || userQuoteIdParam;
+    const quoteId = quoteIdFromPath || quoteIdFromQuery;
+    
+    if ((quoteId || userQuoteId) && isRestoringFromUrl.current) {
+      const filteredQuotes = getFilteredQuotes();
+      let quoteIndex = -1;
+      
+      if (isUserQuote && userQuoteId) {
+        // Find user quote by matching `user_${id}` format
+        quoteIndex = filteredQuotes.findIndex(q => String(q.id) === `user_${userQuoteId}`);
+      } else if (quoteId) {
+        // Find regular quote by ID
+        quoteIndex = filteredQuotes.findIndex(q => q.id === quoteId);
+      }
+      
+      if (quoteIndex !== -1 && currentIndex !== quoteIndex) {
+        setCurrentIndex(quoteIndex);
+        // Update URL to match the quote type
+        if (isUserQuote && userQuoteId) {
+          window.history.replaceState({ userQuoteId, index: quoteIndex }, '', `/user-quote/${userQuoteId}`);
+        } else if (quoteId) {
+        const newPath = `/quote/${quoteId}`;
+        if (!pathMatch || parseInt(pathMatch[1], 10) !== quoteId || quoteIdParam) {
+          window.history.replaceState({ quoteId, index: quoteIndex }, '', newPath);
+          }
+        }
+      } else if (quoteIndex === -1) {
+        // Quote not found, redirect to first quote
+        const filteredQuotes = getFilteredQuotes();
+        if (filteredQuotes.length > 0) {
+          const firstQuote = filteredQuotes[0];
+          const firstQuoteId = firstQuote.id;
+          const isFirstUserQuote = String(firstQuoteId).startsWith('user_');
+          if (isFirstUserQuote) {
+            const cleanId = String(firstQuoteId).replace('user_', '');
+            window.history.replaceState({ userQuoteId: cleanId, index: 0 }, '', `/user-quote/${cleanId}`);
+          } else {
+            window.history.replaceState({ quoteId: firstQuoteId, index: 0 }, '', `/quote/${firstQuoteId}`);
+          }
+        }
+        setCurrentIndex(0);
+      }
+      
+      // Mark restoration complete
+      isRestoringFromUrl.current = false;
+      isInitialLoad.current = false;
+    } else if (!quoteId && !userQuoteId && isInitialLoad.current) {
+      // No quote ID in URL (user visited root), update URL with current quote
+      const filteredQuotes = getFilteredQuotes();
+      if (filteredQuotes[currentIndex]) {
+        const currentQuote = filteredQuotes[currentIndex];
+        const currentQuoteId = currentQuote.id;
+        const isCurrentUserQuote = String(currentQuoteId).startsWith('user_');
+        if (isCurrentUserQuote) {
+          const cleanId = String(currentQuoteId).replace('user_', '');
+          window.history.replaceState({ userQuoteId: cleanId, index: currentIndex }, '', `/user-quote/${cleanId}`);
+        } else {
+          window.history.replaceState({ quoteId: currentQuoteId, index: currentIndex }, '', `/quote/${currentQuoteId}`);
+        }
+      }
+      isInitialLoad.current = false;
+    }
+  }, [quotes, isAppReady, currentIndex]);
+
+  // Update URL when quote changes (but not on initial load or when restoring from URL)
+  useEffect(() => {
+    if (!isAppReady || isInitialLoad.current || isRestoringFromUrl.current) return;
+    
+    const filteredQuotes = getFilteredQuotes();
+    if (filteredQuotes[currentIndex]) {
+      const quoteId = filteredQuotes[currentIndex].id;
+      const isUserQuote = String(quoteId).startsWith('user_');
+      
+      // Check current URL to see if it needs updating
+      const currentPath = window.location.pathname;
+      let needsUpdate = false;
+      let newPath = '';
+      
+      if (isUserQuote) {
+        const cleanId = String(quoteId).replace('user_', '');
+        newPath = `/user-quote/${cleanId}`;
+        needsUpdate = currentPath !== newPath;
+        if (needsUpdate) {
+          window.history.pushState({ userQuoteId: cleanId, index: currentIndex }, '', newPath);
+        }
+      } else {
+        newPath = `/quote/${quoteId}`;
+        needsUpdate = currentPath !== newPath;
+        if (needsUpdate) {
+          window.history.pushState({ quoteId, index: currentIndex }, '', newPath);
+        }
+      }
+    }
+  }, [currentIndex, isAppReady]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.index !== undefined) {
+        setCurrentIndex(event.state.index);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        setIsAuthenticated(true);
+        setUser(data.user);
+        fetchUserData();
+        // Load user's saved category preferences
+        fetchUserPreferences();
+      } else {
+        // Explicitly set to false if not authenticated
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+
+  const fetchUserData = async () => {
+    try {
+      const [likesRes, dislikesRes, savedRes] = await Promise.all([
+        fetch('/api/user/likes'),
+        fetch('/api/user/dislikes'),
+        fetch('/api/user/saved'),
+      ]);
+
+      if (likesRes.ok) {
+        const likesData = await likesRes.json();
+        setLikedQuotes(likesData.quotes || []);
+      }
+
+      if (dislikesRes.ok) {
+        const dislikesData = await dislikesRes.json();
+        setDislikedQuotes(dislikesData.quotes || []);
+      }
+
+      if (savedRes.ok) {
+        const savedData = await savedRes.json();
+        setSavedQuotes(savedData.quotes || []);
+      }
+    } catch (error) {
+      console.error('Fetch user data error:', error);
+    }
+  };
+
+  // Fetch user's card style preferences
+  const fetchCardStyle = async () => {
+    try {
+      const response = await fetch('/api/user/card-style', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        const theme = CARD_THEMES.find(t => t.id === data.themeId);
+        const font = FONT_STYLES.find(f => f.id === data.fontId);
+        
+        // Handle background - check for custom image (multiple images supported)
+        let bg: BackgroundImage | undefined;
+        const bgId = data.backgroundId;
+        
+        if (bgId && (bgId === 'custom' || bgId.startsWith('custom_'))) {
+          // Try to load custom image from localStorage
+          try {
+            // Check new multiple images format first
+            const customImagesJson = localStorage.getItem('quoteswipe_custom_images');
+            if (customImagesJson) {
+              const customImages = JSON.parse(customImagesJson);
+              const customImage = customImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
+              if (customImage) {
+                bg = {
+                  id: customImage.id,
+                  name: customImage.name,
+                  url: customImage.url,
+                  thumbnail: customImage.url,
+                  overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                  textColor: '#ffffff',
+                  authorColor: '#e5e5e5',
+                  categoryBg: 'rgba(255,255,255,0.15)',
+                  categoryText: '#ffffff',
+                };
+              }
+            }
+            
+            // Fallback to old single image format for backward compatibility
+            if (!bg) {
+              const customImageUrl = localStorage.getItem('quoteswipe_custom_bg');
+              if (customImageUrl) {
+                bg = {
+                  id: 'custom',
+                  name: 'My Photo',
+                  url: customImageUrl,
+                  thumbnail: customImageUrl,
+                  overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                  textColor: '#ffffff',
+                  authorColor: '#e5e5e5',
+                  categoryBg: 'rgba(255,255,255,0.15)',
+                  categoryText: '#ffffff',
+                };
+              }
+            }
+          } catch (e) {
+            console.error('Failed to load custom background:', e);
+          }
+        } else {
+          bg = BACKGROUND_IMAGES.find(b => b.id === bgId);
+        }
+        
+        // Use found theme/font/background or fallback to defaults
+        setCardTheme(theme || CARD_THEMES[0]);
+        setFontStyle(font || FONT_STYLES[0]);
+        setBackgroundImage(bg || BACKGROUND_IMAGES[0]);
+      }
+    } catch (error) {
+      console.error('Fetch card style error:', error);
+    }
+  };
+
+  // Fetch user's created quotes
+  const fetchUserQuotes = async () => {
+    try {
+      const response = await fetch('/api/user/quotes', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setUserQuotes(data.quotes || []);
+      }
+    } catch (error) {
+      console.error('Fetch user quotes error:', error);
+    }
+  };
+
+  // Save user's card style preferences
+  const saveCardStyle = async (themeToSave?: CardTheme, fontToSave?: FontStyle, bgToSave?: BackgroundImage) => {
+    try {
+      // Use passed values or fall back to current state
+      const themeId = themeToSave?.id || cardTheme.id;
+      const fontId = fontToSave?.id || fontStyle.id;
+      const backgroundId = bgToSave?.id || backgroundImage.id;
+      
+      const response = await fetch('/api/user/card-style', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ themeId, fontId, backgroundId }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save card style');
+      }
+    } catch (error) {
+      console.error('Save card style error:', error);
+      throw error;
+    }
+  };
+
+  // Fetch user preferences (selected categories)
+  const fetchUserPreferences = async () => {
+    try {
+      isLoadingPreferences.current = true;
+      const response = await fetch('/api/user/preferences');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.selectedCategories && Array.isArray(data.selectedCategories)) {
+          // Set the categories (even if empty array)
+          setSelectedCategories(data.selectedCategories);
+        }
+      }
+      // Mark preferences as loaded (triggers quote fetch)
+      setPreferencesLoaded(true);
+    } catch (error) {
+      console.error('Fetch user preferences error:', error);
+      // Still mark as loaded even on error so quotes can load
+      setPreferencesLoaded(true);
+    } finally {
+      // Small delay to ensure state is set before allowing saves
+      setTimeout(() => {
+        isLoadingPreferences.current = false;
+      }, 300);
+    }
+  };
+
+  // Save user preferences when selectedCategories changes (for authenticated users)
+  const saveUserPreferences = async (categories: string[]) => {
+    if (!isAuthenticated || isLoadingPreferences.current) return;
+    
+    try {
+      await fetch('/api/user/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedCategories: categories }),
+      });
+    } catch (error) {
+      console.error('Save user preferences error:', error);
+    }
+  };
+
+  // Shuffle array function (Fisher-Yates algorithm)
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const fetchQuotes = async (isCategoryChange = false) => {
+    try {
+      setIsLoadingQuotes(true);
+      if (isCategoryChange) {
+        setIsChangingCategories(true);
+      }
+      
+      // Build cache key and URL
+      let categoriesKey = 'all';
+      let url = '/api/quotes';
+      
+      if (selectedCategories.length > 0) {
+        categoriesKey = selectedCategories.sort().join(',');
+        url = `/api/quotes?categories=${encodeURIComponent(categoriesKey)}`;
+      } else if (!isAuthenticated && categories.length > 0) {
+        categoriesKey = categories[0].name;
+        url = `/api/quotes?categories=${encodeURIComponent(categoriesKey)}`;
+      }
+      
+      const cacheKey = `quotes_${categoriesKey}_${isAuthenticated ? 'auth' : 'guest'}`;
+      
+      // Try to get from cache first (instant display)
+      const cachedQuotes = getFromCache<Quote[]>(cacheKey, QUOTES_CACHE_DURATION);
+      if (cachedQuotes && cachedQuotes.length > 0) {
+        let quotesData = cachedQuotes;
+        if (selectedCategories.length > 1) {
+          quotesData = shuffleArray(quotesData);
+        }
+        setQuotes(quotesData);
+        setCurrentIndex(0);
+        setSwipeHistory([]);
+        setDragOffset({ x: 0, y: 0 });
+        setSwipeDirection(null);
+        setIsDragging(false);
+        setIsAnimating(false);
+        setIsLoadingQuotes(false);
+        
+        // Fetch fresh data in background (stale-while-revalidate pattern)
+        fetch(url).then(async (response) => {
+          if (response.ok) {
+            const data = await response.json();
+            const freshQuotes = data.quotes || [];
+            setToCache(cacheKey, freshQuotes);
+            // Only update if:
+            // 1. Data changed significantly
+            // 2. User is not currently interacting (dragging/animating)
+            // 3. User is still at index 0 (hasn't swiped yet)
+            const canSafelyUpdate = 
+              freshQuotes.length !== cachedQuotes.length && 
+              !isDraggingRef.current && 
+              !isAnimatingRef.current &&
+              currentIndexRef.current === 0;
+            if (canSafelyUpdate) {
+              setQuotes(selectedCategories.length > 1 ? shuffleArray(freshQuotes) : freshQuotes);
+            }
+          }
+        }).catch(() => {});
+        
+        if (isCategoryChange) {
+          setTimeout(() => setIsChangingCategories(false), 150);
+        }
+        return;
+      }
+      
+      // No cache - fetch from server
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        let quotesData = data.quotes || [];
+        
+        // Cache the response
+        setToCache(cacheKey, quotesData);
+        
+        // Shuffle quotes if multiple categories are selected
+        if (selectedCategories.length > 1) {
+          quotesData = shuffleArray(quotesData);
+        }
+        
+        // Shorter delay since we already have loading state
+        if (isCategoryChange) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        
+        setQuotes(quotesData);
+        setCurrentIndex(0);
+        setSwipeHistory([]);
+        setDragOffset({ x: 0, y: 0 });
+        setSwipeDirection(null);
+        setIsDragging(false);
+        setIsAnimating(false);
+      }
+    } catch (error) {
+      console.error('Fetch quotes error:', error);
+    } finally {
+      setIsLoadingQuotes(false);
+      if (isCategoryChange) {
+        setTimeout(() => setIsChangingCategories(false), 200);
+      }
+    }
+  };
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(category)) {
+        // Remove this category
+        return prev.filter(c => c !== category);
+      } else {
+        // Add this category
+        return [...prev, category];
+      }
+    });
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const cacheKey = `categories_${isAuthenticated ? 'auth' : 'guest'}`;
+      
+      // Try cache first for instant display
+      const cachedData = getFromCache<{ categories: Category[]; totalCategories: number }>(
+        cacheKey,
+        CATEGORIES_CACHE_DURATION
+      );
+      
+      if (cachedData) {
+        setCategories(cachedData.categories);
+        setTotalCategories(cachedData.totalCategories);
+        
+        // Fetch fresh data in background
+        fetch('/api/categories', { credentials: 'include' }).then(async (response) => {
+          if (response.ok) {
+            const data = await response.json();
+            const freshData = {
+              categories: data.categories || [],
+              totalCategories: data.totalCategories || data.categories?.length || 0,
+            };
+            setToCache(cacheKey, freshData);
+            // Update if different
+            if (freshData.categories.length !== cachedData.categories.length) {
+              setCategories(freshData.categories);
+              setTotalCategories(freshData.totalCategories);
+            }
+          }
+        }).catch(() => {});
+        return;
+      }
+      
+      // No cache - fetch from server
+      const response = await fetch('/api/categories', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const freshData = {
+          categories: data.categories || [],
+          totalCategories: data.totalCategories || data.categories?.length || 0,
+        };
+        setToCache(cacheKey, freshData);
+        setCategories(freshData.categories);
+        setTotalCategories(freshData.totalCategories);
+      }
+    } catch (error) {
+      console.error('Fetch categories error:', error);
+    }
+  };
+
+  const handleLogin = async (email: string, password: string) => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
+
+    setIsAuthenticated(true);
+    setUser(data.user);
+    setShowAuthModal(false);
+    setSwipeCount(0);
+    setAuthenticatedSwipeCount(0); // Reset authenticated swipe count on login
+    
+    // Clear guest category cache to force fresh fetch with all categories
+    try {
+      sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
+    } catch {}
+    
+    await fetchUserData();
+    // Refetch categories to show all categories for authenticated users
+    await fetchCategories();
+    // Load user's saved category preferences
+    await fetchUserPreferences();
+    
+    // Show success toast
+    toast.success(`Welcome back, ${data.user.name}! 👋`);
+  };
+
+  const handleRegister = async (name: string, email: string, password: string) => {
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Registration failed');
+    }
+
+    setIsAuthenticated(true);
+    setUser(data.user);
+    setShowAuthModal(false);
+    setSwipeCount(0);
+    setAuthenticatedSwipeCount(0); // Reset authenticated swipe count on login
+    
+    // Clear guest category cache to force fresh fetch with all categories
+    try {
+      sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
+    } catch {}
+    
+    await fetchUserData();
+    // Refetch categories to show all categories for authenticated users
+    await fetchCategories();
+    // New users won't have preferences yet, but set the flag to allow saving
+    isLoadingPreferences.current = false;
+    
+    // Show success toast
+    toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      
+      // Clear user-specific cache on logout
+      clearUserCache();
+      
+      setIsAuthenticated(false);
+      setUser(null);
+      setIsSidebarOpen(false);
+      setSwipeCount(0);
+      setAuthenticatedSwipeCount(0);
+      setCurrentIndex(0);
+      setLikedQuotes([]);
+      setDislikedQuotes([]);
+      setSavedQuotes([]);
+      // Reset selected categories - they may not be available for non-auth users
+      setSelectedCategories([]);
+      // Reset preferences loaded flag
+      setPreferencesLoaded(false);
+      // Reset card customization to defaults
+      setCardTheme(CARD_THEMES[0]);
+      setFontStyle(FONT_STYLES[0]);
+      
+      // Refetch categories and then quotes for non-authenticated user
+      const response = await fetch('/api/categories', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        const newCategories = data.categories || [];
+        setCategories(newCategories);
+        setTotalCategories(data.totalCategories || newCategories.length || 0);
+        
+        // Cache the new categories
+        setToCache('categories_guest', {
+          categories: newCategories,
+          totalCategories: data.totalCategories || newCategories.length || 0,
+        });
+        
+        // Fetch quotes for the first available category
+        if (newCategories.length > 0) {
+          const quotesResponse = await fetch(`/api/quotes?categories=${encodeURIComponent(newCategories[0].name)}`);
+          if (quotesResponse.ok) {
+            const quotesData = await quotesResponse.json();
+            setQuotes(quotesData.quotes || []);
+            // Cache the quotes
+            setToCache(`quotes_${newCategories[0].name}_guest`, quotesData.quotes || []);
+          }
+        }
+      }
+      
+      // Show success toast
+      toast.success('You have been logged out. See you soon! 👋');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout. Please try again.');
+    }
+  };
+
+  const getFilteredQuotes = useCallback(() => {
+    return quotes;
+  }, [quotes]);
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Don't allow dragging if auth modal is open
+    if (showAuthModal) return;
+    setIsDragging(true);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    startPos.current = { x: clientX, y: clientY };
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging || showAuthModal) return;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const deltaX = clientX - startPos.current.x;
+    const deltaY = clientY - startPos.current.y;
+    setDragOffset({ x: deltaX, y: deltaY });
+
+    // Set swipe direction for button animation - lower threshold for mobile
+    const animationThreshold = isMobile ? 30 : 50;
+    if (Math.abs(deltaX) > animationThreshold) {
+      setSwipeDirection(deltaX > 0 ? 'right' : 'left');
+    } else {
+      setSwipeDirection(null);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    // Lower threshold for mobile devices (60px) vs desktop (120px)
+    const swipeThreshold = isMobile ? 60 : 120;
+    if (Math.abs(dragOffset.x) > swipeThreshold) {
+      handleSwipe(dragOffset.x > 0 ? 'right' : 'left');
+    } else {
+      setDragOffset({ x: 0, y: 0 });
+      setSwipeDirection(null);
+    }
+  };
+
+  const handleSwipe = async (direction: 'left' | 'right') => {
+    const filteredQuotes = getFilteredQuotes();
+    const currentQuote = filteredQuotes[currentIndex];
+
+    if (direction === 'right' && currentQuote) {
+      // Check if user already liked this quote
+      const alreadyLiked = likedQuotes.some(q => q.id === currentQuote.id);
+      
+      if (!alreadyLiked) {
+        setLastLikedQuote(currentQuote);
+        
+        if (isAuthenticated) {
+          try {
+            const response = await fetch('/api/user/likes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ quoteId: currentQuote.id }),
+            });
+            const data = await response.json();
+            
+            // Only update if it's a new like (not already liked)
+            if (!data.alreadyLiked) {
+              setLikedQuotes(prev => [...prev, currentQuote]);
+              // Remove from dislikes if was disliked before
+              setDislikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
+              // Update likes count in the quote
+              setQuotes(prev => prev.map(q => 
+                q.id === currentQuote.id 
+                  ? { ...q, likes_count: (q.likes_count || 0) + 1 }
+                  : q
+              ));
+            }
+          } catch (error) {
+            console.error('Like quote error:', error);
+          }
+        } else {
+          // Guest user - track locally
+          setLikedQuotes(prev => [...prev, currentQuote]);
+          setDislikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
+          setQuotes(prev => prev.map(q => 
+            q.id === currentQuote.id 
+              ? { ...q, likes_count: (q.likes_count || 0) + 1 }
+              : q
+          ));
+        }
+      } else {
+        // Already liked - just set as last liked for undo tracking
+        setLastLikedQuote(currentQuote);
+      }
+    } else if (direction === 'left' && currentQuote) {
+      // Check if user already disliked this quote
+      const alreadyDisliked = dislikedQuotes.some(q => q.id === currentQuote.id);
+      
+      if (!alreadyDisliked) {
+        if (isAuthenticated) {
+          try {
+            const response = await fetch('/api/user/dislikes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ quoteId: currentQuote.id }),
+            });
+            const data = await response.json();
+            
+            // Only update if it's a new dislike (not already disliked)
+            if (!data.alreadyDisliked) {
+              setDislikedQuotes(prev => [...prev, currentQuote]);
+              // Remove from likes if was liked before
+              setLikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
+              // Update dislikes count in the quote
+              setQuotes(prev => prev.map(q => 
+                q.id === currentQuote.id 
+                  ? { ...q, dislikes_count: (q.dislikes_count || 0) + 1 }
+                  : q
+              ));
+            }
+          } catch (error) {
+            console.error('Dislike quote error:', error);
+          }
+        } else {
+          // Guest user - track locally
+          setDislikedQuotes(prev => [...prev, currentQuote]);
+          setLikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
+          setQuotes(prev => prev.map(q => 
+            q.id === currentQuote.id 
+              ? { ...q, dislikes_count: (q.dislikes_count || 0) + 1 }
+              : q
+          ));
+        }
+      }
+      setLastLikedQuote(null);
+    } else {
+      setLastLikedQuote(null);
+    }
+
+    // Track swipe counts
+    if (!isAuthenticated) {
+      // Increment swipe count for unauthenticated users
+      const newCount = swipeCount + 1;
+      setSwipeCount(newCount);
+
+      // Show auth modal after 5 swipes
+      if (newCount >= 5) {
+        // Reset drag state before opening modal
+        setIsDragging(false);
+        setDragOffset({ x: 0, y: 0 });
+        setSwipeDirection(null);
+        setShowAuthModal(true);
+        return;
+      }
+    } else {
+      // Increment swipe count for authenticated users
+      const newAuthCount = authenticatedSwipeCount + 1;
+      setAuthenticatedSwipeCount(newAuthCount);
+
+      // Show Instagram follow modal after 10 swipes
+      if (newAuthCount >= 10) {
+        // Reset drag state before opening modal
+        setIsDragging(false);
+        setDragOffset({ x: 0, y: 0 });
+        setSwipeDirection(null);
+        setShowInstagramModal(true);
+        // Reset count after showing modal
+        setAuthenticatedSwipeCount(0);
+        return;
+      }
+    }
+
+    // Add current index and direction to history before moving forward
+    setSwipeHistory([...swipeHistory, { index: currentIndex, direction }]);
+
+    setSwipeDirection(direction);
+    setTimeout(() => {
+      if (currentIndex < filteredQuotes.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      } else {
+        setCurrentIndex(0);
+        if (!isAuthenticated) {
+          // Reset local tracking for guest users when looping
+          setLikedQuotes([]);
+          setDislikedQuotes([]);
+          setSavedQuotes([]);
+        }
+      }
+      setDragOffset({ x: 0, y: 0 });
+      setSwipeDirection(null);
+    }, 300);
+  };
+
+  const handleUndo = async () => {
+    if (swipeHistory.length === 0) return;
+
+    const filteredQuotes = getFilteredQuotes();
+    const lastSwipe = swipeHistory[swipeHistory.length - 1];
+    const previousIndex = lastSwipe.index;
+    const previousDirection = lastSwipe.direction;
+    const newHistory = swipeHistory.slice(0, -1);
+
+    // Remove last liked quote if it was liked (swiped right)
+    if (lastLikedQuote && previousDirection === 'right') {
+      setLikedQuotes(likedQuotes.filter(q => q.id !== lastLikedQuote.id));
+      
+      // If authenticated, remove like from database
+      if (isAuthenticated) {
+        try {
+          // Note: We'd need a DELETE endpoint for this, but for now we'll just update the UI
+          // The like will remain in DB but won't show in UI
+          // You can add DELETE /api/user/likes/:quoteId endpoint if needed
+        } catch (error) {
+          console.error('Error removing like:', error);
+        }
+      }
+      setLastLikedQuote(null);
+    }
+
+    // Decrement swipe count
+    if (!isAuthenticated && swipeCount > 0) {
+      setSwipeCount(swipeCount - 1);
+    } else if (isAuthenticated && authenticatedSwipeCount > 0) {
+      setAuthenticatedSwipeCount(authenticatedSwipeCount - 1);
+    }
+
+    // Animate undo with reverse swipe direction
+    // If swiped right, card comes back from right
+    // If swiped left, card comes back from left
+    const reverseDirection = previousDirection === 'right' ? 'right' : 'left';
+    setSwipeDirection(reverseDirection);
+    const offsetX = previousDirection === 'right' ? 200 : -200;
+    setDragOffset({ x: offsetX, y: 0 });
+    
+    setTimeout(() => {
+      setCurrentIndex(previousIndex);
+      setSwipeHistory(newHistory);
+      setDragOffset({ x: 0, y: 0 });
+      setSwipeDirection(null);
+    }, 300);
+  };
+
+  const handleLike = () => {
+    // Prevent multiple clicks during animation
+    if (isDragging || isAnimating) return;
+    
+    setIsAnimating(true);
+    setSwipeDirection('right');
+    
+    // Set the target drag offset - CSS transition will animate smoothly
+    setDragOffset({ x: 300, y: 0 });
+    
+    // After animation completes, trigger swipe
+    setTimeout(() => {
+      handleSwipe('right');
+      setIsAnimating(false);
+    }, 300);
+  };
+
+  const handleDislike = () => {
+    // Prevent multiple clicks during animation
+    if (isDragging || isAnimating) return;
+    
+    setIsAnimating(true);
+    setSwipeDirection('left');
+    
+    // Set the target drag offset - CSS transition will animate smoothly
+    setDragOffset({ x: -300, y: 0 });
+    
+    // After animation completes, trigger swipe
+    setTimeout(() => {
+      handleSwipe('left');
+      setIsAnimating(false);
+    }, 300);
+  };
+
+  const handleSave = async () => {
+    const filteredQuotes = getFilteredQuotes();
+    const currentQuote = filteredQuotes[currentIndex];
+
+    if (currentQuote) {
+      if (isAuthenticated) {
+        try {
+          await fetch('/api/user/saved', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quoteId: currentQuote.id }),
+          });
+          setSavedQuotes([...savedQuotes, currentQuote]);
+        } catch (error) {
+          console.error('Save quote error:', error);
+        }
+      } else {
+        setSavedQuotes([...savedQuotes, currentQuote]);
+      }
+      setTimeout(() => handleSwipe('right'), 200);
+    }
+  };
+
+  const handleShare = () => {
+    const filteredQuotes = getFilteredQuotes();
+    const currentQuote = filteredQuotes[currentIndex];
+
+    if (!currentQuote) return;
+
+    // Set the quote to share
+    setShareQuote({
+      id: currentQuote.id,
+      text: currentQuote.text,
+      author: currentQuote.author,
+      category: currentQuote.category,
+      category_icon: currentQuote.category_icon,
+      likes_count: currentQuote.likes_count,
+      isUserQuote: false,
+    });
+    setShowShareModal(true);
+  };
+  
+  // Handle share for user-created quotes
+  const handleShareUserQuote = (quote: UserQuote) => {
+    setShareQuote({
+      id: `user_${quote.id}`,
+      text: quote.text,
+      author: quote.author,
+      category: quote.category || 'Personal',
+      category_icon: quote.category_icon || '✨',
+      isUserQuote: true,
+      is_public: quote.is_public,
+    });
+    setShowShareModal(true);
+  };
+
+  // Handle navigation to a specific quote from sidebar
+  const handleQuoteNavigation = useCallback(async (quoteId: number, category?: string) => {
+    // Find the quote index in the current quotes array
+    let quoteIndex = quotes.findIndex(q => q.id === quoteId);
+    
+    if (quoteIndex !== -1) {
+      // Quote is in current stack, navigate to it
+      setCurrentIndex(quoteIndex);
+      window.history.pushState({}, '', `/quote/${quoteId}`);
+      return;
+    }
+    
+    // Quote's category is not selected, add it and fetch quotes
+    if (category) {
+      const newSelectedCategories = selectedCategories.includes(category) 
+        ? selectedCategories 
+        : [...selectedCategories, category];
+      
+      if (!selectedCategories.includes(category)) {
+        setSelectedCategories(newSelectedCategories);
+      }
+      setIsLoadingQuotes(true);
+      
+      try {
+        // Fetch quotes with the category included
+        const response = await fetch(`/api/quotes?categories=${newSelectedCategories.join(',')}`);
+        if (response.ok) {
+          const data = await response.json();
+          const fetchedQuotes = data.quotes || [];
+          setQuotes(fetchedQuotes);
+          
+          // Find the quote index in the new quotes array
+          const newQuoteIndex = fetchedQuotes.findIndex((q: Quote) => q.id === quoteId);
+          if (newQuoteIndex !== -1) {
+            setCurrentIndex(newQuoteIndex);
+            window.history.pushState({}, '', `/quote/${quoteId}`);
+          } else {
+            // Quote still not found, fetch it directly
+            const quoteResponse = await fetch(`/api/quotes/${quoteId}`);
+            if (quoteResponse.ok) {
+              const quoteData = await quoteResponse.json();
+              if (quoteData.quote) {
+                // Add the quote to the beginning of the array
+                setQuotes(prev => [quoteData.quote, ...prev]);
+                setCurrentIndex(0);
+                window.history.pushState({}, '', `/quote/${quoteId}`);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching quotes:', error);
+        toast.error('Failed to load quote');
+      } finally {
+        setIsLoadingQuotes(false);
+      }
+      return;
+    }
+    
+    // No category provided, try to fetch the quote directly
+    try {
+      setIsLoadingQuotes(true);
+      const quoteResponse = await fetch(`/api/quotes/${quoteId}`);
+      if (quoteResponse.ok) {
+        const quoteData = await quoteResponse.json();
+        if (quoteData.quote) {
+          // Add the quote to the beginning of the array
+          setQuotes(prev => [quoteData.quote, ...prev]);
+          setCurrentIndex(0);
+          window.history.pushState({}, '', `/quote/${quoteId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching quote:', error);
+      toast.error('Failed to load quote');
+    } finally {
+      setIsLoadingQuotes(false);
+    }
+  }, [quotes, selectedCategories]);
+
+  // Use refs to track state for event handlers to avoid re-attaching listeners
+  const isDraggingRef = useRef(isDragging);
+  const dragOffsetRef = useRef(dragOffset);
+  const handleSwipeRef = useRef(handleSwipe);
+  const isMobileRef = useRef(isMobile);
+  const isAnimatingRef = useRef(isAnimating);
+  const currentIndexRef = useRef(currentIndex);
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    isDraggingRef.current = isDragging;
+    dragOffsetRef.current = dragOffset;
+    handleSwipeRef.current = handleSwipe;
+    isMobileRef.current = isMobile;
+    isAnimatingRef.current = isAnimating;
+    currentIndexRef.current = currentIndex;
+  });
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      if (isDraggingRef.current) {
+        setIsDragging(false);
+        // Lower threshold for mobile devices (60px) vs desktop (120px)
+        const swipeThreshold = isMobileRef.current ? 60 : 120;
+        if (Math.abs(dragOffsetRef.current.x) > swipeThreshold) {
+          handleSwipeRef.current(dragOffsetRef.current.x > 0 ? 'right' : 'left');
+        } else {
+          setDragOffset({ x: 0, y: 0 });
+          setSwipeDirection(null);
+        }
+      }
+    };
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchend', handleMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, []); // Empty deps - all values accessed via refs
+
+  // Reset drag state when modals open
+  useEffect(() => {
+    if (showAuthModal || showInstagramModal) {
+      setIsDragging(false);
+      setDragOffset({ x: 0, y: 0 });
+      setSwipeDirection(null);
+    }
+  }, [showAuthModal, showInstagramModal]);
+
+  const filteredQuotes = getFilteredQuotes();
+  const currentQuote = filteredQuotes[currentIndex];
+  const progress = filteredQuotes.length > 0 
+    ? ((currentIndex + 1) / filteredQuotes.length) * 100 
+    : 0;
+
+  // Show loading state until app is ready to prevent flickering
+  if (!isAppReady) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          {/* Logo with spinning ring */}
+          <div className="relative w-24 h-24 mx-auto mb-6">
+            {/* Spinning ring */}
+            <div 
+              className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-purple-500"
+              style={{ animation: 'spin 1s linear infinite' }}
+            />
+            
+            {/* Second ring (slower, opposite) */}
+            <div 
+              className="absolute inset-2 rounded-full border-4 border-transparent border-b-pink-500 border-l-purple-500"
+              style={{ animation: 'spin 1.5s linear infinite reverse' }}
+            />
+            
+            {/* Logo in center */}
+            <div 
+              className="absolute inset-4 flex items-center justify-center"
+              style={{ animation: 'logoPulse 2s ease-in-out infinite' }}
+            >
+              <Image 
+                src="/logo.svg" 
+                alt="QuoteSwipe" 
+                width={64}
+                height={64}
+                priority
+              />
+        </div>
+          </div>
+          
+          {/* Loading text */}
+          <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>
+        </div>
+
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @keyframes logoPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.95); opacity: 0.8; }
+          }
+        `}} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-pink-950 flex overflow-hidden">
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        isAuthenticated={isAuthenticated}
+        user={user}
+        likedCount={likedQuotes.length}
+        savedCount={savedQuotes.length}
+        dislikedCount={dislikedQuotes.length}
+        viewedCount={currentIndex + 1}
+        categories={categories}
+        totalCategories={totalCategories}
+        selectedCategories={selectedCategories}
+        onCategoryToggle={handleCategoryToggle}
+        onLoginClick={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
+        onSavedQuoteDelete={(quoteId) => {
+          setSavedQuotes(savedQuotes.filter(q => q.id !== quoteId));
+        }}
+        onQuoteClick={handleQuoteNavigation}
+        onCustomizeClick={() => setShowCustomizationModal(true)}
+        onCreateQuoteClick={() => {
+          setEditingQuote(null);
+          setShowCreateQuoteModal(true);
+        }}
+        onEditQuoteClick={(quote) => {
+          setEditingQuote(quote);
+          setShowCreateQuoteModal(true);
+        }}
+        onViewQuoteClick={(quote) => {
+          setViewingUserQuote(quote);
+        }}
+        userQuotes={userQuotes}
+        onUserQuoteDelete={(quoteId) => {
+          setUserQuotes(userQuotes.filter(q => q.id !== quoteId));
+        }}
+        onRefreshUserQuotes={fetchUserQuotes}
+      />
+
+      {/* Lazy-loaded modals wrapped in Suspense for better performance */}
+      {showAuthModal && (
+        <Suspense fallback={<ModalLoader />}>
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLogin={handleLogin}
+        onRegister={handleRegister}
+        onGoogleSuccess={async (googleUser) => {
+          setIsAuthenticated(true);
+          setUser(googleUser);
+          setShowAuthModal(false);
+          setSwipeCount(0);
+          setAuthenticatedSwipeCount(0);
+          
+          // Clear guest category cache to force fresh fetch with all categories
+          try {
+            sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
+          } catch {}
+          
+          await fetchUserData();
+              await fetchCardStyle();
+          await fetchCategories();
+          // Load user's saved category preferences
+          await fetchUserPreferences();
+          
+          // Show success toast
+          toast.success(`Welcome, ${googleUser.name}! 🎉`);
+        }}
+        swipeCount={swipeCount}
+      />
+        </Suspense>
+      )}
+
+      {showShareModal && shareQuote && (
+        <Suspense fallback={<ModalLoader />}>
+        <ShareModal
+          isOpen={showShareModal}
+            onClose={() => {
+              setShowShareModal(false);
+              setShareQuote(null);
+              setPreGeneratedShareImage(null); // Clear pre-generated image
+            }}
+            quote={shareQuote}
+            preGeneratedImage={preGeneratedShareImage}
+          />
+        </Suspense>
+      )}
+
+      {showInstagramModal && (
+        <Suspense fallback={<ModalLoader />}>
+      <InstagramFollowModal
+        isOpen={showInstagramModal}
+        onClose={() => setShowInstagramModal(false)}
+        onFollow={() => {
+          // Optional: Track follow event
+          console.log('User followed on Instagram');
+        }}
+      />
+        </Suspense>
+      )}
+
+      {showCustomizationModal && (
+        <Suspense fallback={<ModalLoader />}>
+          <CardCustomization
+            isOpen={showCustomizationModal}
+            onClose={() => setShowCustomizationModal(false)}
+            currentTheme={cardTheme}
+            currentFont={fontStyle}
+            currentBackground={backgroundImage}
+            onThemeChange={setCardTheme}
+            onFontChange={setFontStyle}
+            onBackgroundChange={setBackgroundImage}
+            onSave={saveCardStyle}
+            isAuthenticated={isAuthenticated}
+          />
+        </Suspense>
+      )}
+
+      {showSearchModal && (
+        <Suspense fallback={<ModalLoader />}>
+      <SearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+            onQuoteSelect={(quoteId: number, category?: string) => {
+              // Close modal first for better UX
+              setShowSearchModal(false);
+              // Use the same navigation handler as sidebar
+              handleQuoteNavigation(quoteId, category);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {showCreateQuoteModal && (
+        <Suspense fallback={<ModalLoader />}>
+          <CreateQuoteModal
+            isOpen={showCreateQuoteModal}
+            onClose={() => {
+              setShowCreateQuoteModal(false);
+              setEditingQuote(null);
+            }}
+            onSuccess={(quote, cacheInvalidated) => {
+              if (editingQuote) {
+                // Update existing quote
+                setUserQuotes(userQuotes.map(q => q.id === quote.id ? quote : q));
+              } else {
+                // Add new quote
+                setUserQuotes([quote, ...userQuotes]);
+              }
+              toast.success(editingQuote ? 'Quote updated!' : 'Quote created!');
+              
+              // If server cache was invalidated (public quote), clear client cache and refetch
+              if (cacheInvalidated) {
+                // Clear client-side quotes cache
+                try {
+                  const keysToRemove: string[] = [];
+                  for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    if (key?.startsWith(CACHE_PREFIX + 'quotes_')) {
+                      keysToRemove.push(key);
+                    }
+                  }
+                  keysToRemove.forEach(key => sessionStorage.removeItem(key));
+                } catch {
+                  // Ignore storage errors
+                }
+                
+                // Refetch quotes to include the new public quote
+                fetchQuotes(true);
+                toast.success(quote.is_public ? 'Your quote is now public!' : 'Quote visibility updated!', { icon: '🌍' });
+              }
+            }}
+            categories={categories}
+            editQuote={editingQuote}
+          />
+        </Suspense>
+      )}
+
+      {/* View User Quote Modal */}
+      {viewingUserQuote && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setViewingUserQuote(null)}
+          />
+          
+          {/* Quote Card Container */}
+          <div className="relative w-full max-w-md animate-in zoom-in-95 duration-200">
+            {/* Close button */}
+            <button
+              onClick={() => setViewingUserQuote(null)}
+              className="absolute -top-12 right-0 flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-sm font-medium transition-all"
+            >
+              <span>Close</span>
+              <span className="text-lg">×</span>
+            </button>
+            
+            {/* Action buttons */}
+            <div className="absolute -top-12 left-0 flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setEditingQuote(viewingUserQuote);
+                  setViewingUserQuote(null);
+                  setShowCreateQuoteModal(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-medium transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                Edit
+              </button>
+              <button
+                onClick={async () => {
+                  const quoteToShare = viewingUserQuote;
+                  
+                  // Generate image first while quote card is still visible
+                  try {
+                    const { toPng } = await import('html-to-image');
+                    // Find the actual QuoteCard element (not the wrapper) - it has data-quote-id without "user_" prefix
+                    const quoteCardElement = document.querySelector(`[data-quote-id="${quoteToShare.id}"][data-quote-card="true"]`) as HTMLElement;
+                    
+                    if (quoteCardElement) {
+                      // Wait for any animations to complete
+                      await new Promise(resolve => setTimeout(resolve, 100));
+                      
+                      // Store original styles
+                      const originalTransform = quoteCardElement.style.transform;
+                      const originalTransition = quoteCardElement.style.transition;
+                      
+                      // Reset transform for clean capture
+                      quoteCardElement.style.transform = 'none';
+                      quoteCardElement.style.transition = 'none';
+                      
+                      // Wait for style update
+                      await new Promise(resolve => setTimeout(resolve, 50));
+                      
+                      const dataUrl = await toPng(quoteCardElement, {
+                        quality: 1.0,
+                        pixelRatio: 3,
+                        cacheBust: true,
+                        width: quoteCardElement.offsetWidth,
+                        height: quoteCardElement.offsetHeight,
+                        style: {
+                          borderRadius: '0px',
+                          overflow: 'hidden',
+                        },
+                      });
+                      
+                      // Restore original styles
+                      quoteCardElement.style.transform = originalTransform;
+                      quoteCardElement.style.transition = originalTransition;
+                      
+                      setPreGeneratedShareImage(dataUrl);
+              }
+            } catch (error) {
+                    console.error('Error pre-generating image:', error);
+                  }
+                  
+                  // Close viewing screen
+                  setViewingUserQuote(null);
+                  
+                  // Open share modal
+                  handleShareUserQuote(quoteToShare);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-full text-sm font-medium transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+                Share
+              </button>
+            </div>
+            
+            {/* Quote Card */}
+            <div 
+              className="aspect-[4/5] overflow-hidden shadow-2xl flex items-center justify-center"
+              style={{ borderRadius: '24px' }}
+            >
+              <QuoteCard
+                quote={{
+                  id: viewingUserQuote.id,
+                  text: viewingUserQuote.text,
+                  author: viewingUserQuote.author,
+                  category: viewingUserQuote.category || 'Personal',
+                  category_icon: viewingUserQuote.category_icon || '✨',
+                }}
+                index={0}
+                currentIndex={0}
+                dragOffset={{ x: 0, y: 0 }}
+                swipeDirection={null}
+                isDragging={false}
+                isAnimating={false}
+                totalQuotes={1}
+                onDragStart={() => {}}
+                onDragMove={() => {}}
+                cardTheme={cardTheme}
+                fontStyle={fontStyle}
+                backgroundImage={backgroundImage}
+              />
+            </div>
+            
+            {/* Quote info */}
+            <div className="mt-4 text-center">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                viewingUserQuote.is_public === 1 
+                  ? 'bg-green-500/20 text-green-300' 
+                  : 'bg-gray-500/20 text-gray-300'
+              }`}>
+                {viewingUserQuote.is_public === 1 ? (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                    Public - Visible to everyone
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Private - Only you can see
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
+        {/* Top Header - Full Width Rounded Bar */}
+        <div className="fixed top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-30 flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+          {/* Left Group - All icons on desktop, Menu & Search on mobile */}
+          <div className="flex items-center gap-1 sm:gap-2">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
+              title="Menu"
+          >
+              <Menu size={16} className="sm:w-[18px] sm:h-[18px] text-gray-700 dark:text-gray-300" />
+          </button>
+          
+          <button
+            onClick={() => setShowSearchModal(true)}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
+              title="Search"
+          >
+              <Search size={14} className="sm:w-4 sm:h-4 text-gray-700 dark:text-gray-300" />
+          </button>
+          
+            {/* Dark Mode - Hidden on mobile, shown on desktop */}
+            <button
+              onClick={toggleTheme}
+              className={`hidden sm:flex w-9 h-9 rounded-full items-center justify-center active:scale-95 transition-all ${
+                theme === 'dark' 
+                  ? 'bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50' 
+                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun size={16} className="text-yellow-600 dark:text-yellow-400" />
+              ) : (
+                <Moon size={16} className="text-gray-600 dark:text-gray-400" />
+              )}
+            </button>
+            
+            {/* Language - Hidden on mobile, shown on desktop */}
+            <div className="hidden sm:block">
+          <LanguageSelector compact />
+        </div>
+                </div>
+          
+          {/* Center - Categories (mobile only) */}
+          <div className="sm:hidden">
+            {selectedCategories.length > 0 ? (
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="h-7 px-2.5 rounded-full bg-gradient-to-r from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 border border-blue-200/50 dark:border-blue-700/50 flex items-center gap-1.5 hover:from-blue-500/20 hover:to-pink-500/20 active:scale-95 transition-all"
+                title="Manage categories"
+              >
+                <span className="flex items-center">
+                  {selectedCategories.slice(0, 3).map((catName) => {
+                    const cat = categories.find(c => c.name === catName);
+                    return cat ? (
+                      <span key={catName} className="text-xs leading-none">{cat.icon}</span>
+              ) : null;
+            })}
+                </span>
+                <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
+                  {selectedCategories.length === 1 
+                    ? categories.find(c => c.name === selectedCategories[0])?.name?.slice(0, 8) 
+                    : `${selectedCategories.length}`}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="h-7 px-2.5 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
+                title="Select categories"
+              >
+                <span className="text-xs">📚</span>
+                <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">All</span>
+              </button>
+            )}
+              </div>
+          
+          {/* Right Group - Theme & Language on mobile, Categories on desktop */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Mobile only - Theme & Language */}
+            <button
+              onClick={toggleTheme}
+              className={`sm:hidden w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-all ${
+                theme === 'dark' 
+                  ? 'bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50' 
+                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun size={14} className="text-yellow-600 dark:text-yellow-400" />
+              ) : (
+                <Moon size={14} className="text-gray-600 dark:text-gray-400" />
+              )}
+            </button>
+            
+            <div className="sm:hidden">
+              <LanguageSelector compact />
+          </div>
+            
+            {/* Desktop only - Categories */}
+            <div className="hidden sm:block">
+              {selectedCategories.length > 0 ? (
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="h-8 px-3 rounded-full bg-gradient-to-r from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 border border-blue-200/50 dark:border-blue-700/50 flex items-center gap-2 hover:from-blue-500/20 hover:to-pink-500/20 active:scale-95 transition-all"
+                  title="Manage categories"
+                >
+                  <span className="flex items-center gap-0.5">
+                    {selectedCategories.slice(0, 4).map((catName) => {
+                      const cat = categories.find(c => c.name === catName);
+                      return cat ? (
+                        <span key={catName} className="text-sm leading-none">{cat.icon}</span>
+                      ) : null;
+                    })}
+                  </span>
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    {selectedCategories.length === 1 
+                      ? categories.find(c => c.name === selectedCategories[0])?.name 
+                      : `${selectedCategories.length} categories`}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="h-8 px-3 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
+                  title="Select categories"
+                >
+                  <span className="text-sm">📚</span>
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">All quotes</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* Progress Bar */}
+        <div className="fixed top-0 left-0 right-0 h-[2px] bg-white/30 backdrop-blur-sm z-50">
+          <div
+            className="h-full bg-gradient-to-r from-blue-500 to-pink-500 transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* Card Stack - 4:5 aspect ratio container for Instagram-perfect cards */}
+        <div 
+          className={`relative w-full max-w-[280px] sm:max-w-[320px] md:max-w-[380px] lg:max-w-[420px] xl:max-w-[450px] mx-auto aspect-[4/5] mb-4 sm:mb-6 md:mb-8 mt-14 sm:mt-16 md:mt-12 lg:mt-8 px-2 sm:px-4 md:px-0 transition-opacity duration-300 ${
+            isChangingCategories ? 'opacity-0' : 'opacity-100'
+          }`}
+          key={`cards-${selectedCategories.join(',')}`}
+        >
+          {filteredQuotes
+            .map((quote, index) => ({ quote, index }))
+            .filter(({ index }) => {
+              // Only render cards that are visible (current, next, previous)
+              const offset = index - currentIndex;
+              return offset >= 0 && offset <= 2;
+            })
+            .map(({ quote, index }) => (
+              <QuoteCard
+                key={quote.id}
+                quote={quote}
+                index={index}
+                currentIndex={currentIndex}
+                dragOffset={dragOffset}
+                swipeDirection={swipeDirection}
+                isDragging={isDragging}
+                isAnimating={isAnimating}
+                totalQuotes={filteredQuotes.length}
+                onDragStart={handleDragStart}
+                onDragMove={handleDragMove}
+                cardTheme={cardTheme}
+                fontStyle={fontStyle}
+                backgroundImage={backgroundImage}
+              />
+            ))}
+        </div>
+
+        {/* Control Buttons */}
+        <ControlButtons
+          onLike={handleLike}
+          onDislike={handleDislike}
+          onSave={handleSave}
+          onShare={handleShare}
+          onUndo={handleUndo}
+          canUndo={swipeHistory.length > 0}
+          swipeDirection={isDragging && !isAnimating ? swipeDirection : null}
+          isAnimating={isDragging && !isAnimating && Math.abs(dragOffset.x) > (isMobile ? 30 : 50)}
+        />
+
+        {/* Action Buttons (Like/Dislike with arrows) */}
+        <ActionButtons
+          onLike={handleLike}
+          onDislike={handleDislike}
+          swipeDirection={isAnimating && !isDragging ? swipeDirection : null}
+          isAnimating={isAnimating && !isDragging}
+        />
+
+        {/* Quick Action Buttons */}
+        <div className="flex items-center gap-2 mt-3">
+          {/* Create Quote Button */}
+          <button
+            onClick={() => {
+              if (isAuthenticated) {
+                setEditingQuote(null);
+                setShowCreateQuoteModal(true);
+              } else {
+                toast('Login to create your own quotes', {
+                  icon: '✍️',
+                  duration: 3000,
+                });
+                setShowAuthModal(true);
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all hover:scale-105 active:scale-95"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+            Create Quote
+          </button>
+          
+          {/* Customize Card Button */}
+          <button
+            onClick={() => {
+              if (isAuthenticated) {
+                setShowCustomizationModal(true);
+              } else {
+                toast('Login to customize your card style', {
+                  icon: '🎨',
+                  duration: 3000,
+                });
+                setShowAuthModal(true);
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-xs font-medium hover:bg-white dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all hover:scale-105 active:scale-95 shadow-sm"
+          >
+            <Palette size={14} />
+            Customize
+          </button>
+        </div>
+
+        {/* Quick Links Footer */}
+        <nav className="flex items-center justify-center gap-1 mt-3 sm:mt-4">
+            <Link 
+              href="/about" 
+            className="text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+            About
+            </Link>
+          <span className="text-gray-300 dark:text-gray-600">•</span>
+            <Link 
+              href="/contact" 
+            className="text-xs text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+            >
+            Contact
+            </Link>
+          <span className="text-gray-300 dark:text-gray-600">•</span>
+            <Link 
+              href="/privacy-policy" 
+            className="text-xs text-gray-400 dark:text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+            >
+            Privacy
+            </Link>
+          <span className="text-gray-300 dark:text-gray-600">•</span>
+            <Link 
+              href="/feedback" 
+            className="text-xs text-gray-400 dark:text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+            >
+            Feedback
+            </Link>
+          </nav>
+      </div>
+    </div>
+  );
+}
+

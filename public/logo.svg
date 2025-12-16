@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <!-- Main gradient matching website -->
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6"/>
+      <stop offset="50%" style="stop-color:#8B5CF6"/>
+      <stop offset="100%" style="stop-color:#EC4899"/>
+    </linearGradient>
+    
+    <!-- Lighter gradient for accents -->
+    <linearGradient id="lightGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60A5FA"/>
+      <stop offset="50%" style="stop-color:#A78BFA"/>
+      <stop offset="100%" style="stop-color:#F472B6"/>
+    </linearGradient>
+    
+    <!-- Glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Card shadow -->
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#8B5CF6" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Outer glow ring -->
+  <circle cx="100" cy="100" r="96" fill="none" stroke="url(#lightGradient)" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Main circle background -->
+  <circle cx="100" cy="100" r="92" fill="url(#mainGradient)"/>
+  
+  <!-- Inner decorative ring -->
+  <circle cx="100" cy="100" r="85" fill="none" stroke="white" stroke-width="1" opacity="0.15"/>
+  
+  <!-- Decorative quote marks in background -->
+  <text x="25" y="90" font-family="Georgia, 'Times New Roman', serif" font-size="80" font-weight="bold" fill="white" opacity="0.1">"</text>
+  <text x="135" y="150" font-family="Georgia, 'Times New Roman', serif" font-size="50" font-weight="bold" fill="white" opacity="0.08">"</text>
+  
+  <!-- Stacked Cards -->
+  <!-- Card 3 - Back (most tilted) -->
+  <g transform="rotate(-15 100 105)">
+    <rect x="52" y="50" width="80" height="100" rx="12" fill="white" opacity="0.15"/>
+  </g>
+  
+  <!-- Card 2 - Middle -->
+  <g transform="rotate(-8 100 105)">
+    <rect x="55" y="48" width="80" height="100" rx="12" fill="white" opacity="0.35"/>
+  </g>
+  
+  <!-- Card 1 - Front (main card) -->
+  <g filter="url(#cardShadow)">
+    <rect x="58" y="46" width="80" height="100" rx="12" fill="white"/>
+    
+    <!-- Quote mark on card -->
+    <text x="68" y="82" font-family="Georgia, 'Times New Roman', serif" font-size="36" font-weight="bold" fill="url(#mainGradient)">"</text>
+    
+    <!-- Text lines -->
+    <rect x="96" y="62" width="32" height="4" rx="2" fill="url(#mainGradient)"/>
+    <rect x="96" y="72" width="26" height="4" rx="2" fill="url(#lightGradient)" opacity="0.7"/>
+    
+    <!-- Author line -->
+    <rect x="72" y="110" width="52" height="3" rx="1.5" fill="#9CA3AF"/>
+    <rect x="72" y="118" width="36" height="3" rx="1.5" fill="#D1D5DB"/>
+    
+    <!-- Heart icon -->
+    <g transform="translate(114, 126)">
+      <path d="M8 3 C8 1.5 9.5 0 11.5 0 C13.5 0 15 1.5 15 3.5 C15 7 8 12 8 12 C8 12 1 7 1 3.5 C1 1.5 2.5 0 4.5 0 C6.5 0 8 1.5 8 3Z" fill="#EC4899"/>
+    </g>
+  </g>
+  
+  <!-- Swipe indicator arrow -->
+  <g transform="translate(150, 90)" filter="url(#glow)">
+    <circle cx="12" cy="12" r="16" fill="white" opacity="0.2"/>
+    <path d="M6 12 L18 12" stroke="white" stroke-width="3" stroke-linecap="round"/>
+    <path d="M14 7 L19 12 L14 17" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  
+  <!-- Sparkle effects -->
+  <circle cx="45" cy="55" r="3" fill="white" opacity="0.6"/>
+  <circle cx="160" cy="140" r="2" fill="white" opacity="0.5"/>
+  <circle cx="155" cy="55" r="2.5" fill="white" opacity="0.4"/>
+</svg>
