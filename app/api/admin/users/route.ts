@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 
 // GET /api/admin/users - Get all users (admin only)
@@ -14,58 +14,61 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')?.trim() || '';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-    let users;
-    let total = 0;
+    const usersCollection = await getCollection('users');
+    const likesCollection = await getCollection('user_likes');
+    const savedCollection = await getCollection('user_saved');
 
+    // Build filter
+    let filter = {};
     if (search) {
-      // With search filter
-      const searchPattern = `%${search}%`;
-      
-      // Use query instead of execute to avoid prepared statement issues with LIMIT
-      const [userResults] = await pool.query(`
-        SELECT 
-          id, name, email, COALESCE(role, 'user') as role, created_at,
-          (SELECT COUNT(*) FROM user_likes WHERE user_id = users.id) as likes_count,
-          (SELECT COUNT(*) FROM user_saved WHERE user_id = users.id) as saved_count
-        FROM users
-        WHERE name LIKE ? OR email LIKE ?
-        ORDER BY created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `, [searchPattern, searchPattern]);
-      
-      users = userResults;
-
-      const [countResult] = await pool.query(
-        'SELECT COUNT(*) as total FROM users WHERE name LIKE ? OR email LIKE ?',
-        [searchPattern, searchPattern]
-      );
-      total = Array.isArray(countResult) && countResult.length > 0 
-        ? (countResult[0] as { total: number }).total 
-        : 0;
-    } else {
-      // No search filter - use query with inline LIMIT/OFFSET
-      const [userResults] = await pool.query(`
-        SELECT 
-          id, name, email, COALESCE(role, 'user') as role, created_at,
-          (SELECT COUNT(*) FROM user_likes WHERE user_id = users.id) as likes_count,
-          (SELECT COUNT(*) FROM user_saved WHERE user_id = users.id) as saved_count
-        FROM users
-        ORDER BY created_at DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `);
-      
-      users = userResults;
-
-      const [countResult] = await pool.query('SELECT COUNT(*) as total FROM users');
-      total = Array.isArray(countResult) && countResult.length > 0 
-        ? (countResult[0] as { total: number }).total 
-        : 0;
+      filter = {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } }
+        ]
+      };
     }
 
+    // Get users
+    const users = await usersCollection
+      .find(filter)
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray() as any[];
+
+    // Get total count
+    const total = await usersCollection.countDocuments(filter);
+
+    // Get likes and saved counts for each user
+    const userIds = users.map((u: any) => u._id.toString());
+    
+    const likesCounts = await likesCollection.aggregate([
+      { $match: { user_id: { $in: userIds } } },
+      { $group: { _id: '$user_id', count: { $sum: 1 } } }
+    ]).toArray() as any[];
+    const likesMap = new Map(likesCounts.map((l: any) => [l._id, l.count]));
+
+    const savedCounts = await savedCollection.aggregate([
+      { $match: { user_id: { $in: userIds } } },
+      { $group: { _id: '$user_id', count: { $sum: 1 } } }
+    ]).toArray() as any[];
+    const savedMap = new Map(savedCounts.map((s: any) => [s._id, s.count]));
+
+    const formattedUsers = users.map((u: any) => ({
+      id: u._id.toString(),
+      name: u.name,
+      email: u.email,
+      role: u.role || 'user',
+      created_at: u.created_at,
+      likes_count: likesMap.get(u._id.toString()) || 0,
+      saved_count: savedMap.get(u._id.toString()) || 0
+    }));
+
     return NextResponse.json({
-      users,
+      users: formattedUsers,
       pagination: {
         page,
         limit,
@@ -81,4 +84,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

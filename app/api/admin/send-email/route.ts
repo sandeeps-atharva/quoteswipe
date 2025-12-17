@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 import { festivalEmailTemplate, festivalEmailText } from '@/lib/email-templates';
 
 interface User {
-  id: number;
+  _id: any;
   name: string;
   email: string;
 }
 
 interface Quote {
-  id: string | number;
+  id?: string;
+  _id?: any;
   text: string;
   author: string;
   category_name?: string;
 }
 
 interface Festival {
-  id: number;
+  id?: number;
+  _id?: any;
   name: string;
 }
 
@@ -54,46 +56,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get festival
-    const [festivals] = await pool.execute(
-      'SELECT id, name FROM festivals WHERE id = ?',
-      [festivalId]
-    );
+    const festivalsCollection = await getCollection('festivals');
+    const quotesCollection = await getCollection('quotes');
+    const categoriesCollection = await getCollection('categories');
+    const usersCollection = await getCollection('users');
+    const campaignsCollection = await getCollection('email_campaigns');
+    const logsCollection = await getCollection('email_logs');
 
-    if (!Array.isArray(festivals) || festivals.length === 0) {
+    // Get festival
+    const festival: any = await festivalsCollection.findOne({
+      $or: [{ id: festivalId }, { _id: toObjectId(festivalId) as any }]
+    });
+
+    if (!festival) {
       return NextResponse.json({ error: 'Festival not found' }, { status: 404 });
     }
 
-    const festival = festivals[0] as Festival;
-
     // Get quote with category
-    const [quotes] = await pool.execute(`
-      SELECT q.id, q.text, q.author, c.name as category_name
-      FROM quotes q
-      LEFT JOIN categories c ON q.category_id = c.id
-      WHERE q.id = ?
-    `, [quoteId]);
+    const quote: any = await quotesCollection.findOne({
+      $or: [{ id: quoteId }, { _id: toObjectId(quoteId) as any }]
+    });
 
-    if (!Array.isArray(quotes) || quotes.length === 0) {
+    if (!quote) {
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
-    const quote = quotes[0] as Quote;
+    // Get category name
+    let categoryName = '';
+    if (quote.category_id) {
+      const category: any = await categoriesCollection.findOne({
+        $or: [{ id: quote.category_id }, { _id: quote.category_id }]
+      }) as any;
+      categoryName = category?.name || '';
+    }
 
     // Get users
     let users: User[];
     if (sendToAll) {
-      const [allUsers] = await pool.execute(
-        'SELECT id, name, email FROM users WHERE role != "admin"'
-      );
-      users = allUsers as User[];
+      users = await usersCollection.find({ role: { $ne: 'admin' } }).toArray() as any[];
     } else {
-      const placeholders = userIds.map(() => '?').join(',');
-      const [selectedUsers] = await pool.execute(
-        `SELECT id, name, email FROM users WHERE id IN (${placeholders})`,
-        userIds
-      );
-      users = selectedUsers as User[];
+      users = await usersCollection.find({
+        _id: { $in: userIds.map((id: string) => toObjectId(id) as any) }
+      }).toArray() as any[];
     }
 
     if (users.length === 0) {
@@ -101,19 +105,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Create email campaign record
-    const [campaignResult] = await pool.execute(`
-      INSERT INTO email_campaigns (name, subject, festival_id, quote_id, sent_by, total_recipients, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'sending')
-    `, [
-      `${festival.name} Campaign - ${new Date().toISOString().split('T')[0]}`,
+    const campaignResult = await campaignsCollection.insertOne({
+      name: `${festival.name} Campaign - ${new Date().toISOString().split('T')[0]}`,
       subject,
-      festivalId,
-      quoteId,
-      authResult.user.userId,
-      users.length
-    ]) as any;
+      festival_id: festivalId,
+      quote_id: quoteId,
+      sent_by: authResult.user.userId,
+      total_recipients: users.length,
+      status: 'sending',
+      created_at: new Date()
+    } as any);
 
-    const campaignId = campaignResult.insertId;
+    const campaignId = campaignResult.insertedId.toString();
 
     // Send emails
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://quoteswipe.com';
@@ -125,7 +128,7 @@ export async function POST(request: NextRequest) {
       const html = festivalEmailTemplate(
         { name: user.name, email: user.email },
         festival.name,
-        { text: quote.text, author: quote.author, category: quote.category_name },
+        { text: quote.text, author: quote.author, category: categoryName },
         appUrl,
         customMessage
       );
@@ -133,7 +136,7 @@ export async function POST(request: NextRequest) {
       const text = festivalEmailText(
         { name: user.name, email: user.email },
         festival.name,
-        { text: quote.text, author: quote.author, category: quote.category_name },
+        { text: quote.text, author: quote.author, category: categoryName },
         appUrl,
         customMessage
       );
@@ -146,17 +149,16 @@ export async function POST(request: NextRequest) {
       });
 
       // Log email
-      await pool.execute(`
-        INSERT INTO email_logs (campaign_id, user_id, email, email_type, status, error_message, sent_at)
-        VALUES (?, ?, ?, 'festival', ?, ?, ?)
-      `, [
-        campaignId,
-        user.id,
-        user.email,
-        result.success ? 'sent' : 'failed',
-        result.error || null,
-        result.success ? new Date() : null
-      ]);
+      await logsCollection.insertOne({
+        campaign_id: campaignId,
+        user_id: user._id.toString(),
+        email: user.email,
+        email_type: 'festival',
+        status: result.success ? 'sent' : 'failed',
+        error_message: result.error || null,
+        sent_at: result.success ? new Date() : null,
+        created_at: new Date()
+      } as any);
 
       if (result.success) {
         sentCount++;
@@ -170,11 +172,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Update campaign status
-    await pool.execute(`
-      UPDATE email_campaigns 
-      SET sent_count = ?, failed_count = ?, status = ?, completed_at = NOW()
-      WHERE id = ?
-    `, [sentCount, failedCount, failedCount === users.length ? 'failed' : 'completed', campaignId]);
+    await campaignsCollection.updateOne(
+      { _id: campaignResult.insertedId },
+      {
+        $set: {
+          sent_count: sentCount,
+          failed_count: failedCount,
+          status: failedCount === users.length ? 'failed' : 'completed',
+          completed_at: new Date()
+        }
+      }
+    );
 
     return NextResponse.json({
       message: `Email campaign completed`,
@@ -203,22 +211,49 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [campaigns] = await pool.execute(`
-      SELECT 
-        ec.*,
-        f.name as festival_name,
-        q.text as quote_text,
-        q.author as quote_author,
-        u.name as sent_by_name
-      FROM email_campaigns ec
-      LEFT JOIN festivals f ON ec.festival_id = f.id
-      LEFT JOIN quotes q ON ec.quote_id = q.id
-      LEFT JOIN users u ON ec.sent_by = u.id
-      ORDER BY ec.created_at DESC
-      LIMIT 50
-    `);
+    const campaignsCollection = await getCollection('email_campaigns');
+    const festivalsCollection = await getCollection('festivals');
+    const quotesCollection = await getCollection('quotes');
+    const usersCollection = await getCollection('users');
 
-    return NextResponse.json({ campaigns });
+    const campaigns = await campaignsCollection
+      .find({})
+      .sort({ created_at: -1 })
+      .limit(50)
+      .toArray() as any[];
+
+    // Get related data
+    const formattedCampaigns = await Promise.all(campaigns.map(async (campaign) => {
+      let festival: any = null;
+      if (campaign.festival_id) {
+        festival = await festivalsCollection.findOne({
+          $or: [{ id: campaign.festival_id }, { _id: toObjectId(campaign.festival_id) as any }]
+        });
+      }
+
+      let quote: any = null;
+      if (campaign.quote_id) {
+        quote = await quotesCollection.findOne({
+          $or: [{ id: campaign.quote_id }, { _id: toObjectId(campaign.quote_id) as any }]
+        });
+      }
+
+      let sentByUser: any = null;
+      if (campaign.sent_by) {
+        sentByUser = await usersCollection.findOne({ _id: toObjectId(campaign.sent_by) as any });
+      }
+
+      return {
+        ...campaign,
+        id: campaign.id || campaign._id?.toString(),
+        festival_name: festival?.name || null,
+        quote_text: quote?.text || null,
+        quote_author: quote?.author || null,
+        sent_by_name: sentByUser?.name || null
+      };
+    }));
+
+    return NextResponse.json({ campaigns: formattedCampaigns });
   } catch (error) {
     console.error('Get campaigns error:', error);
     return NextResponse.json(
@@ -227,4 +262,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

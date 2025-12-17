@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import crypto from 'crypto';
 import { sendEmail } from '@/lib/email';
 import { passwordResetEmailTemplate, passwordResetEmailText } from '@/lib/email-templates';
@@ -15,14 +15,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const usersCollection = await getCollection('users');
+
     // Find user
-    const [users] = await pool.execute(
-      'SELECT id, name, email, google_id, password FROM users WHERE email = ?',
-      [email]
-    ) as any[];
+    const user: any = await usersCollection.findOne({ email }) as any;
 
     // Always return success message for security (don't reveal if email exists)
-    if (!Array.isArray(users) || users.length === 0) {
+    if (!user) {
       return NextResponse.json(
         { 
           message: 'Password reset email sent! 📧',
@@ -31,8 +30,6 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
     }
-
-    const user = users[0];
 
     // Check if user signed up with Google only (has google_id but no password)
     if (user.google_id && !user.password) {
@@ -48,9 +45,9 @@ export async function POST(request: NextRequest) {
     resetExpires.setHours(resetExpires.getHours() + 1); // Token expires in 1 hour
 
     // Store reset token in database
-    await pool.execute(
-      'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?',
-      [resetToken, resetExpires, user.id]
+    await usersCollection.updateOne(
+      { _id: user._id },
+      { $set: { password_reset_token: resetToken, password_reset_expires: resetExpires } }
     );
 
     // Build reset link
@@ -93,4 +90,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

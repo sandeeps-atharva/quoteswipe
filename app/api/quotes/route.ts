@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, ObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 // In-memory cache for quotes (rarely changes)
@@ -17,76 +17,113 @@ async function getBaseQuotesFromCache(cacheKey: string, categoriesParam: string 
     return cached.data;
   }
 
-  // Category filter
-  let categoryFilter = '';
-  const params: any[] = [];
-  
+  const quotesCollection = await getCollection('quotes');
+  const categoriesCollection = await getCollection('categories');
+  const userQuotesCollection = await getCollection('user_quotes');
+  const usersCollection = await getCollection('users');
+  const likesCollection = await getCollection('user_likes');
+  const dislikesCollection = await getCollection('user_dislikes');
+
+  // Build category filter
+  let categoryIds: any[] = [];
   if (categoriesParam && categoriesParam !== 'All') {
-    const categories = categoriesParam.split(',').map(c => c.trim()).filter(c => c && c !== 'All');
-    if (categories.length > 0) {
-      const placeholders = categories.map(() => '?').join(',');
-      categoryFilter = ` WHERE c.name IN (${placeholders})`;
-      params.push(...categories);
+    const categoryNames = categoriesParam.split(',').map((c: any) => c.trim()).filter(c => c && c !== 'All');
+    if (categoryNames.length > 0) {
+      const cats = await categoriesCollection.find({ name: { $in: categoryNames } }).toArray() as any[];
+      categoryIds = cats.map((c: any) => c.id || c._id);
     }
   }
 
-  // Query for regular quotes - cast id to string for UNION compatibility
-  const regularQuotesQuery = `
-    SELECT 
-      CAST(q.id AS CHAR) as id,
-      q.text COLLATE utf8mb4_unicode_ci as text,
-      q.author COLLATE utf8mb4_unicode_ci as author,
-      c.name COLLATE utf8mb4_unicode_ci as category,
-      c.icon COLLATE utf8mb4_unicode_ci as category_icon,
-      c.id as category_id,
-      (SELECT COUNT(*) FROM user_likes WHERE quote_id = q.id) as likes_count,
-      (SELECT COUNT(*) FROM user_dislikes WHERE quote_id = q.id) as dislikes_count,
-      'regular' COLLATE utf8mb4_unicode_ci as quote_type,
-      CAST(NULL AS SIGNED) as creator_id,
-      CAST(NULL AS CHAR) COLLATE utf8mb4_unicode_ci as creator_name
-    FROM quotes q
-    INNER JOIN categories c ON q.category_id = c.id
-    ${categoryFilter}
-  `;
+  // Query regular quotes
+  const quotesFilter = categoryIds.length > 0 ? { category_id: { $in: categoryIds } } : {};
+  const regularQuotes = await quotesCollection.find(quotesFilter).toArray() as any[];
 
-  // Query for public user quotes
-  const publicUserQuotesQuery = `
-    SELECT 
-      CONCAT('user_', CAST(uq.id AS CHAR)) COLLATE utf8mb4_unicode_ci as id,
-      uq.text COLLATE utf8mb4_unicode_ci as text,
-      uq.author COLLATE utf8mb4_unicode_ci as author,
-      COALESCE(c.name, 'Personal') COLLATE utf8mb4_unicode_ci as category,
-      COALESCE(c.icon, '✨') COLLATE utf8mb4_unicode_ci as category_icon,
-      uq.category_id,
-      0 as likes_count,
-      0 as dislikes_count,
-      'user' COLLATE utf8mb4_unicode_ci as quote_type,
-      uq.user_id as creator_id,
-      u.name COLLATE utf8mb4_unicode_ci as creator_name
-    FROM user_quotes uq
-    LEFT JOIN categories c ON uq.category_id = c.id
-    LEFT JOIN users u ON uq.user_id = u.id
-    WHERE uq.is_public = 1
-    ${categoryFilter ? categoryFilter.replace('WHERE', 'AND') : ''}
-  `;
+  // Get all categories for mapping
+  const allCategories = await categoriesCollection.find({}).toArray() as any[];
+  const categoryMap = new Map(allCategories.map((c: any) => [c.id || c._id?.toString(), c]));
 
-  // Combine both queries
-  const combinedQuery = `
-    (${regularQuotesQuery})
-    UNION ALL
-    (${publicUserQuotesQuery})
-    ORDER BY RAND()
-  `;
+  // Get likes and dislikes counts
+  const likeCounts = await likesCollection.aggregate([
+    { $group: { _id: '$quote_id', count: { $sum: 1 } } }
+  ]).toArray() as any[];
+  const likeCountMap = new Map(likeCounts.map((l: any) => [String(l._id), l.count]));
 
-  // Double the params for the UNION (same category filter used twice)
-  const allParams = categoryFilter ? [...params, ...params] : [];
+  const dislikeCounts = await dislikesCollection.aggregate([
+    { $group: { _id: '$quote_id', count: { $sum: 1 } } }
+  ]).toArray() as any[];
+  const dislikeCountMap = new Map(dislikeCounts.map((d: any) => [String(d._id), d.count]));
 
-  const [quotes] = await pool.execute(combinedQuery, allParams) as any[];
+  // Transform regular quotes
+  const formattedQuotes = regularQuotes.map((q: any) => {
+    const category = categoryMap.get(q.category_id) || categoryMap.get(String(q.category_id));
+    const quoteId = q.id || q._id?.toString();
+    return {
+      id: quoteId,
+      text: q.text,
+      author: q.author,
+      category: category?.name || 'General',
+      category_icon: category?.icon || '💭',
+      category_id: q.category_id,
+      likes_count: likeCountMap.get(String(quoteId)) || 0,
+      dislikes_count: dislikeCountMap.get(String(quoteId)) || 0,
+      quote_type: 'regular',
+      creator_id: null,
+      creator_name: null,
+    };
+  });
+
+  // Query public user quotes
+  const userQuotesFilter: any = { is_public: true };
+  if (categoryIds.length > 0) {
+    userQuotesFilter.category_id = { $in: categoryIds };
+  }
+  const publicUserQuotes = await userQuotesCollection.find(userQuotesFilter).toArray() as any[];
+
+  // Get user names for user quotes
+  const userIds = [...new Set(publicUserQuotes.map((uq: any) => uq.user_id).filter(Boolean))];
+  let userMap = new Map();
   
+  if (userIds.length > 0) {
+    const users = await usersCollection.find({ 
+      $or: userIds.map(id => {
+        try {
+          if (ObjectId.isValid(id)) return { _id: new ObjectId(id) };
+        } catch {}
+        return { id: id };
+      })
+    }).toArray() as any[];
+    userMap = new Map(users.map((u: any) => [u._id?.toString() || u.id, u]));
+  }
+
+  // Transform user quotes
+  const formattedUserQuotes = publicUserQuotes.map((uq: any) => {
+    const category = categoryMap.get(uq.category_id) || categoryMap.get(String(uq.category_id));
+    const user = userMap.get(uq.user_id?.toString()) || userMap.get(String(uq.user_id));
+    return {
+      id: `user_${uq.id || uq._id}`,
+      text: uq.text,
+      author: uq.author,
+      category: category?.name || 'Personal',
+      category_icon: category?.icon || '✨',
+      category_id: uq.category_id,
+      likes_count: 0,
+      dislikes_count: 0,
+      quote_type: 'user',
+      creator_id: uq.user_id,
+      creator_name: user?.name || 'Anonymous',
+      is_public: uq.is_public,
+      custom_background: uq.custom_background,
+    };
+  });
+
+  // Combine and shuffle
+  const allQuotes = [...formattedQuotes, ...formattedUserQuotes];
+  const shuffled = allQuotes.sort(() => Math.random() - 0.5);
+
   // Store in cache
-  quotesCache.set(cacheKey, { data: quotes, timestamp: Date.now() });
-  
-  return quotes;
+  quotesCache.set(cacheKey, { data: shuffled, timestamp: Date.now() });
+
+  return shuffled;
 }
 
 export async function GET(request: NextRequest) {
@@ -97,56 +134,34 @@ export async function GET(request: NextRequest) {
 
     // Create cache key based on categories
     const cacheKey = `quotes:${categoriesParam || 'all'}`;
-    
+
     // Get base quotes from cache
     let quotes = await getBaseQuotesFromCache(cacheKey, categoriesParam);
 
     // If user is authenticated, add user-specific data (not cached)
     if (userId) {
-      // Filter out regular quote IDs (not user quotes) - keep as strings
-      const regularQuoteIds = quotes
-        .filter((q: any) => q.quote_type === 'regular')
-        .map((q: any) => q.id);
-      
-      if (regularQuoteIds.length > 0) {
-        const placeholders = regularQuoteIds.map(() => '?').join(',');
-        
-        // Get user's likes
-        const [userLikes] = await pool.execute(
-          `SELECT quote_id FROM user_likes WHERE user_id = ? AND quote_id IN (${placeholders})`,
-          [userId, ...regularQuoteIds]
-        ) as any[];
-        const likedIds = new Set(userLikes.map((l: any) => String(l.quote_id)));
+      const likesCollection = await getCollection('user_likes');
+      const savedCollection = await getCollection('user_saved');
 
-        // Get user's saves
-        const [userSaves] = await pool.execute(
-          `SELECT quote_id FROM user_saved WHERE user_id = ? AND quote_id IN (${placeholders})`,
-          [userId, ...regularQuoteIds]
-        ) as any[];
-        const savedIds = new Set(userSaves.map((s: any) => String(s.quote_id)));
+      // Get user's likes
+      const userLikes = await likesCollection.find({ user_id: userId }).toArray() as any[];
+      const likedIds = new Set(userLikes.map((l: any) => String(l.quote_id)));
 
-        // Merge user data with cached quotes - keep IDs as strings
-        quotes = quotes.map((q: any) => ({
-          ...q,
-          id: q.id, // Keep ID as is (string)
-          is_liked: q.quote_type === 'regular' && likedIds.has(String(q.id)) ? 1 : 0,
-          is_saved: q.quote_type === 'regular' && savedIds.has(String(q.id)) ? 1 : 0,
-          is_own_quote: q.quote_type === 'user' && q.creator_id === userId ? 1 : 0,
-        }));
-      } else {
-        quotes = quotes.map((q: any) => ({
-          ...q,
-          id: q.id, // Keep ID as is (string)
-          is_liked: 0,
-          is_saved: 0,
-          is_own_quote: q.quote_type === 'user' && q.creator_id === userId ? 1 : 0,
-        }));
-      }
+      // Get user's saves
+      const userSaves = await savedCollection.find({ user_id: userId }).toArray() as any[];
+      const savedIds = new Set(userSaves.map((s: any) => String(s.quote_id)));
+
+      // Merge user data with cached quotes
+      quotes = quotes.map((q: any) => ({
+        ...q,
+        is_liked: likedIds.has(String(q.id)) ? 1 : 0,
+        is_saved: savedIds.has(String(q.id)) ? 1 : 0,
+        is_own_quote: q.quote_type === 'user' && String(q.creator_id) === String(userId) ? 1 : 0,
+      }));
     } else {
       // For non-authenticated users, add default values
       quotes = quotes.map((q: any) => ({
         ...q,
-        id: q.id, // Keep ID as is (string)
         is_liked: 0,
         is_saved: 0,
         is_own_quote: 0,
@@ -155,10 +170,10 @@ export async function GET(request: NextRequest) {
 
     // Return with cache headers for browser caching
     const response = NextResponse.json({ quotes }, { status: 200 });
-    
+
     // Cache for 1 minute in browser (stale-while-revalidate for 5 minutes)
     response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-    
+
     return response;
   } catch (error) {
     console.error('Get quotes error:', error);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 // GET - Fetch user's card style preferences
@@ -14,25 +14,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch card style preferences including background AND custom backgrounds
-    const [preferences] = await pool.execute(
-      `SELECT card_theme_id, card_font_id, card_background_id, custom_backgrounds FROM user_preferences WHERE user_id = ?`,
-      [userId]
-    ) as any[];
+    const preferencesCollection = await getCollection('user_preferences');
+    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
 
-    if (Array.isArray(preferences) && preferences.length > 0) {
+    if (preferences) {
       // Parse custom_backgrounds if it exists
       let customBackgrounds = [];
-      if (preferences[0].custom_backgrounds) {
-        customBackgrounds = typeof preferences[0].custom_backgrounds === 'string'
-          ? JSON.parse(preferences[0].custom_backgrounds)
-          : preferences[0].custom_backgrounds;
+      if (preferences.custom_backgrounds) {
+        customBackgrounds = typeof preferences.custom_backgrounds === 'string'
+          ? JSON.parse(preferences.custom_backgrounds)
+          : preferences.custom_backgrounds;
       }
 
       return NextResponse.json({
-        themeId: preferences[0].card_theme_id || 'default',
-        fontId: preferences[0].card_font_id || 'elegant',
-        backgroundId: preferences[0].card_background_id || 'none',
+        themeId: preferences.card_theme_id || 'default',
+        fontId: preferences.card_font_id || 'elegant',
+        backgroundId: preferences.card_background_id || 'none',
         customBackgrounds, // Include custom backgrounds in response
       });
     }
@@ -68,25 +65,25 @@ export async function POST(request: NextRequest) {
 
     const { themeId, fontId, backgroundId } = await request.json();
 
-    // Check if user already has preferences
-    const [existing] = await pool.execute(
-      `SELECT id FROM user_preferences WHERE user_id = ?`,
-      [userId]
-    ) as any[];
+    const preferencesCollection = await getCollection('user_preferences');
 
-    if (Array.isArray(existing) && existing.length > 0) {
-      // Update existing preferences
-      await pool.execute(
-        `UPDATE user_preferences SET card_theme_id = ?, card_font_id = ?, card_background_id = ?, updated_at = NOW() WHERE user_id = ?`,
-        [themeId, fontId, backgroundId || 'none', userId]
-      );
-    } else {
-      // Insert new preferences
-      await pool.execute(
-        `INSERT INTO user_preferences (user_id, card_theme_id, card_font_id, card_background_id, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())`,
-        [userId, themeId, fontId, backgroundId || 'none']
-      );
-    }
+    // Upsert preferences
+    await preferencesCollection.updateOne(
+      { user_id: userId },
+      {
+        $set: {
+          card_theme_id: themeId,
+          card_font_id: fontId,
+          card_background_id: backgroundId || 'none',
+          updated_at: new Date()
+        },
+        $setOnInsert: {
+          user_id: userId,
+          created_at: new Date()
+        }
+      },
+      { upsert: true }
+    );
 
     return NextResponse.json({
       success: true,

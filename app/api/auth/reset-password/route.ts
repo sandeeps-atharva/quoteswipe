@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,20 +13,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user with valid reset token
-    const [users] = await pool.execute(
-      'SELECT id, google_id, password FROM users WHERE password_reset_token = ? AND password_reset_expires > NOW()',
-      [token]
-    ) as any[];
+    const usersCollection = await getCollection('users');
 
-    if (!Array.isArray(users) || users.length === 0) {
+    // Find user with valid reset token
+    const user: any = await usersCollection.findOne({
+      password_reset_token: token,
+      password_reset_expires: { $gt: new Date() as any }
+    });
+
+    if (!user) {
       return NextResponse.json(
         { error: 'Invalid or expired reset token' },
         { status: 400 }
       );
     }
-
-    const user = users[0];
 
     // Check if user signed up with Google only (has google_id but no password)
     if (user.google_id && !user.password) {
@@ -40,9 +40,12 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Update password and clear reset token
-    await pool.execute(
-      'UPDATE users SET password = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?',
-      [hashedPassword, user.id]
+    await usersCollection.updateOne(
+      { _id: user._id },
+      { 
+        $set: { password: hashedPassword },
+        $unset: { password_reset_token: '', password_reset_expires: '' }
+      }
     );
 
     return NextResponse.json(
@@ -57,4 +60,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

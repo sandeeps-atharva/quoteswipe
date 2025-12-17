@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quoteswipe.com';
 
@@ -19,25 +19,34 @@ interface Quote {
 
 async function getQuote(id: string): Promise<Quote | null> {
   try {
-    const [quotes] = await pool.execute(
-      `SELECT 
-        q.id,
-        q.text,
-        q.author,
-        c.name as category,
-        c.icon as category_icon,
-        c.id as category_id
-      FROM quotes q
-      INNER JOIN categories c ON q.category_id = c.id
-      WHERE q.id = ?`,
-      [id]
-    ) as any[];
+    const quotesCollection = await getCollection('quotes');
+    const categoriesCollection = await getCollection('categories');
 
-    if (!Array.isArray(quotes) || quotes.length === 0) {
+    // Find quote by id or _id
+    const quote = await quotesCollection.findOne({
+      $or: [{ id: id }, { _id: toObjectId(id) as any }]
+    }) as any;
+
+    if (!quote) {
       return null;
     }
 
-    return quotes[0];
+    // Get category
+    let category: any = null;
+    if (quote.category_id) {
+      category = await categoriesCollection.findOne({
+        $or: [{ id: quote.category_id }, { _id: quote.category_id }]
+      }) as any;
+    }
+
+    return {
+      id: quote.id || quote._id?.toString(),
+      text: quote.text,
+      author: quote.author,
+      category: category?.name || 'General',
+      category_icon: category?.icon || '💭',
+      category_id: quote.category_id,
+    };
   } catch (error) {
     console.error('Get quote error:', error);
     return null;
@@ -123,18 +132,3 @@ export async function generateMetadata({ params }: QuotePageProps): Promise<Meta
     },
   };
 }
-
-// Generate static params for popular quotes (optional optimization)
-// export async function generateStaticParams() {
-//   try {
-//     const [quotes] = await pool.execute(
-//       'SELECT id FROM quotes ORDER BY likes_count DESC LIMIT 100'
-//     ) as any[];
-//     return quotes.map((quote: { id: number }) => ({
-//       id: quote.id.toString(),
-//     }));
-//   } catch {
-//     return [];
-//   }
-// }
-

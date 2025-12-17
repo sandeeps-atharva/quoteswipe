@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -17,13 +17,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already disliked this quote
-    const [existingDislikes] = await pool.execute(
-      'SELECT id FROM user_dislikes WHERE user_id = ? AND quote_id = ?',
-      [userId, quoteId]
-    ) as any[];
+    const userDislikesCollection = await getCollection('user_dislikes');
+    const userLikesCollection = await getCollection('user_likes');
 
-    if (Array.isArray(existingDislikes) && existingDislikes.length > 0) {
+    // Check if user already disliked this quote
+    const existingDislike: any = await userDislikesCollection.findOne({
+      user_id: userId,
+      quote_id: quoteId
+    });
+
+    if (existingDislike) {
       return NextResponse.json(
         { message: 'Quote already disliked', alreadyDisliked: true },
         { status: 200 }
@@ -31,21 +34,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Remove like if exists (mutual exclusivity)
-    await pool.execute(
-      'DELETE FROM user_likes WHERE user_id = ? AND quote_id = ?',
-      [userId, quoteId]
-    );
+    await userLikesCollection.deleteOne({
+      user_id: userId,
+      quote_id: quoteId
+    });
 
-    // Insert dislike (UNIQUE constraint ensures no duplicates)
-    await pool.execute(
-      'INSERT INTO user_dislikes (user_id, quote_id) VALUES (?, ?)',
-      [userId, quoteId]
-    );
+    // Insert dislike
+    await userDislikesCollection.insertOne({
+      user_id: userId,
+      quote_id: quoteId,
+      created_at: new Date()
+    } as any);
 
     return NextResponse.json({ message: 'Quote disliked' }, { status: 200 });
   } catch (error: any) {
-    // Handle duplicate key error (shouldn't happen due to check above, but safety net)
-    if (error.code === 'ER_DUP_ENTRY') {
+    // Handle duplicate key error
+    if (error.code === 11000) {
       return NextResponse.json(
         { message: 'Quote already disliked', alreadyDisliked: true },
         { status: 200 }
@@ -66,22 +70,52 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [dislikes] = await pool.execute(
-      `SELECT 
-        q.id,
-        q.text,
-        q.author,
-        c.name as category,
-        c.icon as category_icon
-      FROM user_dislikes ud
-      INNER JOIN quotes q ON ud.quote_id = q.id
-      INNER JOIN categories c ON q.category_id = c.id
-      WHERE ud.user_id = ?
-      ORDER BY ud.created_at DESC`,
-      [userId]
-    ) as any[];
+    const userDislikesCollection = await getCollection('user_dislikes');
+    const quotesCollection = await getCollection('quotes');
+    const categoriesCollection = await getCollection('categories');
 
-    return NextResponse.json({ quotes: dislikes }, { status: 200 });
+    // Get user's disliked quote IDs
+    const dislikes = await userDislikesCollection
+      .find({ user_id: userId })
+      .sort({ created_at: -1 })
+      .toArray() as any[];
+
+    const quoteIds = dislikes.map((d: any) => d.quote_id);
+
+    if (quoteIds.length === 0) {
+      return NextResponse.json({ quotes: [] }, { status: 200 });
+    }
+
+    // Get quotes - try both string and ObjectId matching
+    const objectIds = quoteIds.map(id => {
+      try { return toObjectId(id); } catch { return null; }
+    }).filter((id): id is any => id !== null);
+    
+    const quotes = await quotesCollection.find({
+      $or: [
+        { id: { $in: quoteIds } },
+        { _id: { $in: objectIds } }
+      ]
+    }).toArray() as any[];
+
+    // Get categories
+    const categoryIds = [...new Set(quotes.map((q: any) => q.category_id).filter(Boolean))];
+    const categories = await categoriesCollection.find({}).toArray() as any[];
+    const categoryMap = new Map(categories.map((c: any) => [c.id || c._id?.toString(), c]));
+
+    // Transform quotes
+    const result = quotes.map((q: any) => {
+      const category = categoryMap.get(q.category_id) || categoryMap.get(String(q.category_id));
+      return {
+        id: q.id || q._id?.toString(),
+        text: q.text,
+        author: q.author,
+        category: category?.name || 'Unknown',
+        category_icon: category?.icon || '📚'
+      };
+    });
+
+    return NextResponse.json({ quotes: result }, { status: 200 });
   } catch (error) {
     console.error('Get disliked quotes error:', error);
     return NextResponse.json(
@@ -90,4 +124,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

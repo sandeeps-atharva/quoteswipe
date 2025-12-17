@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 // GET user profile with stats
@@ -14,56 +14,45 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user details
-    const [users] = await pool.execute(
-      `SELECT 
-        id, name, email, 
-        COALESCE(role, 'user') as role, 
-        created_at,
-        profile_picture,
-        google_id,
-        CASE 
-          WHEN google_id IS NOT NULL THEN 'google'
-          ELSE 'email'
-        END as auth_provider
-      FROM users WHERE id = ?`,
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const likesCollection = await getCollection('user_likes');
+    const dislikesCollection = await getCollection('user_dislikes');
+    const savedCollection = await getCollection('user_saved');
 
-    if (!Array.isArray(users) || users.length === 0) {
+    // Get user details
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
+
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
-    const user = users[0];
-    delete user.google_id; // Don't expose to client
+    // Format user response
+    const userResponse = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role || 'user',
+      created_at: user.created_at,
+      profile_picture: user.profile_picture,
+      auth_provider: user.google_id ? 'google' : 'email',
+    };
 
     // Get user stats
-    const [likedCount] = await pool.execute(
-      'SELECT COUNT(*) as count FROM user_likes WHERE user_id = ?',
-      [userId]
-    ) as any[];
-
-    const [dislikedCount] = await pool.execute(
-      'SELECT COUNT(*) as count FROM user_dislikes WHERE user_id = ?',
-      [userId]
-    ) as any[];
-
-    const [savedCount] = await pool.execute(
-      'SELECT COUNT(*) as count FROM user_saved WHERE user_id = ?',
-      [userId]
-    ) as any[];
+    const likedCount = await likesCollection.countDocuments({ user_id: userId });
+    const dislikedCount = await dislikesCollection.countDocuments({ user_id: userId });
+    const savedCount = await savedCollection.countDocuments({ user_id: userId });
 
     const stats = {
-      liked: likedCount[0]?.count || 0,
-      disliked: dislikedCount[0]?.count || 0,
-      saved: savedCount[0]?.count || 0,
+      liked: likedCount,
+      disliked: dislikedCount,
+      saved: savedCount,
     };
 
     return NextResponse.json({
-      user,
+      user: userResponse,
       stats,
     });
   } catch (error) {
@@ -105,30 +94,30 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const usersCollection = await getCollection('users');
+
     // Update user name
-    await pool.execute(
-      'UPDATE users SET name = ? WHERE id = ?',
-      [name.trim(), userId]
+    await usersCollection.updateOne(
+      { _id: toObjectId(userId) as any },
+      { $set: { name: name.trim() } }
     );
 
     // Fetch updated user
-    const [users] = await pool.execute(
-      `SELECT 
-        id, name, email, 
-        COALESCE(role, 'user') as role, 
-        created_at,
-        profile_picture,
-        CASE 
-          WHEN google_id IS NOT NULL THEN 'google'
-          ELSE 'email'
-        END as auth_provider
-      FROM users WHERE id = ?`,
-      [userId]
-    ) as any[];
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
+
+    const userResponse = {
+      id: user?._id.toString(),
+      name: user?.name,
+      email: user?.email,
+      role: user?.role || 'user',
+      created_at: user?.created_at,
+      profile_picture: user?.profile_picture,
+      auth_provider: user?.google_id ? 'google' : 'email',
+    };
 
     return NextResponse.json({
       success: true,
-      user: users[0],
+      user: userResponse,
     });
   } catch (error) {
     console.error('Update user profile error:', error);
@@ -138,4 +127,3 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { generateToken } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 import { welcomeEmailTemplate, welcomeEmailText } from '@/lib/email-templates';
@@ -7,16 +7,21 @@ import { welcomeEmailTemplate, welcomeEmailText } from '@/lib/email-templates';
 // Get a random quote for welcome email
 async function getRandomQuote(): Promise<{ text: string; author: string; category?: string } | null> {
   try {
-    const [quotes] = await pool.execute(`
-      SELECT q.text, q.author, c.name as category
-      FROM quotes q
-      LEFT JOIN categories c ON q.category_id = c.id
-      ORDER BY RAND()
-      LIMIT 1
-    `);
+    const quotesCollection = await getCollection('quotes');
+    const categoriesCollection = await getCollection('categories');
     
-    if (Array.isArray(quotes) && quotes.length > 0) {
-      return quotes[0] as { text: string; author: string; category?: string };
+    const quotes = await quotesCollection.aggregate([
+      { $sample: { size: 1 } }
+    ]).toArray() as any[];
+    
+    if (quotes.length > 0) {
+      const quote = quotes[0];
+      let categoryName = '';
+      if (quote.category_id) {
+        const category: any = await categoriesCollection.findOne({ _id: quote.category_id }) as any;
+        categoryName = category?.name || '';
+      }
+      return { text: quote.text, author: quote.author, category: categoryName };
     }
     return null;
   } catch {
@@ -77,7 +82,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Decode the JWT token from Google
-    // The credential is a JWT token that contains user info
     const parts = credential.split('.');
     if (parts.length !== 3) {
       return NextResponse.json(
@@ -100,25 +104,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the token with Google (optional but recommended for production)
-    // For now, we'll trust the JWT since it comes directly from Google's OAuth
+    const usersCollection = await getCollection('users');
 
     // Check if user exists
-    const [existingUsers] = await pool.execute(
-      'SELECT id, name, email, google_id, password FROM users WHERE email = ? OR google_id = ?',
-      [email, googleId]
-    );
+    const existingUser: any = await usersCollection.findOne({
+      $or: [{ email }, { google_id: googleId }]
+    }) as any;
 
-    let userId: number;
+    let userId: string;
     let userName = name || email.split('@')[0];
     let isNewUser = false;
 
-    if (Array.isArray(existingUsers) && existingUsers.length > 0) {
+    if (existingUser) {
       // User exists
-      const user = existingUsers[0] as { id: number; name: string; google_id?: string; password?: string };
-      
       // Check if user registered with email/password but NOT with Google
-      if (user.password && !user.google_id) {
+      if (existingUser.password && !existingUser.google_id) {
         return NextResponse.json(
           { 
             error: 'This email is already registered with email and password. Please login using your email and password instead of Google Sign-In.',
@@ -128,24 +128,29 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      userId = user.id;
-      userName = user.name;
+      userId = existingUser._id.toString();
+      userName = existingUser.name;
 
-      // Link Google account if not already linked (this case: user has google_id already)
-      if (!user.google_id) {
-        await pool.execute(
-          'UPDATE users SET google_id = ?, profile_picture = ? WHERE id = ?',
-          [googleId, picture || null, userId]
+      // Link Google account if not already linked
+      if (!existingUser.google_id) {
+        await usersCollection.updateOne(
+          { _id: existingUser._id },
+          { $set: { google_id: googleId, profile_picture: picture || null } }
         );
       }
     } else {
       // Create new user
-      const [result] = await pool.execute(
-        'INSERT INTO users (name, email, google_id, profile_picture, email_verified) VALUES (?, ?, ?, ?, ?)',
-        [userName, email, googleId, picture || null, email_verified ? 1 : 0]
-      ) as any;
+      const result = await usersCollection.insertOne({
+        name: userName,
+        email,
+        google_id: googleId,
+        profile_picture: picture || null,
+        email_verified: email_verified || false,
+        role: 'user',
+        created_at: new Date(),
+      } as any);
 
-      userId = result.insertId;
+      userId = result.insertedId.toString();
       isNewUser = true;
 
       // Send welcome email for new users (non-blocking)
@@ -183,4 +188,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

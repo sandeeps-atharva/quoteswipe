@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 
 // Maximum file size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -72,17 +72,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const preferencesCollection = await getCollection('user_preferences');
+
     // Get existing custom backgrounds
-    const [rows] = await pool.execute(
-      'SELECT custom_backgrounds FROM user_preferences WHERE user_id = ?',
-      [userId]
-    ) as any[];
+    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
 
     let existingBackgrounds: CustomBackground[] = [];
-    if (rows.length > 0 && rows[0].custom_backgrounds) {
-      existingBackgrounds = typeof rows[0].custom_backgrounds === 'string' 
-        ? JSON.parse(rows[0].custom_backgrounds)
-        : rows[0].custom_backgrounds;
+    if (preferences?.custom_backgrounds) {
+      existingBackgrounds = typeof preferences.custom_backgrounds === 'string' 
+        ? JSON.parse(preferences.custom_backgrounds)
+        : preferences.custom_backgrounds;
     }
 
     // Check limit
@@ -118,23 +117,21 @@ export async function POST(request: NextRequest) {
     // Update database
     const updatedBackgrounds = [...existingBackgrounds, newBackground];
     
-    // Check if user_preferences row exists
-    const [existing] = await pool.execute(
-      'SELECT id FROM user_preferences WHERE user_id = ?',
-      [userId]
-    ) as any[];
-
-    if (existing.length > 0) {
-      await pool.execute(
-        'UPDATE user_preferences SET custom_backgrounds = ?, updated_at = NOW() WHERE user_id = ?',
-        [JSON.stringify(updatedBackgrounds), userId]
-      );
-    } else {
-      await pool.execute(
-        'INSERT INTO user_preferences (user_id, custom_backgrounds, created_at, updated_at) VALUES (?, ?, NOW(), NOW())',
-        [userId, JSON.stringify(updatedBackgrounds)]
-      );
-    }
+    // Upsert preferences
+    await preferencesCollection.updateOne(
+      { user_id: userId },
+      {
+        $set: {
+          custom_backgrounds: updatedBackgrounds,
+          updated_at: new Date()
+        },
+        $setOnInsert: {
+          user_id: userId,
+          created_at: new Date()
+        }
+      },
+      { upsert: true }
+    );
 
     return NextResponse.json({
       success: true,
@@ -160,16 +157,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ backgrounds: [] });
     }
 
-    const [rows] = await pool.execute(
-      'SELECT custom_backgrounds FROM user_preferences WHERE user_id = ?',
-      [userId]
-    ) as any[];
+    const preferencesCollection = await getCollection('user_preferences');
+    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
 
     let backgrounds: CustomBackground[] = [];
-    if (rows.length > 0 && rows[0].custom_backgrounds) {
-      backgrounds = typeof rows[0].custom_backgrounds === 'string'
-        ? JSON.parse(rows[0].custom_backgrounds)
-        : rows[0].custom_backgrounds;
+    if (preferences?.custom_backgrounds) {
+      backgrounds = typeof preferences.custom_backgrounds === 'string'
+        ? JSON.parse(preferences.custom_backgrounds)
+        : preferences.custom_backgrounds;
     }
 
     return NextResponse.json({ backgrounds });
@@ -201,22 +196,19 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Get existing backgrounds
-    const [rows] = await pool.execute(
-      'SELECT custom_backgrounds FROM user_preferences WHERE user_id = ?',
-      [userId]
-    ) as any[];
+    const preferencesCollection = await getCollection('user_preferences');
+    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
 
-    if (rows.length === 0 || !rows[0].custom_backgrounds) {
+    if (!preferences?.custom_backgrounds) {
       return NextResponse.json(
         { error: 'Background not found' },
         { status: 404 }
       );
     }
 
-    const backgrounds: CustomBackground[] = typeof rows[0].custom_backgrounds === 'string'
-      ? JSON.parse(rows[0].custom_backgrounds)
-      : rows[0].custom_backgrounds;
+    const backgrounds: CustomBackground[] = typeof preferences.custom_backgrounds === 'string'
+      ? JSON.parse(preferences.custom_backgrounds)
+      : preferences.custom_backgrounds;
 
     const backgroundToDelete = backgrounds.find(bg => bg.id === backgroundId);
     
@@ -230,9 +222,9 @@ export async function DELETE(request: NextRequest) {
     // Update database (no file to delete - it's all in database!)
     const updatedBackgrounds = backgrounds.filter(bg => bg.id !== backgroundId);
     
-    await pool.execute(
-      'UPDATE user_preferences SET custom_backgrounds = ?, updated_at = NOW() WHERE user_id = ?',
-      [JSON.stringify(updatedBackgrounds), userId]
+    await preferencesCollection.updateOne(
+      { user_id: userId },
+      { $set: { custom_backgrounds: updatedBackgrounds, updated_at: new Date() } }
     );
 
     return NextResponse.json({

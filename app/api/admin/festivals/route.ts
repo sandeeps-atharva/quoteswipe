@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 
 // GET /api/admin/festivals - Get all festivals
@@ -10,17 +10,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [festivals] = await pool.execute(`
-      SELECT 
-        f.*,
-        COUNT(fq.id) as quotes_count
-      FROM festivals f
-      LEFT JOIN festival_quotes fq ON f.id = fq.festival_id
-      GROUP BY f.id
-      ORDER BY f.date ASC
-    `);
+    const festivalsCollection = await getCollection('festivals');
+    const festivalQuotesCollection = await getCollection('festival_quotes');
 
-    return NextResponse.json({ festivals });
+    const festivals = await festivalsCollection.find({}).sort({ date: 1 }).toArray() as any[];
+
+    // Get quote counts for each festival
+    const quoteCounts = await festivalQuotesCollection.aggregate([
+      { $group: { _id: '$festival_id', count: { $sum: 1 } } }
+    ]).toArray() as any[];
+    const countMap = new Map(quoteCounts.map((q: any) => [String(q._id), q.count]));
+
+    const formattedFestivals = festivals.map((f: any) => ({
+      ...f,
+      id: f.id || f._id?.toString(),
+      quotes_count: countMap.get(String(f.id || f._id)) || 0
+    }));
+
+    return NextResponse.json({ festivals: formattedFestivals });
   } catch (error) {
     console.error('Get festivals error:', error);
     return NextResponse.json(
@@ -47,14 +54,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const [result] = await pool.execute(
-      'INSERT INTO festivals (name, date, description) VALUES (?, ?, ?)',
-      [name, date, description || null]
-    ) as any;
+    const festivalsCollection = await getCollection('festivals');
+
+    const result = await festivalsCollection.insertOne({
+      name,
+      date: new Date(date),
+      description: description || null,
+      created_at: new Date()
+    } as any);
 
     return NextResponse.json({
       message: 'Festival created successfully',
-      festivalId: result.insertId,
+      festivalId: result.insertedId.toString(),
     }, { status: 201 });
   } catch (error) {
     console.error('Create festival error:', error);
@@ -64,4 +75,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

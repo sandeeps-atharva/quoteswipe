@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quoteswipe.com';
 
@@ -14,33 +14,51 @@ interface UserQuote {
   author: string;
   category: string | null;
   category_icon: string | null;
-  is_public: number;
+  is_public: boolean;
   creator_name: string;
 }
 
 async function getUserQuote(id: string): Promise<UserQuote | null> {
   try {
-    const [quotes] = await pool.execute(
-      `SELECT 
-        uq.id,
-        uq.text,
-        uq.author,
-        uq.is_public,
-        c.name as category,
-        c.icon as category_icon,
-        u.name as creator_name
-      FROM user_quotes uq
-      LEFT JOIN categories c ON uq.category_id = c.id
-      LEFT JOIN users u ON uq.user_id = u.id
-      WHERE uq.id = ? AND uq.is_public = 1`,
-      [id]
-    ) as any[];
+    const userQuotesCollection = await getCollection('user_quotes');
+    const categoriesCollection = await getCollection('categories');
+    const usersCollection = await getCollection('users');
 
-    if (!Array.isArray(quotes) || quotes.length === 0) {
+    // Find public user quote by id or _id
+    const quote = await userQuotesCollection.findOne({
+      $and: [
+        { $or: [{ id: id }, { _id: toObjectId(id) as any }] },
+        { is_public: true }
+      ]
+    }) as any;
+
+    if (!quote) {
       return null;
     }
 
-    return quotes[0];
+    // Get category
+    let category: any = null;
+    if (quote.category_id) {
+      category = await categoriesCollection.findOne({
+        $or: [{ id: quote.category_id }, { _id: quote.category_id }]
+      }) as any;
+    }
+
+    // Get creator name
+    let creator: any = null;
+    if (quote.user_id) {
+      creator = await usersCollection.findOne({ _id: toObjectId(quote.user_id) as any }) as any;
+    }
+
+    return {
+      id: quote.id || quote._id?.toString(),
+      text: quote.text,
+      author: quote.author,
+      is_public: quote.is_public,
+      category: category?.name || null,
+      category_icon: category?.icon || null,
+      creator_name: creator?.name || 'Anonymous',
+    };
   } catch (error) {
     console.error('Get user quote error:', error);
     return null;
@@ -127,4 +145,3 @@ export async function generateMetadata({ params }: UserQuotePageProps): Promise<
     },
   };
 }
-

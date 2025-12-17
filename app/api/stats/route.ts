@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 
 // Cache stats for 60 seconds
 export const revalidate = 60;
@@ -20,59 +20,42 @@ export async function GET() {
     });
   }
   try {
-    // Get total quotes
-    const [quotesResult] = await pool.execute(
-      'SELECT COUNT(*) as count FROM quotes'
-    ) as any[];
-    const totalQuotes = quotesResult[0]?.count || 0;
+    const quotesCollection = await getCollection('quotes');
+    const categoriesCollection = await getCollection('categories');
+    const usersCollection = await getCollection('users');
+    const savedCollection = await getCollection('user_saved');
+    const likesCollection = await getCollection('user_likes');
+    const feedbackCollection = await getCollection('feedback');
 
-    // Get total categories
-    const [categoriesResult] = await pool.execute(
-      'SELECT COUNT(*) as count FROM categories'
-    ) as any[];
-    const totalCategories = categoriesResult[0]?.count || 0;
+    // Get counts
+    const totalQuotes = await quotesCollection.countDocuments();
+    const totalCategories = await categoriesCollection.countDocuments();
+    const totalUsers = await usersCollection.countDocuments();
+    const totalSaved = await savedCollection.countDocuments();
+    const totalLikes = await likesCollection.countDocuments();
 
-    // Get total users
-    const [usersResult] = await pool.execute(
-      'SELECT COUNT(*) as count FROM users'
-    ) as any[];
-    const totalUsers = usersResult[0]?.count || 0;
-
-    // Get total saved quotes
-    const [savedResult] = await pool.execute(
-      'SELECT COUNT(*) as count FROM user_saved'
-    ) as any[];
-    const totalSaved = savedResult[0]?.count || 0;
-
-    // Get total likes
-    const [likesResult] = await pool.execute(
-      'SELECT COUNT(*) as count FROM user_likes'
-    ) as any[];
-    const totalLikes = likesResult[0]?.count || 0;
-
-    // Get average rating from feedback (if rating column exists)
+    // Get average rating from feedback
     let avgRating = '5.0';
     try {
-      const [ratingResult] = await pool.execute(
-        'SELECT AVG(rating) as avg_rating FROM feedback WHERE is_approved = 1'
-      ) as any[];
-      if (ratingResult[0]?.avg_rating) {
-        avgRating = parseFloat(ratingResult[0].avg_rating).toFixed(1);
+      const ratingResult = await feedbackCollection.aggregate([
+        { $match: { is_approved: true } },
+        { $group: { _id: null, avgRating: { $avg: '$rating' } } }
+      ]).toArray() as any[];
+      if (ratingResult[0]?.avgRating) {
+        avgRating = parseFloat(ratingResult[0].avgRating).toFixed(1);
       }
     } catch {
-      // Rating column doesn't exist, use default
       avgRating = '5.0';
     }
 
-    // Get total testimonials (if columns exist)
+    // Get total testimonials
     let totalTestimonials = 0;
     try {
-      const [testimonialsResult] = await pool.execute(
-        'SELECT COUNT(*) as count FROM feedback WHERE is_testimonial = 1 AND is_approved = 1'
-      ) as any[];
-      totalTestimonials = testimonialsResult[0]?.count || 0;
+      totalTestimonials = await feedbackCollection.countDocuments({
+        is_testimonial: true,
+        is_approved: true
+      });
     } catch {
-      // Columns don't exist, use default
       totalTestimonials = 0;
     }
 
@@ -123,4 +106,3 @@ export async function GET() {
     );
   }
 }
-

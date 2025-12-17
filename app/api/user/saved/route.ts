@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -17,10 +17,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await pool.execute(
-      'INSERT IGNORE INTO user_saved (user_id, quote_id) VALUES (?, ?)',
-      [userId, quoteId]
-    );
+    const userSavedCollection = await getCollection('user_saved');
+
+    // Check if already saved (upsert behavior)
+    const existing: any = await userSavedCollection.findOne({
+      user_id: userId,
+      quote_id: quoteId
+    });
+
+    if (!existing) {
+      await userSavedCollection.insertOne({
+        user_id: userId,
+        quote_id: quoteId,
+        created_at: new Date()
+      } as any);
+    }
 
     return NextResponse.json({ message: 'Quote saved' }, { status: 200 });
   } catch (error) {
@@ -39,22 +50,51 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [saved] = await pool.execute(
-      `SELECT 
-        q.id,
-        q.text,
-        q.author,
-        c.name as category,
-        c.icon as category_icon
-      FROM user_saved us
-      INNER JOIN quotes q ON us.quote_id = q.id
-      INNER JOIN categories c ON q.category_id = c.id
-      WHERE us.user_id = ?
-      ORDER BY us.created_at DESC`,
-      [userId]
-    ) as any[];
+    const userSavedCollection = await getCollection('user_saved');
+    const quotesCollection = await getCollection('quotes');
+    const categoriesCollection = await getCollection('categories');
 
-    return NextResponse.json({ quotes: saved }, { status: 200 });
+    // Get user's saved quote IDs
+    const saved = await userSavedCollection
+      .find({ user_id: userId })
+      .sort({ created_at: -1 })
+      .toArray() as any[];
+
+    const quoteIds = saved.map((s: any) => s.quote_id);
+
+    if (quoteIds.length === 0) {
+      return NextResponse.json({ quotes: [] }, { status: 200 });
+    }
+
+    // Get quotes - try both string id and ObjectId matching
+    const objectIds = quoteIds.map(id => {
+      try { return toObjectId(id); } catch { return null; }
+    }).filter((id): id is any => id !== null);
+    
+    const quotes = await quotesCollection.find({
+      $or: [
+        { id: { $in: quoteIds } },
+        { _id: { $in: objectIds } }
+      ]
+    }).toArray() as any[];
+
+    // Get categories
+    const categories = await categoriesCollection.find({}).toArray() as any[];
+    const categoryMap = new Map(categories.map((c: any) => [c.id || c._id?.toString(), c]));
+
+    // Transform quotes
+    const result = quotes.map((q: any) => {
+      const category = categoryMap.get(q.category_id) || categoryMap.get(String(q.category_id));
+      return {
+        id: q.id || q._id?.toString(),
+        text: q.text,
+        author: q.author,
+        category: category?.name || 'Unknown',
+        category_icon: category?.icon || '📚'
+      };
+    });
+
+    return NextResponse.json({ quotes: result }, { status: 200 });
   } catch (error) {
     console.error('Get saved quotes error:', error);
     return NextResponse.json(
@@ -79,10 +119,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await pool.execute(
-      'DELETE FROM user_saved WHERE user_id = ? AND quote_id = ?',
-      [userId, quoteId]
-    );
+    const userSavedCollection = await getCollection('user_saved');
+    await userSavedCollection.deleteOne({
+      user_id: userId,
+      quote_id: quoteId
+    });
 
     return NextResponse.json({ message: 'Quote removed from collection' }, { status: 200 });
   } catch (error) {
@@ -93,4 +134,3 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-

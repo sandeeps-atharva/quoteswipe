@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -13,33 +13,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const [users] = await pool.execute(
-      `SELECT 
-        id, name, email, 
-        COALESCE(role, 'user') as role, 
-        created_at,
-        profile_picture,
-        google_id,
-        CASE 
-          WHEN google_id IS NOT NULL THEN 'google'
-          ELSE 'email'
-        END as auth_provider
-      FROM users WHERE id = ?`,
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
 
-    if (!Array.isArray(users) || users.length === 0) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
-    const user = users[0];
-    // Don't expose google_id to client
-    delete user.google_id;
+    // Build response object
+    const userResponse = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role || 'user',
+      created_at: user.created_at,
+      profile_picture: user.profile_picture,
+      auth_provider: user.google_id ? 'google' : 'email',
+    };
     
-    return NextResponse.json({ user }, { status: 200 });
+    return NextResponse.json({ user: userResponse }, { status: 200 });
   } catch (error) {
     console.error('Get user error:', error);
     return NextResponse.json(
@@ -48,4 +43,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

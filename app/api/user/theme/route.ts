@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 // GET - Fetch user's theme preference
@@ -14,14 +14,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const [preferences] = await pool.execute(
-      `SELECT theme_mode FROM user_preferences WHERE user_id = ?`,
-      [userId]
-    ) as any[];
+    const preferencesCollection = await getCollection('user_preferences');
+    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
 
-    if (Array.isArray(preferences) && preferences.length > 0 && preferences[0].theme_mode) {
+    if (preferences?.theme_mode) {
       return NextResponse.json({
-        theme: preferences[0].theme_mode,
+        theme: preferences.theme_mode,
       });
     }
 
@@ -61,25 +59,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already has preferences
-    const [existing] = await pool.execute(
-      `SELECT id FROM user_preferences WHERE user_id = ?`,
-      [userId]
-    ) as any[];
+    const preferencesCollection = await getCollection('user_preferences');
 
-    if (Array.isArray(existing) && existing.length > 0) {
-      // Update existing preferences
-      await pool.execute(
-        `UPDATE user_preferences SET theme_mode = ?, updated_at = NOW() WHERE user_id = ?`,
-        [theme, userId]
-      );
-    } else {
-      // Insert new preferences
-      await pool.execute(
-        `INSERT INTO user_preferences (user_id, theme_mode, created_at, updated_at) VALUES (?, ?, NOW(), NOW())`,
-        [userId, theme]
-      );
-    }
+    // Upsert preferences
+    await preferencesCollection.updateOne(
+      { user_id: userId },
+      {
+        $set: {
+          theme_mode: theme,
+          updated_at: new Date()
+        },
+        $setOnInsert: {
+          user_id: userId,
+          created_at: new Date()
+        }
+      },
+      { upsert: true }
+    );
 
     return NextResponse.json({
       success: true,
@@ -94,4 +90,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

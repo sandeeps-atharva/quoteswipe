@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 interface VisitorData {
@@ -61,43 +61,27 @@ export async function POST(request: NextRequest) {
     const validDeviceTypes = ['Desktop', 'Mobile', 'Tablet', 'Unknown'];
     const deviceType = validDeviceTypes.includes(body.deviceType) ? body.deviceType : 'Unknown';
 
+    const visitorsCollection = await getCollection('visitors');
+
     // Insert visitor data into database
-    await pool.execute(
-      `INSERT INTO visitors (
-        ip_address,
-        browser_name,
-        browser_version,
-        os_name,
-        os_version,
-        device_type,
-        cpu_cores,
-        ram_gb,
-        screen_width,
-        screen_height,
-        user_agent,
-        language,
-        timezone,
-        referrer,
-        user_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        ipAddress,
-        body.browserName || null,
-        body.browserVersion || null,
-        body.osName || null,
-        body.osVersion || null,
-        deviceType,
-        body.cpuCores || null,
-        body.ramGb || null,
-        body.screenWidth || null,
-        body.screenHeight || null,
-        body.userAgent || null,
-        body.language || null,
-        body.timezone || null,
-        body.referrer || null,
-        userId || null,
-      ]
-    );
+    await visitorsCollection.insertOne({
+      ip_address: ipAddress,
+      browser_name: body.browserName || null,
+      browser_version: body.browserVersion || null,
+      os_name: body.osName || null,
+      os_version: body.osVersion || null,
+      device_type: deviceType,
+      cpu_cores: body.cpuCores || null,
+      ram_gb: body.ramGb || null,
+      screen_width: body.screenWidth || null,
+      screen_height: body.screenHeight || null,
+      user_agent: body.userAgent || null,
+      language: body.language || null,
+      timezone: body.timezone || null,
+      referrer: body.referrer || null,
+      user_id: userId || null,
+      visited_at: new Date()
+    } as any);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -115,75 +99,87 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is admin
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
 
-    if (users.length === 0 || users[0].role !== 'admin') {
+    if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const visitorsCollection = await getCollection('visitors');
+
     // Get visitor statistics
-    const [totalVisits] = await pool.execute(
-      'SELECT COUNT(*) as total FROM visitors'
-    ) as any[];
+    const totalVisits = await visitorsCollection.countDocuments();
 
-    const [uniqueVisitors] = await pool.execute(
-      'SELECT COUNT(DISTINCT ip_address) as unique_count FROM visitors'
-    ) as any[];
+    const uniqueVisitorsResult = await visitorsCollection.aggregate([
+      { $group: { _id: '$ip_address' } },
+      { $count: 'unique_count' }
+    ]).toArray() as any[];
+    const uniqueVisitors = uniqueVisitorsResult[0]?.unique_count || 0;
 
-    const [deviceStats] = await pool.execute(
-      `SELECT device_type, COUNT(*) as count 
-       FROM visitors 
-       GROUP BY device_type 
-       ORDER BY count DESC`
-    ) as any[];
+    const deviceStats = await visitorsCollection.aggregate([
+      { $group: { _id: '$device_type', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]).toArray() as any[];
 
-    const [browserStats] = await pool.execute(
-      `SELECT browser_name, COUNT(*) as count 
-       FROM visitors 
-       WHERE browser_name IS NOT NULL
-       GROUP BY browser_name 
-       ORDER BY count DESC 
-       LIMIT 10`
-    ) as any[];
+    const browserStats = await visitorsCollection.aggregate([
+      { $match: { browser_name: { $ne: null } } },
+      { $group: { _id: '$browser_name', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]).toArray() as any[];
 
-    const [osStats] = await pool.execute(
-      `SELECT os_name, COUNT(*) as count 
-       FROM visitors 
-       WHERE os_name IS NOT NULL
-       GROUP BY os_name 
-       ORDER BY count DESC 
-       LIMIT 10`
-    ) as any[];
+    const osStats = await visitorsCollection.aggregate([
+      { $match: { os_name: { $ne: null } } },
+      { $group: { _id: '$os_name', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]).toArray() as any[];
 
-    const [recentVisitors] = await pool.execute(
-      `SELECT ip_address, browser_name, os_name, device_type, screen_width, screen_height, visited_at
-       FROM visitors 
-       ORDER BY visited_at DESC 
-       LIMIT 50`
-    ) as any[];
+    const recentVisitors = await visitorsCollection
+      .find({})
+      .sort({ visited_at: -1 })
+      .limit(50)
+      .toArray() as any[];
 
-    const [dailyStats] = await pool.execute(
-      `SELECT 
-         DATE(visited_at) as date,
-         COUNT(*) as visits,
-         COUNT(DISTINCT ip_address) as unique_visitors
-       FROM visitors 
-       WHERE visited_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-       GROUP BY DATE(visited_at)
-       ORDER BY date DESC`
-    ) as any[];
+    // Daily stats for last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const dailyStats = await visitorsCollection.aggregate([
+      { $match: { visited_at: { $gte: thirtyDaysAgo } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$visited_at' } },
+          visits: { $sum: 1 },
+          unique_visitors: { $addToSet: '$ip_address' }
+        }
+      },
+      {
+        $project: {
+          date: '$_id',
+          visits: 1,
+          unique_visitors: { $size: '$unique_visitors' }
+        }
+      },
+      { $sort: { date: -1 } }
+    ]).toArray() as any[];
 
     return NextResponse.json({
-      totalVisits: totalVisits[0].total,
-      uniqueVisitors: uniqueVisitors[0].unique_count,
-      deviceStats,
-      browserStats,
-      osStats,
-      recentVisitors,
+      totalVisits,
+      uniqueVisitors,
+      deviceStats: deviceStats.map((d: any) => ({ device_type: d._id, count: d.count })),
+      browserStats: browserStats.map(b => ({ browser_name: b._id, count: b.count })),
+      osStats: osStats.map(o => ({ os_name: o._id, count: o.count })),
+      recentVisitors: recentVisitors.map(v => ({
+        ip_address: v.ip_address,
+        browser_name: v.browser_name,
+        os_name: v.os_name,
+        device_type: v.device_type,
+        screen_width: v.screen_width,
+        screen_height: v.screen_height,
+        visited_at: v.visited_at
+      })),
       dailyStats,
     });
   } catch (error) {
@@ -191,4 +187,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-

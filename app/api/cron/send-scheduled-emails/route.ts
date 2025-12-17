@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { festivalEmailTemplate, festivalEmailText } from '@/lib/email-templates';
 
@@ -25,23 +25,24 @@ export async function GET(request: NextRequest) {
 
     console.log(`[CRON] Checking scheduled emails for ${currentDate} at ${currentTimeStr}`);
 
-    // Get pending scheduled emails for today that should be sent now
-    // Compare both date and time (hour and minute)
-    const [scheduledEmails] = await pool.query(`
-      SELECT 
-        se.*,
-        q.text as quote_text,
-        q.author as quote_author,
-        c.name as category_name
-      FROM scheduled_emails se
-      LEFT JOIN quotes q ON se.quote_id = q.id
-      LEFT JOIN categories c ON q.category_id = c.id
-      WHERE se.scheduled_date = ?
-        AND se.status = 'pending'
-        AND se.scheduled_time <= ?
-    `, [currentDate, currentTimeStr]);
+    const scheduledEmailsCollection = await getCollection('scheduled_emails');
+    const recipientsCollection = await getCollection('scheduled_email_recipients');
+    const quotesCollection = await getCollection('quotes');
+    const categoriesCollection = await getCollection('categories');
+    const usersCollection = await getCollection('users');
 
-    if (!Array.isArray(scheduledEmails) || scheduledEmails.length === 0) {
+    // Get pending scheduled emails for today that should be sent now
+    const startOfDay = new Date(currentDate);
+    const endOfDay = new Date(currentDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const scheduledEmails = await scheduledEmailsCollection.find({
+      scheduled_date: { $gte: startOfDay, $lte: endOfDay },
+      status: 'pending',
+      scheduled_time: { $lte: currentTimeStr }
+    }).toArray() as any[];
+
+    if (scheduledEmails.length === 0) {
       console.log('[CRON] No emails to send');
       return NextResponse.json({ message: 'No emails to send', processed: 0 });
     }
@@ -51,46 +52,76 @@ export async function GET(request: NextRequest) {
     const results = [];
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://quoteswipe.com';
 
-    for (const scheduled of scheduledEmails as any[]) {
+    for (const scheduled of scheduledEmails) {
       console.log(`[CRON] Processing: ${scheduled.title}`);
 
-      // Get recipients
-      const [recipients] = await pool.query(`
-        SELECT ser.*, u.name, u.email
-        FROM scheduled_email_recipients ser
-        JOIN users u ON ser.user_id = u.id
-        WHERE ser.scheduled_email_id = ? AND ser.email_status = 'pending'
-      `, [scheduled.id]);
+      // Get quote details if exists
+      let quoteText = 'Wishing you a wonderful day!';
+      let quoteAuthor = 'QuoteSwipe';
+      let categoryName = '';
 
-      if (!Array.isArray(recipients) || recipients.length === 0) {
+      if (scheduled.quote_id) {
+        const quote: any = await quotesCollection.findOne({
+          $or: [{ id: scheduled.quote_id }, { _id: toObjectId(scheduled.quote_id) as any }]
+        });
+        if (quote) {
+          quoteText = quote.text;
+          quoteAuthor = quote.author;
+          if (quote.category_id) {
+            const category: any = await categoriesCollection.findOne({
+              $or: [{ id: quote.category_id }, { _id: quote.category_id }]
+            }) as any;
+            categoryName = category?.name || '';
+          }
+        }
+      }
+
+      // Get recipients
+      const scheduledEmailId = scheduled.id || scheduled._id?.toString();
+      const recipients = await recipientsCollection.find({
+        scheduled_email_id: scheduledEmailId,
+        email_status: 'pending'
+      }).toArray() as any[];
+
+      if (recipients.length === 0) {
         console.log(`[CRON] No pending recipients for ${scheduled.title}`);
         continue;
       }
 
+      // Get user details for recipients
+      const userIds = recipients.map((r: any) => r.user_id);
+      const users = await usersCollection.find({
+        _id: { $in: userIds.map(id => toObjectId(id) as any) }
+      }).toArray() as any[];
+      const userMap = new Map(users.map((u: any) => [u._id.toString(), { name: u.name, email: u.email }]));
+
       let sentCount = 0;
       let failedCount = 0;
 
-      for (const recipient of recipients as any[]) {
+      for (const recipient of recipients) {
+        const user = userMap.get(recipient.user_id);
+        if (!user) continue;
+
         try {
           // Build email content
           const html = festivalEmailTemplate(
-            { name: recipient.name, email: recipient.email },
+            { name: user.name, email: user.email },
             scheduled.title.replace(/[^\w\s]/g, '').trim(), // Festival name from title
             { 
-              text: scheduled.quote_text || 'Wishing you a wonderful day!', 
-              author: scheduled.quote_author || 'QuoteSwipe',
-              category: scheduled.category_name
+              text: quoteText, 
+              author: quoteAuthor,
+              category: categoryName
             },
             appUrl,
             scheduled.custom_message
           );
 
           const text = festivalEmailText(
-            { name: recipient.name, email: recipient.email },
+            { name: user.name, email: user.email },
             scheduled.title,
             { 
-              text: scheduled.quote_text || 'Wishing you a wonderful day!', 
-              author: scheduled.quote_author || 'QuoteSwipe'
+              text: quoteText, 
+              author: quoteAuthor
             },
             appUrl,
             scheduled.custom_message
@@ -98,23 +129,23 @@ export async function GET(request: NextRequest) {
 
           // Send email
           const result = await sendEmail({
-            to: recipient.email,
+            to: user.email,
             subject: scheduled.subject,
             html,
             text,
           });
 
           // Update recipient status
-          await pool.query(`
-            UPDATE scheduled_email_recipients 
-            SET email_status = ?, sent_at = ?, error_message = ?
-            WHERE id = ?
-          `, [
-            result.success ? 'sent' : 'failed',
-            result.success ? new Date() : null,
-            result.error || null,
-            recipient.id
-          ]);
+          await recipientsCollection.updateOne(
+            { _id: recipient._id },
+            {
+              $set: {
+                email_status: result.success ? 'sent' : 'failed',
+                sent_at: result.success ? new Date() : null,
+                error_message: result.error || null
+              }
+            }
+          );
 
           if (result.success) {
             sentCount++;
@@ -125,27 +156,35 @@ export async function GET(request: NextRequest) {
           // Rate limiting
           await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
-          console.error(`[CRON] Error sending to ${recipient.email}:`, error);
+          console.error(`[CRON] Error sending to ${user.email}:`, error);
           failedCount++;
           
-          await pool.query(`
-            UPDATE scheduled_email_recipients 
-            SET email_status = 'failed', error_message = ?
-            WHERE id = ?
-          `, [error instanceof Error ? error.message : 'Unknown error', recipient.id]);
+          await recipientsCollection.updateOne(
+            { _id: recipient._id },
+            {
+              $set: {
+                email_status: 'failed',
+                error_message: error instanceof Error ? error.message : 'Unknown error'
+              }
+            }
+          );
         }
       }
 
       // Update scheduled email status
       const allFailed = sentCount === 0 && failedCount > 0;
-      await pool.query(`
-        UPDATE scheduled_emails 
-        SET status = ?, sent_at = NOW()
-        WHERE id = ?
-      `, [allFailed ? 'failed' : 'sent', scheduled.id]);
+      await scheduledEmailsCollection.updateOne(
+        { _id: scheduled._id },
+        {
+          $set: {
+            status: allFailed ? 'failed' : 'sent',
+            sent_at: new Date()
+          }
+        }
+      );
 
       results.push({
-        id: scheduled.id,
+        id: scheduledEmailId,
         title: scheduled.title,
         sent: sentCount,
         failed: failedCount,
@@ -172,4 +211,3 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return GET(request);
 }
-

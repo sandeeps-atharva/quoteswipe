@@ -1,11 +1,11 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
-import pool from './db';
+import { getCollection, toObjectId } from './db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 export interface TokenPayload {
-  userId: number;
+  userId: string | number;
   email: string;
   role?: 'user' | 'admin';
 }
@@ -22,17 +22,17 @@ export function verifyToken(token: string): TokenPayload | null {
   }
 }
 
-export function getUserIdFromRequest(request: NextRequest): number | null {
+export function getUserIdFromRequest(request: NextRequest): string | null {
   const token = request.cookies.get('auth-token')?.value;
   if (!token) return null;
   
   const payload = verifyToken(token);
-  return payload?.userId || null;
+  return payload?.userId?.toString() || null;
 }
 
 // Get full user info from request (including role)
 export async function getUserFromRequest(request: NextRequest): Promise<{
-  userId: number;
+  userId: string;
   email: string;
   role: 'user' | 'admin';
   name: string;
@@ -44,15 +44,12 @@ export async function getUserFromRequest(request: NextRequest): Promise<{
   if (!payload?.userId) return null;
 
   try {
-    const [users] = await pool.execute(
-      "SELECT id, name, email, COALESCE(role, 'user') as role FROM users WHERE id = ?",
-      [payload.userId]
-    );
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(payload.userId) as any }) as any;
 
-    if (Array.isArray(users) && users.length > 0) {
-      const user = users[0] as { id: number; name: string; email: string; role: 'user' | 'admin' };
+    if (user) {
       return {
-        userId: user.id,
+        userId: user._id.toString(),
         email: user.email,
         role: user.role || 'user',
         name: user.name,
@@ -67,7 +64,7 @@ export async function getUserFromRequest(request: NextRequest): Promise<{
 
 // Admin authorization middleware helper
 export async function requireAdmin(request: NextRequest): Promise<
-  | { authorized: true; user: { userId: number; email: string; role: 'admin'; name: string } }
+  | { authorized: true; user: { userId: string; email: string; role: 'admin'; name: string } }
   | { authorized: false; response: NextResponse }
 > {
   const user = await getUserFromRequest(request);
@@ -91,4 +88,3 @@ export async function requireAdmin(request: NextRequest): Promise<
     user: { ...user, role: 'admin' },
   };
 }
-

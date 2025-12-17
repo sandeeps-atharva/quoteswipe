@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 
@@ -71,49 +71,53 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Check if user is admin
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
     
-    if (users[0]?.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     
-    let query = `
-      SELECT f.*, u.name as user_name 
-      FROM feedback f 
-      LEFT JOIN users u ON f.user_id = u.id 
-    `;
-    const params: any[] = [];
+    const feedbackCollection = await getCollection('feedback');
     
-    if (status && status !== 'all') {
-      query += ' WHERE f.status = ?';
-      params.push(status);
-    }
+    const filter = status && status !== 'all' ? { status } : {};
+    const feedback = await feedbackCollection
+      .find(filter)
+      .sort({ created_at: -1 })
+      .toArray() as any[];
     
-    query += ' ORDER BY f.created_at DESC';
+    // Get user names
+    const userIds = feedback.map((f: any) => f.user_id).filter(Boolean);
+    const users = userIds.length > 0 
+      ? await usersCollection.find({ _id: { $in: userIds.map(id => toObjectId(id) as any) } }).toArray() as any[]
+      : [];
+    const userMap = new Map(users.map((u: any) => [u._id.toString(), u.name]));
     
-    const [feedback] = await pool.execute(query, params) as any[];
+    const formattedFeedback = feedback.map((f: any) => ({
+      ...f,
+      id: f.id || f._id?.toString(),
+      user_name: f.user_id ? userMap.get(f.user_id.toString()) : null
+    }));
     
     // Get counts by status
-    const [counts] = await pool.execute(`
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as new_count,
-        SUM(CASE WHEN status = 'read' THEN 1 ELSE 0 END) as read_count,
-        SUM(CASE WHEN status = 'replied' THEN 1 ELSE 0 END) as replied_count,
-        SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved_count
-      FROM feedback
-    `) as any[];
+    const total = await feedbackCollection.countDocuments();
+    const newCount = await feedbackCollection.countDocuments({ status: 'new' });
+    const readCount = await feedbackCollection.countDocuments({ status: 'read' });
+    const repliedCount = await feedbackCollection.countDocuments({ status: 'replied' });
+    const resolvedCount = await feedbackCollection.countDocuments({ status: 'resolved' });
     
     return NextResponse.json({ 
-      feedback,
-      counts: counts[0]
+      feedback: formattedFeedback,
+      counts: {
+        total,
+        new_count: newCount,
+        read_count: readCount,
+        replied_count: repliedCount,
+        resolved_count: resolvedCount
+      }
     }, { status: 200 });
   } catch (error) {
     console.error('Get feedback error:', error);
@@ -138,12 +142,18 @@ export async function POST(request: NextRequest) {
     // Get user ID if authenticated
     const userId = getUserIdFromRequest(request);
     
+    const feedbackCollection = await getCollection('feedback');
+    
     // Insert feedback
-    await pool.execute(
-      `INSERT INTO feedback (user_id, name, email, category, message) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [userId || null, name.trim(), email.trim(), category || 'general', message.trim()]
-    );
+    await feedbackCollection.insertOne({
+      user_id: userId || null,
+      name: name.trim(),
+      email: email.trim(),
+      category: category || 'general',
+      message: message.trim(),
+      status: 'new',
+      created_at: new Date()
+    } as any);
     
     // Send email notification to admin
     const adminEmail = process.env.ADMIN_EMAIL || 'hello.quoteswipe@gmail.com';
@@ -173,12 +183,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
     
-    if (users[0]?.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
@@ -194,28 +202,24 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
     
-    const updates: string[] = [];
-    const params: any[] = [];
+    const updates: any = {};
     
     if (status) {
-      updates.push('status = ?');
-      params.push(status);
+      updates.status = status;
     }
     
     if (admin_notes !== undefined) {
-      updates.push('admin_notes = ?');
-      params.push(admin_notes);
+      updates.admin_notes = admin_notes;
     }
     
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
     }
     
-    params.push(feedbackId);
-    
-    await pool.execute(
-      `UPDATE feedback SET ${updates.join(', ')} WHERE id = ?`,
-      params
+    const feedbackCollection = await getCollection('feedback');
+    await feedbackCollection.updateOne(
+      { $or: [{ id: feedbackId }, { _id: toObjectId(feedbackId) as any }] },
+      { $set: updates }
     );
     
     return NextResponse.json({ message: 'Feedback updated' }, { status: 200 });
@@ -233,12 +237,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
     
-    if (users[0]?.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
@@ -249,7 +251,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Feedback ID required' }, { status: 400 });
     }
     
-    await pool.execute('DELETE FROM feedback WHERE id = ?', [feedbackId]);
+    const feedbackCollection = await getCollection('feedback');
+    await feedbackCollection.deleteOne({ 
+      $or: [{ id: feedbackId }, { _id: toObjectId(feedbackId) as any }] 
+    });
     
     return NextResponse.json({ message: 'Feedback deleted' }, { status: 200 });
   } catch (error) {

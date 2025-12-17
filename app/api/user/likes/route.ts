@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -17,13 +17,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already liked this quote
-    const [existingLikes] = await pool.execute(
-      'SELECT id FROM user_likes WHERE user_id = ? AND quote_id = ?',
-      [userId, quoteId]
-    ) as any[];
+    const userLikesCollection = await getCollection('user_likes');
+    const userDislikesCollection = await getCollection('user_dislikes');
 
-    if (Array.isArray(existingLikes) && existingLikes.length > 0) {
+    const userObjId = toObjectId(userId) as any;
+    const quoteObjId = toObjectId(quoteId);
+
+    // Check if user already liked this quote
+    const existingLike: any = await userLikesCollection.findOne({
+      user_id: userObjId,
+      quote_id: quoteObjId
+    });
+
+    if (existingLike) {
       return NextResponse.json(
         { message: 'Quote already liked', alreadyLiked: true },
         { status: 200 }
@@ -31,21 +37,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Remove dislike if exists (mutual exclusivity)
-    await pool.execute(
-      'DELETE FROM user_dislikes WHERE user_id = ? AND quote_id = ?',
-      [userId, quoteId]
-    );
+    await userDislikesCollection.deleteOne({
+      user_id: userObjId,
+      quote_id: quoteObjId
+    });
 
-    // Insert like (UNIQUE constraint ensures no duplicates)
-    await pool.execute(
-      'INSERT INTO user_likes (user_id, quote_id) VALUES (?, ?)',
-      [userId, quoteId]
-    );
+    // Insert like
+    await userLikesCollection.insertOne({
+      user_id: userObjId,
+      quote_id: quoteObjId,
+      created_at: new Date()
+    } as any);
 
     return NextResponse.json({ message: 'Quote liked' }, { status: 200 });
   } catch (error: any) {
-    // Handle duplicate key error (shouldn't happen due to check above, but safety net)
-    if (error.code === 'ER_DUP_ENTRY') {
+    // Handle duplicate key error
+    if (error.code === 11000) {
       return NextResponse.json(
         { message: 'Quote already liked', alreadyLiked: true },
         { status: 200 }
@@ -66,22 +73,43 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [likes] = await pool.execute(
-      `SELECT 
-        q.id,
-        q.text,
-        q.author,
-        c.name as category,
-        c.icon as category_icon
-      FROM user_likes ul
-      INNER JOIN quotes q ON ul.quote_id = q.id
-      INNER JOIN categories c ON q.category_id = c.id
-      WHERE ul.user_id = ?
-      ORDER BY ul.created_at DESC`,
-      [userId]
-    ) as any[];
+    const userLikesCollection = await getCollection('user_likes');
+    const quotesCollection = await getCollection('quotes');
+    const categoriesCollection = await getCollection('categories');
 
-    return NextResponse.json({ quotes: likes }, { status: 200 });
+    // Get user's liked quote IDs
+    const likes = await userLikesCollection
+      .find({ user_id: toObjectId(userId) as any })
+      .sort({ created_at: -1 })
+      .toArray() as any[];
+
+    const quoteIds = likes.map((l: any) => l.quote_id);
+
+    if (quoteIds.length === 0) {
+      return NextResponse.json({ quotes: [] }, { status: 200 });
+    }
+
+    // Get quotes
+    const quotes = await quotesCollection.find({ _id: { $in: quoteIds } }).toArray() as any[];
+
+    // Get categories
+    const categoryIds = [...new Set(quotes.map((q: any) => q.category_id).filter(Boolean))];
+    const categories = await categoriesCollection.find({ _id: { $in: categoryIds } }).toArray() as any[];
+    const categoryMap = new Map(categories.map((c: any) => [c._id.toString(), c]));
+
+    // Transform quotes
+    const result = quotes.map((q: any) => {
+      const category = q.category_id ? categoryMap.get(q.category_id.toString()) : null;
+      return {
+        id: q._id.toString(),
+        text: q.text,
+        author: q.author,
+        category: category?.name || 'Unknown',
+        category_icon: category?.icon || '📚'
+      };
+    });
+
+    return NextResponse.json({ quotes: result }, { status: 200 });
   } catch (error) {
     console.error('Get liked quotes error:', error);
     return NextResponse.json(
@@ -90,4 +118,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

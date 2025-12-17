@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 // GET user preferences (including selected categories)
@@ -14,22 +14,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const [rows] = await pool.execute(
-      'SELECT selected_categories FROM user_preferences WHERE user_id = ?',
-      [userId]
-    ) as any[];
+    const preferencesCollection = await getCollection('user_preferences');
+    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
 
-    if (rows.length === 0) {
+    if (!preferences) {
       // No preferences saved yet
       return NextResponse.json({
         selectedCategories: [],
       });
     }
 
-    const preferences = rows[0];
     let selectedCategories: string[] = [];
 
-    // Parse JSON if it's stored as a string
+    // Parse if it's stored as a string
     if (preferences.selected_categories) {
       if (typeof preferences.selected_categories === 'string') {
         selectedCategories = JSON.parse(preferences.selected_categories);
@@ -72,12 +69,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use INSERT ... ON DUPLICATE KEY UPDATE for upsert behavior
-    await pool.execute(
-      `INSERT INTO user_preferences (user_id, selected_categories) 
-       VALUES (?, ?) 
-       ON DUPLICATE KEY UPDATE selected_categories = VALUES(selected_categories), updated_at = CURRENT_TIMESTAMP`,
-      [userId, JSON.stringify(selectedCategories)]
+    const preferencesCollection = await getCollection('user_preferences');
+
+    // Upsert preferences
+    await preferencesCollection.updateOne(
+      { user_id: userId },
+      {
+        $set: {
+          selected_categories: selectedCategories,
+          updated_at: new Date()
+        },
+        $setOnInsert: {
+          user_id: userId,
+          created_at: new Date()
+        }
+      },
+      { upsert: true }
     );
 
     return NextResponse.json({
@@ -92,4 +99,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 
@@ -58,17 +58,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     
+    const reviewsCollection = await getCollection('reviews');
+    const usersCollection = await getCollection('users');
+    
     if (type === 'featured' || !type) {
       // Get approved reviews for public display
-      const [reviews] = await pool.execute(
-        `SELECT id, name, rating, title, message, is_featured, created_at 
-         FROM reviews 
-         WHERE is_approved = TRUE 
-         ORDER BY is_featured DESC, rating DESC, created_at DESC 
-         LIMIT 10`
-      ) as any[];
+      // Handle both boolean true and number 1 (from MySQL migration)
+      const reviews = await reviewsCollection
+        .find({ $or: [{ is_approved: true }, { is_approved: 1 }] })
+        .sort({ is_featured: -1, rating: -1, created_at: -1 })
+        .limit(10)
+        .toArray() as any[];
       
-      return NextResponse.json({ reviews }, { 
+      const formattedReviews = reviews.map((r: any) => ({
+        id: r.id || r._id?.toString(),
+        name: r.name,
+        rating: r.rating,
+        title: r.title,
+        message: r.message,
+        is_featured: r.is_featured,
+        created_at: r.created_at
+      }));
+      
+      return NextResponse.json({ reviews: formattedReviews }, { 
         status: 200,
         headers: {
           'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
@@ -82,23 +94,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
     
-    if (users[0]?.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
-    const [reviews] = await pool.execute(
-      `SELECT r.*, u.name as user_name 
-       FROM reviews r 
-       LEFT JOIN users u ON r.user_id = u.id 
-       ORDER BY r.created_at DESC`
-    ) as any[];
+    const reviews = await reviewsCollection
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray() as any[];
     
-    return NextResponse.json({ reviews }, { status: 200 });
+    // Get user names
+    const userIds = reviews.map((r: any) => r.user_id).filter(Boolean);
+    const users = userIds.length > 0 
+      ? await usersCollection.find({ _id: { $in: userIds.map(id => toObjectId(id) as any) } }).toArray() as any[]
+      : [];
+    const userMap = new Map(users.map((u: any) => [u._id.toString(), u.name]));
+    
+    const formattedReviews = reviews.map((r: any) => ({
+      ...r,
+      id: r.id || r._id?.toString(),
+      user_name: r.user_id ? userMap.get(r.user_id.toString()) : null
+    }));
+    
+    return NextResponse.json({ reviews: formattedReviews }, { status: 200 });
   } catch (error) {
     console.error('Get reviews error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -129,12 +149,20 @@ export async function POST(request: NextRequest) {
     // Get user ID if authenticated
     const userId = getUserIdFromRequest(request);
     
+    const reviewsCollection = await getCollection('reviews');
+    
     // Insert review
-    await pool.execute(
-      `INSERT INTO reviews (user_id, name, email, rating, title, message) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId || null, name.trim(), email.trim(), rating, title?.trim() || null, message.trim()]
-    );
+    await reviewsCollection.insertOne({
+      user_id: userId || null,
+      name: name.trim(),
+      email: email.trim(),
+      rating,
+      title: title?.trim() || null,
+      message: message.trim(),
+      is_approved: false,
+      is_featured: false,
+      created_at: new Date()
+    } as any);
     
     // Send email notification to admin
     const adminEmail = process.env.ADMIN_EMAIL || 'hello.quoteswipe@gmail.com';
@@ -164,12 +192,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
     
-    if (users[0]?.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
@@ -180,9 +206,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Review ID required' }, { status: 400 });
     }
     
-    await pool.execute(
-      `UPDATE reviews SET is_approved = ?, is_featured = ? WHERE id = ?`,
-      [is_approved ?? false, is_featured ?? false, reviewId]
+    const reviewsCollection = await getCollection('reviews');
+    
+    await reviewsCollection.updateOne(
+      { $or: [{ id: reviewId }, { _id: toObjectId(reviewId) as any }] },
+      { $set: { is_approved: is_approved ?? false, is_featured: is_featured ?? false } }
     );
     
     return NextResponse.json({ message: 'Review updated' }, { status: 200 });
@@ -200,12 +228,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
     
-    if (users[0]?.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
@@ -216,7 +242,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Review ID required' }, { status: 400 });
     }
     
-    await pool.execute('DELETE FROM reviews WHERE id = ?', [reviewId]);
+    const reviewsCollection = await getCollection('reviews');
+    await reviewsCollection.deleteOne({ 
+      $or: [{ id: reviewId }, { _id: toObjectId(reviewId) as any }] 
+    });
     
     return NextResponse.json({ message: 'Review deleted' }, { status: 200 });
   } catch (error) {
@@ -224,4 +253,3 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-

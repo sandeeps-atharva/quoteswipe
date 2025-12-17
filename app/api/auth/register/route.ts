@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { generateToken } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 import { welcomeEmailTemplate, welcomeEmailText } from '@/lib/email-templates';
@@ -8,16 +8,23 @@ import { welcomeEmailTemplate, welcomeEmailText } from '@/lib/email-templates';
 // Get a random quote for welcome email
 async function getRandomQuote(): Promise<{ text: string; author: string; category?: string } | null> {
   try {
-    const [quotes] = await pool.execute(`
-      SELECT q.text, q.author, c.name as category
-      FROM quotes q
-      LEFT JOIN categories c ON q.category_id = c.id
-      ORDER BY RAND()
-      LIMIT 1
-    `);
+    const quotesCollection = await getCollection('quotes');
+    const categoriesCollection = await getCollection('categories');
     
-    if (Array.isArray(quotes) && quotes.length > 0) {
-      return quotes[0] as { text: string; author: string; category?: string };
+    // Get random quote using aggregation
+    const quotes = await quotesCollection.aggregate([
+      { $sample: { size: 1 } }
+    ]).toArray() as any[];
+    
+    if (quotes.length > 0) {
+      const quote = quotes[0];
+      // Get category name if exists
+      let categoryName = '';
+      if (quote.category_id) {
+        const category: any = await categoriesCollection.findOne({ _id: quote.category_id }) as any;
+        categoryName = category?.name || '';
+      }
+      return { text: quote.text, author: quote.author, category: categoryName };
     }
     return null;
   } catch {
@@ -36,13 +43,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
-    const [existingUsers] = await pool.execute(
-      'SELECT id FROM users WHERE email = ?',
-      [email]
-    );
+    const usersCollection = await getCollection('users');
 
-    if (Array.isArray(existingUsers) && existingUsers.length > 0) {
+    // Check if user already exists
+    const existingUser: any = await usersCollection.findOne({ email }) as any;
+
+    if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 400 }
@@ -53,12 +59,15 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const [result] = await pool.execute(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
-      [name, email, hashedPassword]
-    ) as any;
+    const result = await usersCollection.insertOne({
+      name,
+      email,
+      password: hashedPassword,
+      role: 'user',
+      created_at: new Date(),
+    } as any);
 
-    const userId = result.insertId;
+    const userId = result.insertedId.toString();
 
     // Generate token
     const token = generateToken({ userId, email });
@@ -132,4 +141,3 @@ async function sendWelcomeEmail(name: string, email: string) {
     console.error('Welcome email error:', error);
   }
 }
-

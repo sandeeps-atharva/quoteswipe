@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { invalidateQuotesCache } from '@/app/api/quotes/route';
 
@@ -11,28 +11,40 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [quotes] = await pool.execute(
-      `SELECT 
-        uq.id,
-        uq.text,
-        uq.author,
-        uq.theme_id,
-        uq.font_id,
-        uq.background_id,
-        uq.is_public,
-        uq.category_id,
-        uq.created_at,
-        uq.updated_at,
-        c.name as category,
-        c.icon as category_icon
-      FROM user_quotes uq
-      LEFT JOIN categories c ON uq.category_id = c.id
-      WHERE uq.user_id = ?
-      ORDER BY uq.created_at DESC`,
-      [userId]
-    ) as any[];
+    const userQuotesCollection = await getCollection('user_quotes');
+    const categoriesCollection = await getCollection('categories');
 
-    return NextResponse.json({ quotes }, { status: 200 });
+    // Get user's quotes
+    const quotes = await userQuotesCollection
+      .find({ user_id: userId })
+      .sort({ created_at: -1 })
+      .toArray() as any[];
+
+    // Get categories for mapping
+    const categories = await categoriesCollection.find({}).toArray() as any[];
+    const categoryMap = new Map(categories.map((c: any) => [c.id || c._id?.toString(), c]));
+
+    // Transform quotes
+    const formattedQuotes = quotes.map((q: any) => {
+      const category = categoryMap.get(q.category_id) || categoryMap.get(String(q.category_id));
+      return {
+        id: q.id || q._id?.toString(),
+        text: q.text,
+        author: q.author,
+        theme_id: q.theme_id,
+        font_id: q.font_id,
+        background_id: q.background_id,
+        is_public: q.is_public,
+        category_id: q.category_id,
+        created_at: q.created_at,
+        updated_at: q.updated_at,
+        category: category?.name || 'Personal',
+        category_icon: category?.icon || '✨',
+        custom_background: q.custom_background
+      };
+    });
+
+    return NextResponse.json({ quotes: formattedQuotes }, { status: 200 });
   } catch (error) {
     console.error('Get user quotes error:', error);
     return NextResponse.json(
@@ -51,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { text, author, categoryId, themeId, fontId, backgroundId, isPublic } = body;
+    const { text, author, categoryId, themeId, fontId, backgroundId, isPublic, customBackground } = body;
 
     // Validation
     if (!text || text.trim().length === 0) {
@@ -75,14 +87,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Rate limiting - max 10 quotes per day
-    const [quotesToday] = await pool.execute(
-      `SELECT COUNT(*) as count FROM user_quotes 
-       WHERE user_id = ? AND DATE(created_at) = CURDATE()`,
-      [userId]
-    ) as any[];
+    const userQuotesCollection = await getCollection('user_quotes');
+    const categoriesCollection = await getCollection('categories');
 
-    if (quotesToday[0]?.count >= 10) {
+    // Rate limiting - max 10 quotes per day
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const quotesToday = await userQuotesCollection.countDocuments({
+      user_id: userId,
+      created_at: { $gte: today }
+    });
+
+    if (quotesToday >= 10) {
       return NextResponse.json(
         { error: 'You can only create 10 quotes per day' },
         { status: 429 }
@@ -90,50 +106,44 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert the quote
-    const [result] = await pool.execute(
-      `INSERT INTO user_quotes (user_id, text, author, category_id, theme_id, font_id, background_id, is_public)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        userId,
-        text.trim(),
-        author?.trim() || 'Me',
-        categoryId || null,
-        themeId || 'default',
-        fontId || 'default',
-        backgroundId || 'none',
-        isPublic ? 1 : 0
-      ]
-    ) as any;
+    const newQuote = {
+      user_id: userId,
+      text: text.trim(),
+      author: author?.trim() || 'Me',
+      category_id: categoryId || null,
+      theme_id: themeId || 'default',
+      font_id: fontId || 'default',
+      background_id: backgroundId || 'none',
+      is_public: isPublic ? true : false,
+      custom_background: customBackground || null,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
 
-    const insertId = result.insertId;
+    const result = await userQuotesCollection.insertOne(newQuote as any);
 
-    // Fetch the created quote with category info
-    const [newQuote] = await pool.execute(
-      `SELECT 
-        uq.id,
-        uq.text,
-        uq.author,
-        uq.theme_id,
-        uq.font_id,
-        uq.background_id,
-        uq.is_public,
-        uq.category_id,
-        uq.created_at,
-        c.name as category,
-        c.icon as category_icon
-      FROM user_quotes uq
-      LEFT JOIN categories c ON uq.category_id = c.id
-      WHERE uq.id = ?`,
-      [insertId]
-    ) as any[];
+    // Get category info
+    let category: any = null;
+    if (categoryId) {
+      category = await categoriesCollection.findOne({ 
+        $or: [{ id: categoryId }, { _id: categoryId }] 
+      });
+    }
 
     // If the quote is public, invalidate the quotes cache so it appears in the feed
     if (isPublic) {
       invalidateQuotesCache();
     }
 
+    const responseQuote = {
+      id: result.insertedId.toString(),
+      ...newQuote,
+      category: category?.name || 'Personal',
+      category_icon: category?.icon || '✨'
+    };
+
     return NextResponse.json(
-      { message: 'Quote created successfully', quote: newQuote[0], cacheInvalidated: isPublic },
+      { message: 'Quote created successfully', quote: responseQuote, cacheInvalidated: isPublic },
       { status: 201 }
     );
   } catch (error) {

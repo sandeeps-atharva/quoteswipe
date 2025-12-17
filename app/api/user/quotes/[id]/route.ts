@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { invalidateQuotesCache } from '@/app/api/quotes/route';
 
@@ -15,37 +15,47 @@ export async function GET(
     }
 
     const { id } = await params;
-    const quoteId = parseInt(id);
 
-    if (isNaN(quoteId)) {
-      return NextResponse.json({ error: 'Invalid quote ID' }, { status: 400 });
-    }
+    const userQuotesCollection = await getCollection('user_quotes');
+    const categoriesCollection = await getCollection('categories');
 
-    const [quotes] = await pool.execute(
-      `SELECT 
-        uq.id,
-        uq.text,
-        uq.author,
-        uq.theme_id,
-        uq.font_id,
-        uq.background_id,
-        uq.is_public,
-        uq.category_id,
-        uq.created_at,
-        uq.updated_at,
-        c.name as category,
-        c.icon as category_icon
-      FROM user_quotes uq
-      LEFT JOIN categories c ON uq.category_id = c.id
-      WHERE uq.id = ? AND uq.user_id = ?`,
-      [quoteId, userId]
-    ) as any[];
+    // Find quote by id or _id
+    const quote: any = await userQuotesCollection.findOne({
+      $and: [
+        { user_id: userId },
+        { $or: [{ id: id }, { _id: toObjectId(id) as any }] }
+      ]
+    });
 
-    if (!quotes || quotes.length === 0) {
+    if (!quote) {
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ quote: quotes[0] }, { status: 200 });
+    // Get category info
+    let category: any = null;
+    if (quote.category_id) {
+      category = await categoriesCollection.findOne({
+        $or: [{ id: quote.category_id }, { _id: quote.category_id }]
+      });
+    }
+
+    const formattedQuote = {
+      id: quote.id || quote._id?.toString(),
+      text: quote.text,
+      author: quote.author,
+      theme_id: quote.theme_id,
+      font_id: quote.font_id,
+      background_id: quote.background_id,
+      is_public: quote.is_public,
+      category_id: quote.category_id,
+      created_at: quote.created_at,
+      updated_at: quote.updated_at,
+      category: category?.name || 'Personal',
+      category_icon: category?.icon || '✨',
+      custom_background: quote.custom_background
+    };
+
+    return NextResponse.json({ quote: formattedQuote }, { status: 200 });
   } catch (error) {
     console.error('Get user quote error:', error);
     return NextResponse.json(
@@ -67,25 +77,25 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const quoteId = parseInt(id);
 
-    if (isNaN(quoteId)) {
-      return NextResponse.json({ error: 'Invalid quote ID' }, { status: 400 });
-    }
+    const userQuotesCollection = await getCollection('user_quotes');
+    const categoriesCollection = await getCollection('categories');
 
-    // Check if quote exists and belongs to user (also get current is_public status)
-    const [existing] = await pool.execute(
-      'SELECT id, is_public FROM user_quotes WHERE id = ? AND user_id = ?',
-      [quoteId, userId]
-    ) as any[];
+    // Check if quote exists and belongs to user
+    const existing: any = await userQuotesCollection.findOne({
+      $and: [
+        { user_id: userId },
+        { $or: [{ id: id }, { _id: toObjectId(id) as any }] }
+      ]
+    });
 
-    if (!existing || existing.length === 0) {
+    if (!existing) {
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
-    const wasPublic = existing[0].is_public === 1;
+    const wasPublic = existing.is_public === true;
     const body = await request.json();
-    const { text, author, categoryId, themeId, fontId, backgroundId, isPublic } = body;
+    const { text, author, categoryId, themeId, fontId, backgroundId, isPublic, customBackground } = body;
 
     // Validation
     if (text !== undefined) {
@@ -109,85 +119,69 @@ export async function PUT(
       }
     }
 
-    // Build update query dynamically
-    const updates: string[] = [];
-    const values: any[] = [];
+    // Build update object
+    const updates: any = { updated_at: new Date() };
 
-    if (text !== undefined) {
-      updates.push('text = ?');
-      values.push(text.trim());
-    }
-    if (author !== undefined) {
-      updates.push('author = ?');
-      values.push(author.trim() || 'Me');
-    }
-    if (categoryId !== undefined) {
-      updates.push('category_id = ?');
-      values.push(categoryId || null);
-    }
-    if (themeId !== undefined) {
-      updates.push('theme_id = ?');
-      values.push(themeId);
-    }
-    if (fontId !== undefined) {
-      updates.push('font_id = ?');
-      values.push(fontId);
-    }
-    if (backgroundId !== undefined) {
-      updates.push('background_id = ?');
-      values.push(backgroundId);
-    }
-    if (isPublic !== undefined) {
-      updates.push('is_public = ?');
-      values.push(isPublic ? 1 : 0);
-    }
+    if (text !== undefined) updates.text = text.trim();
+    if (author !== undefined) updates.author = author.trim() || 'Me';
+    if (categoryId !== undefined) updates.category_id = categoryId || null;
+    if (themeId !== undefined) updates.theme_id = themeId;
+    if (fontId !== undefined) updates.font_id = fontId;
+    if (backgroundId !== undefined) updates.background_id = backgroundId;
+    if (isPublic !== undefined) updates.is_public = isPublic ? true : false;
+    if (customBackground !== undefined) updates.custom_background = customBackground;
 
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 1) { // Only updated_at
       return NextResponse.json(
         { error: 'No fields to update' },
         { status: 400 }
       );
     }
 
-    values.push(quoteId, userId);
-
-    await pool.execute(
-      `UPDATE user_quotes SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`,
-      values
+    // Update quote
+    await userQuotesCollection.updateOne(
+      { $or: [{ id: id }, { _id: toObjectId(id) as any }] },
+      { $set: updates }
     );
 
     // Fetch updated quote
-    const [updatedQuote] = await pool.execute(
-      `SELECT 
-        uq.id,
-        uq.text,
-        uq.author,
-        uq.theme_id,
-        uq.font_id,
-        uq.background_id,
-        uq.is_public,
-        uq.category_id,
-        uq.created_at,
-        uq.updated_at,
-        c.name as category,
-        c.icon as category_icon
-      FROM user_quotes uq
-      LEFT JOIN categories c ON uq.category_id = c.id
-      WHERE uq.id = ?`,
-      [quoteId]
-    ) as any[];
+    const updatedQuote: any = await userQuotesCollection.findOne({
+      $or: [{ id: id }, { _id: toObjectId(id) as any }]
+    });
 
-    const isNowPublic = updatedQuote[0]?.is_public === 1;
+    // Get category info
+    let category: any = null;
+    if (updatedQuote?.category_id) {
+      category = await categoriesCollection.findOne({
+        $or: [{ id: updatedQuote.category_id }, { _id: updatedQuote.category_id }]
+      });
+    }
 
-    // Invalidate cache if:
-    // 1. Quote was public and got updated (content change visible to others)
-    // 2. Quote visibility changed (from private to public or vice versa)
+    const isNowPublic = updatedQuote?.is_public === true;
+
+    // Invalidate cache if visibility changed
     if (wasPublic || isNowPublic) {
       invalidateQuotesCache();
     }
 
+    const formattedQuote = {
+      id: updatedQuote?.id || updatedQuote?._id?.toString(),
+      text: updatedQuote?.text,
+      author: updatedQuote?.author,
+      theme_id: updatedQuote?.theme_id,
+      font_id: updatedQuote?.font_id,
+      background_id: updatedQuote?.background_id,
+      is_public: updatedQuote?.is_public,
+      category_id: updatedQuote?.category_id,
+      created_at: updatedQuote?.created_at,
+      updated_at: updatedQuote?.updated_at,
+      category: category?.name || 'Personal',
+      category_icon: category?.icon || '✨',
+      custom_background: updatedQuote?.custom_background
+    };
+
     return NextResponse.json(
-      { message: 'Quote updated successfully', quote: updatedQuote[0], cacheInvalidated: wasPublic || isNowPublic },
+      { message: 'Quote updated successfully', quote: formattedQuote, cacheInvalidated: wasPublic || isNowPublic },
       { status: 200 }
     );
   } catch (error) {
@@ -211,29 +205,30 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const quoteId = parseInt(id);
 
-    if (isNaN(quoteId)) {
-      return NextResponse.json({ error: 'Invalid quote ID' }, { status: 400 });
-    }
+    const userQuotesCollection = await getCollection('user_quotes');
 
-    // Check if quote exists and belongs to user (also get is_public status for cache invalidation)
-    const [existing] = await pool.execute(
-      'SELECT id, is_public FROM user_quotes WHERE id = ? AND user_id = ?',
-      [quoteId, userId]
-    ) as any[];
+    // Check if quote exists and belongs to user
+    const existing: any = await userQuotesCollection.findOne({
+      $and: [
+        { user_id: userId },
+        { $or: [{ id: id }, { _id: toObjectId(id) as any }] }
+      ]
+    });
 
-    if (!existing || existing.length === 0) {
+    if (!existing) {
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
-    const wasPublic = existing[0].is_public === 1;
+    const wasPublic = existing.is_public === true;
 
     // Delete the quote
-    await pool.execute(
-      'DELETE FROM user_quotes WHERE id = ? AND user_id = ?',
-      [quoteId, userId]
-    );
+    await userQuotesCollection.deleteOne({
+      $and: [
+        { user_id: userId },
+        { $or: [{ id: id }, { _id: toObjectId(id) as any }] }
+      ]
+    });
 
     // If the quote was public, invalidate the quotes cache
     if (wasPublic) {

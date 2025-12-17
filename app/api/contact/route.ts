@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 
@@ -124,45 +124,40 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Check if user is admin
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
     
-    if (users[0]?.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     
-    let query = 'SELECT * FROM contact_submissions';
-    const params: any[] = [];
+    const contactCollection = await getCollection('contact_submissions');
     
-    if (status && status !== 'all') {
-      query += ' WHERE status = ?';
-      params.push(status);
-    }
-    
-    query += ' ORDER BY created_at DESC';
-    
-    const [submissions] = await pool.execute(query, params) as any[];
+    const filter = status && status !== 'all' ? { status } : {};
+    const submissions = await contactCollection
+      .find(filter)
+      .sort({ created_at: -1 })
+      .toArray() as any[];
     
     // Get counts by status
-    const [counts] = await pool.execute(`
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) as new_count,
-        SUM(CASE WHEN status = 'read' THEN 1 ELSE 0 END) as read_count,
-        SUM(CASE WHEN status = 'replied' THEN 1 ELSE 0 END) as replied_count,
-        SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed_count
-      FROM contact_submissions
-    `) as any[];
+    const total = await contactCollection.countDocuments();
+    const newCount = await contactCollection.countDocuments({ status: 'new' });
+    const readCount = await contactCollection.countDocuments({ status: 'read' });
+    const repliedCount = await contactCollection.countDocuments({ status: 'replied' });
+    const closedCount = await contactCollection.countDocuments({ status: 'closed' });
     
     return NextResponse.json({ 
-      submissions,
-      counts: counts[0]
+      submissions: submissions.map((s: any) => ({ ...s, id: s.id || s._id?.toString() })),
+      counts: {
+        total,
+        new_count: newCount,
+        read_count: readCount,
+        replied_count: repliedCount,
+        closed_count: closedCount
+      }
     }, { status: 200 });
   } catch (error) {
     console.error('Get contact submissions error:', error);
@@ -193,12 +188,17 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    const contactCollection = await getCollection('contact_submissions');
+    
     // Insert contact submission
-    await pool.execute(
-      `INSERT INTO contact_submissions (name, email, subject, message) 
-       VALUES (?, ?, ?, ?)`,
-      [name.trim(), email.trim(), subject, message.trim()]
-    );
+    await contactCollection.insertOne({
+      name: name.trim(),
+      email: email.trim(),
+      subject,
+      message: message.trim(),
+      status: 'new',
+      created_at: new Date()
+    } as any);
     
     const adminEmail = process.env.ADMIN_EMAIL || 'hello.quoteswipe@gmail.com';
     
@@ -236,12 +236,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
     
-    if (users[0]?.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
@@ -257,32 +255,27 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
     
-    const updates: string[] = [];
-    const params: any[] = [];
+    const updates: any = {};
     
     if (status) {
-      updates.push('status = ?');
-      params.push(status);
-      
+      updates.status = status;
       if (status === 'replied') {
-        updates.push('replied_at = NOW()');
+        updates.replied_at = new Date();
       }
     }
     
     if (admin_notes !== undefined) {
-      updates.push('admin_notes = ?');
-      params.push(admin_notes);
+      updates.admin_notes = admin_notes;
     }
     
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
     }
     
-    params.push(submissionId);
-    
-    await pool.execute(
-      `UPDATE contact_submissions SET ${updates.join(', ')} WHERE id = ?`,
-      params
+    const contactCollection = await getCollection('contact_submissions');
+    await contactCollection.updateOne(
+      { $or: [{ id: submissionId }, { _id: toObjectId(submissionId) as any }] },
+      { $set: updates }
     );
     
     return NextResponse.json({ message: 'Contact submission updated' }, { status: 200 });
@@ -300,12 +293,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const [users] = await pool.execute(
-      'SELECT role FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
     
-    if (users[0]?.role !== 'admin') {
+    if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
@@ -316,7 +307,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Submission ID required' }, { status: 400 });
     }
     
-    await pool.execute('DELETE FROM contact_submissions WHERE id = ?', [submissionId]);
+    const contactCollection = await getCollection('contact_submissions');
+    await contactCollection.deleteOne({ 
+      $or: [{ id: submissionId }, { _id: toObjectId(submissionId) as any }] 
+    });
     
     return NextResponse.json({ message: 'Contact submission deleted' }, { status: 200 });
   } catch (error) {
@@ -324,4 +318,3 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-

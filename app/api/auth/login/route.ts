@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import pool from '@/lib/db';
+import { getCollection } from '@/lib/db';
 import { generateToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -15,19 +15,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user
-    const [users] = await pool.execute(
-      'SELECT id, name, email, password FROM users WHERE email = ?',
-      [email]
-    ) as any[];
+    const usersCollection = await getCollection('users');
+    const user: any = await usersCollection.findOne({ email }) as any;
 
-    if (!Array.isArray(users) || users.length === 0) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       );
     }
-
-    const user = users[0];
 
     // Check if user has a password (might be Google-only account)
     if (!user.password) {
@@ -47,12 +43,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate token
-    const token = generateToken({ userId: user.id, email: user.email });
+    // Generate token (use _id as string)
+    const token = generateToken({ userId: user._id.toString(), email: user.email });
 
     // Set cookie
     const response = NextResponse.json(
-      { message: 'Login successful', user: { id: user.id, name: user.name, email: user.email, auth_provider: 'email' } },
+      { message: 'Login successful', user: { id: user._id.toString(), name: user.name, email: user.email, auth_provider: 'email' } },
       { status: 200 }
     );
 
@@ -72,4 +68,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

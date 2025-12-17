@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import pool from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -23,20 +23,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's current password
-    const [users] = await pool.execute(
-      'SELECT password, google_id FROM users WHERE id = ?',
-      [userId]
-    ) as any[];
+    const usersCollection = await getCollection('users');
 
-    if (!Array.isArray(users) || users.length === 0) {
+    // Get user's current password
+    const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
+
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
-
-    const user = users[0];
 
     // Check if user signed up with Google only (has google_id but no password)
     if (user.google_id && !user.password) {
@@ -60,9 +57,9 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password
-    await pool.execute(
-      'UPDATE users SET password = ? WHERE id = ?',
-      [hashedPassword, userId]
+    await usersCollection.updateOne(
+      { _id: toObjectId(userId) as any },
+      { $set: { password: hashedPassword } }
     );
 
     return NextResponse.json(
@@ -77,4 +74,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
