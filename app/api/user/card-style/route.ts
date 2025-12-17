@@ -14,17 +14,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch card style preferences including background
+    // Fetch card style preferences including background AND custom backgrounds
     const [preferences] = await pool.execute(
-      `SELECT card_theme_id, card_font_id, card_background_id FROM user_preferences WHERE user_id = ?`,
+      `SELECT card_theme_id, card_font_id, card_background_id, custom_backgrounds FROM user_preferences WHERE user_id = ?`,
       [userId]
     ) as any[];
 
     if (Array.isArray(preferences) && preferences.length > 0) {
+      // Parse custom_backgrounds if it exists
+      let customBackgrounds = [];
+      if (preferences[0].custom_backgrounds) {
+        customBackgrounds = typeof preferences[0].custom_backgrounds === 'string'
+          ? JSON.parse(preferences[0].custom_backgrounds)
+          : preferences[0].custom_backgrounds;
+      }
+
       return NextResponse.json({
         themeId: preferences[0].card_theme_id || 'default',
         fontId: preferences[0].card_font_id || 'elegant',
         backgroundId: preferences[0].card_background_id || 'none',
+        customBackgrounds, // Include custom backgrounds in response
       });
     }
 
@@ -33,6 +42,7 @@ export async function GET(request: NextRequest) {
       themeId: 'default',
       fontId: 'elegant',
       backgroundId: 'none',
+      customBackgrounds: [],
     });
 
   } catch (error) {

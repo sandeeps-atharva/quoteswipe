@@ -103,10 +103,10 @@ export async function GET(request: NextRequest) {
 
     // If user is authenticated, add user-specific data (not cached)
     if (userId) {
-      // Filter out regular quote IDs (not user quotes)
+      // Filter out regular quote IDs (not user quotes) - keep as strings
       const regularQuoteIds = quotes
         .filter((q: any) => q.quote_type === 'regular')
-        .map((q: any) => parseInt(q.id));
+        .map((q: any) => q.id);
       
       if (regularQuoteIds.length > 0) {
         const placeholders = regularQuoteIds.map(() => '?').join(',');
@@ -116,27 +116,27 @@ export async function GET(request: NextRequest) {
           `SELECT quote_id FROM user_likes WHERE user_id = ? AND quote_id IN (${placeholders})`,
           [userId, ...regularQuoteIds]
         ) as any[];
-        const likedIds = new Set(userLikes.map((l: any) => l.quote_id));
+        const likedIds = new Set(userLikes.map((l: any) => String(l.quote_id)));
 
         // Get user's saves
         const [userSaves] = await pool.execute(
           `SELECT quote_id FROM user_saved WHERE user_id = ? AND quote_id IN (${placeholders})`,
           [userId, ...regularQuoteIds]
         ) as any[];
-        const savedIds = new Set(userSaves.map((s: any) => s.quote_id));
+        const savedIds = new Set(userSaves.map((s: any) => String(s.quote_id)));
 
-        // Merge user data with cached quotes
+        // Merge user data with cached quotes - keep IDs as strings
         quotes = quotes.map((q: any) => ({
           ...q,
-          id: q.quote_type === 'regular' ? parseInt(q.id) : q.id, // Convert back to int for regular quotes
-          is_liked: q.quote_type === 'regular' && likedIds.has(parseInt(q.id)) ? 1 : 0,
-          is_saved: q.quote_type === 'regular' && savedIds.has(parseInt(q.id)) ? 1 : 0,
+          id: q.id, // Keep ID as is (string)
+          is_liked: q.quote_type === 'regular' && likedIds.has(String(q.id)) ? 1 : 0,
+          is_saved: q.quote_type === 'regular' && savedIds.has(String(q.id)) ? 1 : 0,
           is_own_quote: q.quote_type === 'user' && q.creator_id === userId ? 1 : 0,
         }));
       } else {
         quotes = quotes.map((q: any) => ({
           ...q,
-          id: q.quote_type === 'regular' ? parseInt(q.id) : q.id,
+          id: q.id, // Keep ID as is (string)
           is_liked: 0,
           is_saved: 0,
           is_own_quote: q.quote_type === 'user' && q.creator_id === userId ? 1 : 0,
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       // For non-authenticated users, add default values
       quotes = quotes.map((q: any) => ({
         ...q,
-        id: q.quote_type === 'regular' ? parseInt(q.id) : q.id,
+        id: q.id, // Keep ID as is (string)
         is_liked: 0,
         is_saved: 0,
         is_own_quote: 0,

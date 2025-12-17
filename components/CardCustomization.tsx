@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
-import { X, Palette, Type, Check, Sparkles, Moon, Sun, Loader2, ImageIcon, Upload, Trash2, Plus } from 'lucide-react';
+import { X, Palette, Type, Check, Sparkles, Moon, Sun, Loader2, ImageIcon, Upload, Trash2, Plus, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
@@ -10,9 +10,9 @@ import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, Back
 export { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES };
 export type { CardTheme, FontStyle, BackgroundImage };
 
-// Custom images storage key
+// Custom images storage key (for non-authenticated users)
 const CUSTOM_IMAGES_KEY = 'quoteswipe_custom_images';
-const MAX_CUSTOM_IMAGES = 10; // Maximum number of custom images
+const MAX_CUSTOM_IMAGES = 5; // Maximum number of custom images
 
 interface CustomImageData {
   id: string;
@@ -66,7 +66,9 @@ function CardCustomization({
   const [isSaving, setIsSaving] = useState(false);
   const [showLightThemes, setShowLightThemes] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   
   // Local state for selections (only applied on save)
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>(currentTheme);
@@ -75,33 +77,57 @@ function CardCustomization({
   
   // Multiple custom images state
   const [customImages, setCustomImages] = useState<CustomImageData[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
 
-  // Load custom images from localStorage on mount
+  // Load custom images - from server if authenticated, localStorage otherwise
   useEffect(() => {
-    try {
-      const savedImages = localStorage.getItem(CUSTOM_IMAGES_KEY);
-      if (savedImages) {
-        const parsed = JSON.parse(savedImages) as CustomImageData[];
-        setCustomImages(parsed);
+    const loadCustomImages = async () => {
+      if (isAuthenticated) {
+        // Load from server for authenticated users
+        setIsLoadingImages(true);
+        try {
+          const response = await fetch('/api/user/upload-background');
+          if (response.ok) {
+            const data = await response.json();
+            setCustomImages(data.backgrounds || []);
+          }
+        } catch (e) {
+          console.error('Failed to load custom images from server:', e);
+        } finally {
+          setIsLoadingImages(false);
+        }
       } else {
-        // Migration: Check for old single image format
-        const oldImage = localStorage.getItem('quoteswipe_custom_bg');
-        if (oldImage) {
-          const migratedImage: CustomImageData = {
-            id: 'custom_migrated',
-            url: oldImage,
-            name: 'My Photo',
-            createdAt: Date.now(),
-          };
-          setCustomImages([migratedImage]);
-          localStorage.setItem(CUSTOM_IMAGES_KEY, JSON.stringify([migratedImage]));
-          localStorage.removeItem('quoteswipe_custom_bg'); // Remove old key
+        // Load from localStorage for guests
+        try {
+          const savedImages = localStorage.getItem(CUSTOM_IMAGES_KEY);
+          if (savedImages) {
+            const parsed = JSON.parse(savedImages) as CustomImageData[];
+            setCustomImages(parsed);
+          } else {
+            // Migration: Check for old single image format
+            const oldImage = localStorage.getItem('quoteswipe_custom_bg');
+            if (oldImage) {
+              const migratedImage: CustomImageData = {
+                id: 'custom_migrated',
+                url: oldImage,
+                name: 'My Photo',
+                createdAt: Date.now(),
+              };
+              setCustomImages([migratedImage]);
+              localStorage.setItem(CUSTOM_IMAGES_KEY, JSON.stringify([migratedImage]));
+              localStorage.removeItem('quoteswipe_custom_bg');
+            }
+          }
+        } catch (e) {
+          console.error('Failed to load custom images:', e);
         }
       }
-    } catch (e) {
-      console.error('Failed to load custom images:', e);
+    };
+
+    if (isOpen) {
+      loadCustomImages();
     }
-  }, []);
+  }, [isOpen, isAuthenticated]);
 
   // Convert custom images to BackgroundImage objects
   const customBackgrounds = useMemo(() => 
@@ -148,7 +174,7 @@ function CardCustomization({
     }
   }, []);
 
-  // Handle image upload
+  // Handle image upload - to server if authenticated, localStorage otherwise
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -174,70 +200,93 @@ function CardCustomization({
     setIsUploading(true);
 
     try {
-      // Read file as base64
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
+      if (isAuthenticated) {
+        // Upload to server for authenticated users
+        const formData = new FormData();
+        formData.append('image', file);
         
-        // Create image to resize if needed
-        const img = document.createElement('img');
-        img.onload = () => {
-          // Resize image if too large (max 800px width for storage efficiency)
-          const maxWidth = 800;
-          let width = img.width;
-          let height = img.height;
+        const response = await fetch('/api/user/upload-background', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const newImageData = data.background;
           
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
-          }
+          // Add to local state
+          setCustomImages(prev => [...prev, newImageData]);
           
-          // Create canvas to resize
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
+          // Select the newly uploaded image
+          const newBackground = createCustomBackground(newImageData);
+          setSelectedBackground(newBackground);
           
-          // Get resized image as base64 (quality 0.75 for storage efficiency)
-          const resizedBase64 = canvas.toDataURL('image/jpeg', 0.75);
-          
-          // Create new image data
-          const newImageData: CustomImageData = {
-            id: generateImageId(),
-            url: resizedBase64,
-            name: `Photo ${customImages.length + 1}`,
-            createdAt: Date.now(),
-          };
-          
-          // Save to localStorage
-          try {
-            const updatedImages = [...customImages, newImageData];
-            saveCustomImages(updatedImages);
-            
-            // Select the newly uploaded image
-            const newBackground = createCustomBackground(newImageData);
-            setSelectedBackground(newBackground);
-            
-            toast.success('Image uploaded! 📸');
-          } catch (storageError) {
-            toast.error('Storage full. Remove some images first.');
-            console.error('Storage error:', storageError);
-          }
-          
-          setIsUploading(false);
-        };
-        img.onerror = () => {
-          toast.error('Failed to process image');
-          setIsUploading(false);
-        };
-        img.src = base64;
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read image');
+          toast.success('Image uploaded! 📸 Saved to your account.');
+        } else {
+          const error = await response.json();
+          toast.error(error.error || 'Failed to upload image');
+        }
+        
         setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
+      } else {
+        // Store in localStorage for guests
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target?.result as string;
+          
+          const img = document.createElement('img');
+          img.onload = () => {
+            const maxWidth = 800;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            
+            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+            
+            const newImageData: CustomImageData = {
+              id: generateImageId(),
+              url: resizedBase64,
+              name: `Photo ${customImages.length + 1}`,
+              createdAt: Date.now(),
+            };
+            
+            try {
+              const updatedImages = [...customImages, newImageData];
+              saveCustomImages(updatedImages);
+              
+              const newBackground = createCustomBackground(newImageData);
+              setSelectedBackground(newBackground);
+              
+              toast.success('Image uploaded! 📸 Login to sync across devices.');
+            } catch (storageError) {
+              toast.error('Storage full. Remove some images first.');
+              console.error('Storage error:', storageError);
+            }
+            
+            setIsUploading(false);
+          };
+          img.onerror = () => {
+            toast.error('Failed to process image');
+            setIsUploading(false);
+          };
+          img.src = base64;
+        };
+        reader.onerror = () => {
+          toast.error('Failed to read image');
+          setIsUploading(false);
+        };
+        reader.readAsDataURL(file);
+      }
     } catch (error) {
       toast.error('Failed to upload image');
       setIsUploading(false);
@@ -247,20 +296,43 @@ function CardCustomization({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, [customImages, saveCustomImages]);
+  }, [customImages, saveCustomImages, isAuthenticated]);
 
-  // Handle remove specific custom image
-  const handleRemoveCustomImage = useCallback((imageId: string) => {
-    const updatedImages = customImages.filter(img => img.id !== imageId);
-    saveCustomImages(updatedImages);
-    
-    // Reset to no background if removed image was selected
-    if (selectedBackground.id === imageId) {
-      setSelectedBackground(BACKGROUND_IMAGES[0]);
+  // Handle remove specific custom image - from server if authenticated
+  const handleRemoveCustomImage = useCallback(async (imageId: string) => {
+    if (isAuthenticated) {
+      // Delete from server
+      try {
+        const response = await fetch('/api/user/upload-background', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ backgroundId: imageId }),
+        });
+        
+        if (response.ok) {
+          setCustomImages(prev => prev.filter(img => img.id !== imageId));
+          if (selectedBackground.id === imageId) {
+            setSelectedBackground(BACKGROUND_IMAGES[0]);
+          }
+          toast.success('Image removed');
+        } else {
+          toast.error('Failed to remove image');
+        }
+      } catch (error) {
+        toast.error('Failed to remove image');
+      }
+    } else {
+      // Remove from localStorage
+      const updatedImages = customImages.filter(img => img.id !== imageId);
+      saveCustomImages(updatedImages);
+      
+      if (selectedBackground.id === imageId) {
+        setSelectedBackground(BACKGROUND_IMAGES[0]);
+      }
+      
+      toast.success('Image removed');
     }
-    
-    toast.success('Image removed');
-  }, [customImages, selectedBackground.id, saveCustomImages]);
+  }, [customImages, selectedBackground.id, saveCustomImages, isAuthenticated]);
 
   // Memoized handlers
   const handleCancel = useCallback(() => {
@@ -320,6 +392,119 @@ function CardCustomization({
     fileInputRef.current?.click();
   }, []);
 
+  const triggerCameraInput = useCallback(() => {
+    cameraInputRef.current?.click();
+  }, []);
+
+  // Handle camera capture - reuse the same upload logic
+  const handleCameraCapture = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check max images limit
+    if (customImages.length >= MAX_CUSTOM_IMAGES) {
+      toast.error(`Maximum ${MAX_CUSTOM_IMAGES} photos allowed. Remove some to add more.`);
+      return;
+    }
+
+    setIsCapturing(true);
+
+    try {
+      if (isAuthenticated) {
+        // Upload to server for authenticated users
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        const response = await fetch('/api/user/upload-background', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const newImageData = data.background;
+          
+          setCustomImages(prev => [...prev, newImageData]);
+          
+          const newBackground = createCustomBackground(newImageData);
+          setSelectedBackground(newBackground);
+          
+          toast.success('Photo captured! 📷 Saved to your account.');
+        } else {
+          const error = await response.json();
+          toast.error(error.error || 'Failed to save photo');
+        }
+      } else {
+        // Store in localStorage for guests
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target?.result as string;
+          
+          const img = document.createElement('img');
+          img.onload = () => {
+            const maxWidth = 800;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            
+            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+            
+            const newImageData: CustomImageData = {
+              id: generateImageId(),
+              url: resizedBase64,
+              name: `Camera ${customImages.length + 1}`,
+              createdAt: Date.now(),
+            };
+            
+            try {
+              const updatedImages = [...customImages, newImageData];
+              saveCustomImages(updatedImages);
+              
+              const newBackground = createCustomBackground(newImageData);
+              setSelectedBackground(newBackground);
+              
+              toast.success('Photo captured! 📷 Login to sync across devices.');
+            } catch (storageError) {
+              toast.error('Storage full. Remove some photos first.');
+            }
+            
+            setIsCapturing(false);
+          };
+          img.onerror = () => {
+            toast.error('Failed to process photo');
+            setIsCapturing(false);
+          };
+          img.src = base64;
+        };
+        reader.onerror = () => {
+          toast.error('Failed to read photo');
+          setIsCapturing(false);
+        };
+        reader.readAsDataURL(file);
+        return; // Exit early, setIsCapturing handled in callbacks
+      }
+    } catch (error) {
+      toast.error('Failed to capture photo');
+    }
+    
+    setIsCapturing(false);
+
+    // Reset camera input
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+    }
+  }, [customImages, saveCustomImages, isAuthenticated]);
+
   if (!isOpen) return null;
 
   return (
@@ -330,12 +515,22 @@ function CardCustomization({
         onClick={handleCancel}
       />
       
-      {/* Hidden file input */}
+      {/* Hidden file input for gallery */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         onChange={handleImageUpload}
+        className="hidden"
+      />
+      
+      {/* Hidden camera input for taking photos */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleCameraCapture}
         className="hidden"
       />
       
@@ -457,23 +652,47 @@ function CardCustomization({
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Your photos ({customImages.length}/{MAX_CUSTOM_IMAGES})
                 </p>
-                <button
-                  onClick={triggerFileInput}
-                  disabled={isUploading || customImages.length >= MAX_CUSTOM_IMAGES}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 size={12} className="animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={12} />
-                      Add Photo
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Camera capture button */}
+                  <button
+                    onClick={triggerCameraInput}
+                    disabled={isCapturing || isUploading || customImages.length >= MAX_CUSTOM_IMAGES}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    title="Take a photo"
+                  >
+                    {isCapturing ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" />
+                        Capturing...
+                      </>
+                    ) : (
+                      <>
+                        <Camera size={12} />
+                        <span className="hidden sm:inline">Capture</span>
+                      </>
+                    )}
+                  </button>
+                  
+                  {/* File upload button */}
+                  <button
+                    onClick={triggerFileInput}
+                    disabled={isUploading || isCapturing || customImages.length >= MAX_CUSTOM_IMAGES}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    title="Upload from gallery"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={12} />
+                        <span className="hidden sm:inline">Gallery</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               
               {/* Custom Images Section */}

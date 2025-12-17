@@ -9,7 +9,7 @@ interface UserQuotePageProps {
 }
 
 interface UserQuote {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   category: string | null;

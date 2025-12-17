@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Background Circle -->
+  <circle cx="60" cy="60" r="56" fill="url(#infGrad)"/>
+  
+  <!-- Infinity Symbol made with quotes -->
+  <path d="M30 60 C30 45, 45 45, 52 60 C59 75, 61 75, 68 60 C75 45, 90 45, 90 60 C90 75, 75 75, 68 60 C61 45, 59 45, 52 60 C45 75, 30 75, 30 60Z" 
+        stroke="white" stroke-width="6" stroke-linecap="round" fill="none"/>
+  
+  <!-- Quote marks at intersection -->
+  <text x="48" y="52" font-family="Georgia, serif" font-size="20" fill="white" font-weight="bold">"</text>
+  <text x="62" y="75" font-family="Georgia, serif" font-size="20" fill="white" font-weight="bold">"</text>
+  
+  <defs>
+    <linearGradient id="infGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="50%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+</svg>
+

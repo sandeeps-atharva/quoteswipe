@@ -11,7 +11,7 @@ interface User {
 }
 
 interface Quote {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   category_name?: string;

@@ -9,12 +9,12 @@ interface QuotePageProps {
 }
 
 interface Quote {
-  id: number;
+  id: string;
   text: string;
   author: string;
   category: string;
   category_icon: string;
-  category_id: number;
+  category_id: string | number;
 }
 
 async function getQuote(id: string): Promise<Quote | null> {

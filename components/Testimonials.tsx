@@ -91,7 +91,7 @@ export default function Testimonials() {
     dots: true,
     infinite: true,
     speed: 500,
-    slidesToShow: 2,
+    slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 5000,
@@ -148,9 +148,9 @@ export default function Testimonials() {
     <div className="py-8 sm:py-12 md:py-16">
       {/* Section Header */}
       <div className="text-center mb-8 sm:mb-10 md:mb-12 px-4">
-        <div className="inline-flex items-center justify-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 rounded-full mb-3 sm:mb-4">
+        {/* <div className="inline-flex items-center justify-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 rounded-full mb-3 sm:mb-4">
           <span className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400">💬 Testimonials</span>
-        </div>
+        </div> */}
         <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3">
           What Our Users Say
         </h3>

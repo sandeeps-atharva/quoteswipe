@@ -145,10 +145,39 @@ body {
   background: linear-gradient(180deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
 }
 
-/* Font Display */
-.font-display {
-  font-family: var(--font-display);
-}
+/* ============================================
+   FONT FAMILIES - Use with className
+   ============================================ */
+
+/* Serif Fonts (Elegant) */
+.font-playfair { font-family: var(--font-playfair), Georgia, serif; }
+.font-merriweather { font-family: var(--font-merriweather), Georgia, serif; }
+.font-lora { font-family: var(--font-lora), Georgia, serif; }
+.font-crimson { font-family: var(--font-crimson), Georgia, serif; }
+.font-cormorant { font-family: var(--font-cormorant), Georgia, serif; }
+
+/* Sans-serif Fonts (Modern) */
+.font-roboto { font-family: var(--font-roboto), Arial, sans-serif; }
+.font-opensans { font-family: var(--font-opensans), Arial, sans-serif; }
+.font-lato { font-family: var(--font-lato), Arial, sans-serif; }
+.font-poppins { font-family: var(--font-poppins), Arial, sans-serif; }
+.font-montserrat { font-family: var(--font-montserrat), Arial, sans-serif; }
+.font-inter { font-family: var(--font-inter), Arial, sans-serif; }
+.font-nunito { font-family: var(--font-nunito), Arial, sans-serif; }
+.font-raleway { font-family: var(--font-raleway), Arial, sans-serif; }
+.font-sourcesans { font-family: var(--font-sourcesans), Arial, sans-serif; }
+
+/* Script/Handwriting Fonts */
+.font-dancing { font-family: var(--font-dancing), cursive; }
+.font-pacifico { font-family: var(--font-pacifico), cursive; }
+.font-greatvibes { font-family: var(--font-greatvibes), cursive; }
+.font-sacramento { font-family: var(--font-sacramento), cursive; }
+
+/* Monospace Fonts */
+.font-jetbrains { font-family: var(--font-jetbrains), monospace; }
+
+/* Legacy alias */
+.font-display { font-family: var(--font-playfair), Georgia, serif; }
 
 /* Gradient Border Support */
 .gradient-border {

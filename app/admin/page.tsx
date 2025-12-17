@@ -28,7 +28,7 @@ interface Festival {
 }
 
 interface QuoteItem {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   category_name: string;
@@ -220,7 +220,7 @@ export default function AdminDashboard() {
     subject: string;
     scheduled_date: string;
     scheduled_time: string;
-    quote_id: number | null;
+    quote_id: string | number | null;
     custom_message: string;
     user_ids: number[];
   }) => {

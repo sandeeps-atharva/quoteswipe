@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import pool from '@/lib/db';
 
 // Fetch quote IDs for dynamic sitemap generation
-async function getQuoteIds(): Promise<{ id: number; updated_at: Date }[]> {
+async function getQuoteIds(): Promise<{ id: string; updated_at: Date }[]> {
   try {
     const [quotes] = await pool.execute(
       `SELECT id, COALESCE(updated_at, created_at, NOW()) as updated_at 

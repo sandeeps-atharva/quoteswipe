@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { X, User, Bookmark, LogOut, ArrowLeft, Trash2, Search, Heart, ThumbsDown, Mail, Calendar, Shield, Edit2, Check, Lock, Loader2, Eye, ChevronRight, Share2, ExternalLink, MessageSquare, Info, Palette, PenLine, Plus, Globe } from 'lucide-react';
+import { X, User, Bookmark, LogOut, ArrowLeft, Trash2, Search, Heart, ThumbsDown, Mail, Calendar, Shield, Edit2, Check, Lock, Loader2, Eye, ChevronRight, Share2, ExternalLink, MessageSquare, Info, Palette, PenLine, Plus, Globe, Camera, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -9,14 +9,14 @@ import UpdatePasswordModal from './UpdatePasswordModal';
 import toast from 'react-hot-toast';
 
 interface Category {
-  id: number;
+  id: string | number;
   name: string;
   icon: string;
   count: number;
 }
 
 interface SavedQuote {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   category: string;
@@ -24,7 +24,7 @@ interface SavedQuote {
 }
 
 interface UserQuote {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   theme_id?: string;
@@ -32,7 +32,7 @@ interface UserQuote {
   background_id?: string;
   category?: string;
   category_icon?: string;
-  category_id?: number;
+  category_id?: string | number;
   is_public?: number;
   created_at?: string;
 }
@@ -52,14 +52,14 @@ interface SidebarProps {
   onCategoryToggle: (category: string) => void;
   onLoginClick: () => void;
   onLogout: () => void;
-  onSavedQuoteDelete?: (quoteId: number) => void;
-  onQuoteClick?: (quoteId: number, category?: string) => void;
+  onSavedQuoteDelete?: (quoteId: string | number) => void;
+  onQuoteClick?: (quoteId: string | number, category?: string) => void;
   onCustomizeClick?: () => void;
   onCreateQuoteClick?: () => void;
   onEditQuoteClick?: (quote: UserQuote) => void;
   onViewQuoteClick?: (quote: UserQuote) => void;
   userQuotes?: UserQuote[];
-  onUserQuoteDelete?: (quoteId: number) => void;
+  onUserQuoteDelete?: (quoteId: string | number) => void;
   onRefreshUserQuotes?: () => void;
 }
 
@@ -101,7 +101,7 @@ export default function Sidebar({
   const [hasFetchedSaved, setHasFetchedSaved] = useState(false);
   const [hasFetchedLiked, setHasFetchedLiked] = useState(false);
   const [hasFetchedDisliked, setHasFetchedDisliked] = useState(false);
-  const [navigatingQuoteId, setNavigatingQuoteId] = useState<number | null>(null);
+  const [navigatingQuoteId, setNavigatingQuoteId] = useState<string | number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showUpdatePasswordModal, setShowUpdatePasswordModal] = useState(false);
@@ -110,7 +110,7 @@ export default function Sidebar({
   // Profile state
   const [profileData, setProfileData] = useState<{
     user: {
-      id: number;
+      id: string | number;
       name: string;
       email: string;
       role: string;
@@ -294,7 +294,7 @@ export default function Sidebar({
     }
   };
 
-  const handleDeleteQuote = async (quoteId: number) => {
+  const handleDeleteQuote = async (quoteId: string | number) => {
     if (!isAuthenticated) return;
     try {
       const response = await fetch('/api/user/saved', {
@@ -303,7 +303,7 @@ export default function Sidebar({
         body: JSON.stringify({ quoteId }),
       });
       if (response.ok) {
-        setSavedQuotes(savedQuotes.filter(q => q.id !== quoteId));
+        setSavedQuotes(savedQuotes.filter(q => String(q.id) !== String(quoteId)));
         onSavedQuoteDelete?.(quoteId);
         toast.success('Quote removed');
       }
@@ -421,10 +421,19 @@ export default function Sidebar({
             {/* Create Your Quote Button */}
             <button
               onClick={() => { onCreateQuoteClick?.(); onClose(); }}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+              className="w-full relative overflow-hidden py-3.5 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
-              <PenLine size={16} />
-              <span>Create Your Own Quote</span>
+              <div className="flex items-center justify-center gap-2">
+                <PenLine size={16} />
+                <span>Create Your Own Quote</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 mt-1 text-[10px] text-white/80">
+                <span className="flex items-center gap-1"><Camera size={10} /> Photo</span>
+                <span>•</span>
+                <span className="flex items-center gap-1"><ImageIcon size={10} /> Upload</span>
+                <span>•</span>
+                <span className="flex items-center gap-1"><Palette size={10} /> Themes</span>
+              </div>
             </button>
 
             {/* Account Actions */}
@@ -458,7 +467,7 @@ export default function Sidebar({
   );
 
   // Handle quote click - navigate to the quote with loading state
-  const handleQuoteClick = useCallback(async (quoteId: number, category?: string) => {
+  const handleQuoteClick = useCallback(async (quoteId: string | number, category?: string) => {
     // Prevent double clicks
     if (navigatingQuoteId) return;
     
@@ -725,7 +734,7 @@ export default function Sidebar({
   );
 
   // Handle delete user quote
-  const handleDeleteUserQuote = async (quoteId: number) => {
+  const handleDeleteUserQuote = async (quoteId: string | number) => {
     if (!isAuthenticated) return;
     try {
       const response = await fetch(`/api/user/quotes/${quoteId}`, {
@@ -760,10 +769,15 @@ export default function Sidebar({
       <div className="p-3 border-b border-gray-100 dark:border-gray-800">
         <button
           onClick={() => { onCreateQuoteClick?.(); onClose(); }}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all active:scale-[0.98]"
+          className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all active:scale-[0.98]"
         >
-          <Plus size={18} />
-          <span>Create New Quote</span>
+          <div className="flex items-center justify-center gap-2">
+            <Plus size={18} />
+            <span>Create New Quote</span>
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-1 text-[10px] text-white/80">
+            <Camera size={10} /> <ImageIcon size={10} /> <Palette size={10} /> Customize with photo
+          </div>
         </button>
       </div>
 
@@ -965,17 +979,32 @@ export default function Sidebar({
           >
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 opacity-90 group-hover:opacity-100 transition-opacity rounded-xl" />
             <div className="relative flex items-center gap-3 p-3 sm:p-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <PenLine size={24} className="text-white" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg relative">
+                <PenLine size={22} className="text-white" />
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white/30 flex items-center justify-center">
+                  <Camera size={12} className="text-white" />
+                </div>
               </div>
               <div className="flex-1 text-left">
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-white text-sm sm:text-base">Create Your Quote</h3>
                   <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[9px] font-bold text-white uppercase">New</span>
                 </div>
-                <p className="text-white/80 text-[10px] sm:text-xs mt-0.5">Write, customize &amp; share your own quotes</p>
+                <p className="text-white/80 text-[10px] sm:text-xs mt-0.5">Write, upload photos or take pictures as background</p>
               </div>
               <ChevronRight size={20} className="text-white/60 group-hover:translate-x-1 transition-transform" />
+            </div>
+            {/* Feature badges */}
+            <div className="relative flex items-center justify-center gap-2 pb-3 px-3">
+              <span className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded-full text-[9px] text-white flex items-center gap-1">
+                <Camera size={10} /> Take Photo
+              </span>
+              <span className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded-full text-[9px] text-white flex items-center gap-1">
+                <ImageIcon size={10} /> Upload Image
+              </span>
+              <span className="px-2 py-1 bg-white/20 backdrop-blur-sm rounded-full text-[9px] text-white flex items-center gap-1">
+                <Globe size={10} /> Share
+              </span>
             </div>
           </button>
         </div>
@@ -1010,11 +1039,11 @@ export default function Sidebar({
               <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-4 text-left">
                 {[
                   { icon: '✍️', text: 'Create own quotes' },
-                  { icon: '🌍', text: 'Public/Private' },
+                  { icon: '📷', text: 'Take photo BG' },
+                  { icon: '🖼️', text: 'Upload image BG' },
                   { icon: '🎨', text: '60+ themes' },
-                  { icon: '🖼️', text: 'Custom backgrounds' },
-                  { icon: '📚', text: 'All categories' },
-                  { icon: '💾', text: 'Save favorites' },
+                  { icon: '🔤', text: '75+ fonts' },
+                  { icon: '💾', text: 'Save & Share' },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300">
                     <span className="text-sm">{item.icon}</span>
@@ -1191,7 +1220,7 @@ export default function Sidebar({
             {isAuthenticated ? (
               <button
                 onClick={onLogout}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl transition-all text-sm font-medium border border-red-200 dark:border-red-800/50 hover:border-red-300 dark:hover:border-red-700 active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-blue-500 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all text-sm font-semibold active:scale-[0.98]"
               >
                 <LogOut size={16} />
                 <span>Sign Out</span>

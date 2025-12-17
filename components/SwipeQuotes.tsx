@@ -31,7 +31,7 @@ const ModalLoader = () => (
 );
 
 interface Quote {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   category: string;
@@ -41,14 +41,14 @@ interface Quote {
 }
 
 interface Category {
-  id: number;
+  id: string | number;
   name: string;
   icon: string;
   count: number;
 }
 
 interface User {
-  id: number;
+  id: string | number;
   name: string;
   email: string;
   role?: 'user' | 'admin';
@@ -56,13 +56,13 @@ interface User {
 }
 
 interface UserQuote {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   theme_id?: string;
   font_id?: string;
   background_id?: string;
-  category_id?: number;
+  category_id?: string | number;
   category?: string;
   category_icon?: string;
   is_public?: number;
@@ -221,18 +221,12 @@ export default function SwipeQuotes() {
         
         // Convert query param to path format for regular quotes
         if (quoteIdParam && !pathMatch) {
-          const quoteId = parseInt(quoteIdParam, 10);
-          if (!isNaN(quoteId)) {
-            window.history.replaceState({ quoteId }, '', `/quote/${quoteId}`);
+          window.history.replaceState({ quoteId: quoteIdParam }, '', `/quote/${quoteIdParam}`);
           }
-        }
         
         // Convert query param to path format for user quotes
         if (userQuoteIdParam && !userQuotePathMatch) {
-          const userQuoteId = parseInt(userQuoteIdParam, 10);
-          if (!isNaN(userQuoteId)) {
-            window.history.replaceState({ userQuoteId }, '', `/user-quote/${userQuoteId}`);
-          }
+          window.history.replaceState({ userQuoteId: userQuoteIdParam }, '', `/user-quote/${userQuoteIdParam}`);
         }
         
         if (pathMatch || quoteIdParam || userQuotePathMatch || userQuoteIdParam) {
@@ -320,47 +314,66 @@ export default function SwipeQuotes() {
             const bgId = cardStyleData.backgroundId;
             
             if (bgId && (bgId === 'custom' || bgId.startsWith('custom_'))) {
-              // Try to load custom image from localStorage
-              try {
-                // Check new multiple images format first
-                const customImagesJson = localStorage.getItem('quoteswipe_custom_images');
-                if (customImagesJson) {
-                  const customImages = JSON.parse(customImagesJson);
-                  const customImage = customImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
-                  if (customImage) {
-                    savedBg = {
-                      id: customImage.id,
-                      name: customImage.name,
-                      url: customImage.url,
-                      thumbnail: customImage.url,
-                      overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                      textColor: '#ffffff',
-                      authorColor: '#e5e5e5',
-                      categoryBg: 'rgba(255,255,255,0.15)',
-                      categoryText: '#ffffff',
-                    };
+              // First try to use customBackgrounds from server response
+              const serverCustomImages = cardStyleData.customBackgrounds || [];
+              const serverImage = serverCustomImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
+              
+              if (serverImage) {
+                savedBg = {
+                  id: serverImage.id,
+                  name: serverImage.name,
+                  url: serverImage.url,
+                  thumbnail: serverImage.url,
+                  overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                  textColor: '#ffffff',
+                  authorColor: '#e5e5e5',
+                  categoryBg: 'rgba(255,255,255,0.15)',
+                  categoryText: '#ffffff',
+                };
+              }
+              
+              // Fallback to localStorage if not found on server
+              if (!savedBg) {
+                try {
+                  const customImagesJson = localStorage.getItem('quoteswipe_custom_images');
+                  if (customImagesJson) {
+                    const customImages = JSON.parse(customImagesJson);
+                    const customImage = customImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
+                    if (customImage) {
+                      savedBg = {
+                        id: customImage.id,
+                        name: customImage.name,
+                        url: customImage.url,
+                        thumbnail: customImage.url,
+                        overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                        textColor: '#ffffff',
+                        authorColor: '#e5e5e5',
+                        categoryBg: 'rgba(255,255,255,0.15)',
+                        categoryText: '#ffffff',
+                      };
+                    }
                   }
-                }
-                
-                // Fallback to old single image format for backward compatibility
-                if (!savedBg) {
-                  const customImageUrl = localStorage.getItem('quoteswipe_custom_bg');
-                  if (customImageUrl) {
-                    savedBg = {
-                      id: 'custom',
-                      name: 'My Photo',
-                      url: customImageUrl,
-                      thumbnail: customImageUrl,
-                      overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                      textColor: '#ffffff',
-                      authorColor: '#e5e5e5',
-                      categoryBg: 'rgba(255,255,255,0.15)',
-                      categoryText: '#ffffff',
-                    };
+                  
+                  // Fallback to old single image format for backward compatibility
+                  if (!savedBg) {
+                    const customImageUrl = localStorage.getItem('quoteswipe_custom_bg');
+                    if (customImageUrl) {
+                      savedBg = {
+                        id: 'custom',
+                        name: 'My Photo',
+                        url: customImageUrl,
+                        thumbnail: customImageUrl,
+                        overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                        textColor: '#ffffff',
+                        authorColor: '#e5e5e5',
+                        categoryBg: 'rgba(255,255,255,0.15)',
+                        categoryText: '#ffffff',
+                      };
+                    }
                   }
+                } catch (e) {
+                  console.error('Failed to load custom background from localStorage:', e);
                 }
-              } catch (e) {
-                console.error('Failed to load custom background:', e);
               }
             } else {
               savedBg = BACKGROUND_IMAGES.find(b => b.id === bgId);
@@ -437,18 +450,18 @@ export default function SwipeQuotes() {
   useEffect(() => {
     if (!isAppReady || quotes.length === 0) return;
     
-    // Check if URL is in /quote/[id] format (regular quotes)
-    const pathMatch = window.location.pathname.match(/^\/quote\/(\d+)$/);
-    const quoteIdFromPath = pathMatch ? parseInt(pathMatch[1], 10) : null;
+    // Check if URL is in /quote/[id] format (regular quotes) - supports alphanumeric IDs
+    const pathMatch = window.location.pathname.match(/^\/quote\/([a-zA-Z0-9_-]+)$/);
+    const quoteIdFromPath = pathMatch ? pathMatch[1] : null;
     
     // Check if URL is in /user-quote/[id] format (user quotes)
-    const userQuotePathMatch = window.location.pathname.match(/^\/user-quote\/(\d+)$/);
+    const userQuotePathMatch = window.location.pathname.match(/^\/user-quote\/([a-zA-Z0-9_-]+)$/);
     const userQuoteIdFromPath = userQuotePathMatch ? userQuotePathMatch[1] : null;
     
     // Also check query parameters for backward compatibility
     const urlParams = new URLSearchParams(window.location.search);
     const quoteIdParam = urlParams.get('quote');
-    const quoteIdFromQuery = quoteIdParam ? parseInt(quoteIdParam, 10) : null;
+    const quoteIdFromQuery = quoteIdParam || null;
     const userQuoteIdParam = urlParams.get('user_quote');
     
     // Determine if this is a user quote
@@ -464,8 +477,8 @@ export default function SwipeQuotes() {
         // Find user quote by matching `user_${id}` format
         quoteIndex = filteredQuotes.findIndex(q => String(q.id) === `user_${userQuoteId}`);
       } else if (quoteId) {
-        // Find regular quote by ID
-        quoteIndex = filteredQuotes.findIndex(q => q.id === quoteId);
+        // Find regular quote by ID (compare as strings to handle both number and string IDs)
+        quoteIndex = filteredQuotes.findIndex(q => String(q.id) === String(quoteId));
       }
       
       if (quoteIndex !== -1 && currentIndex !== quoteIndex) {
@@ -475,7 +488,7 @@ export default function SwipeQuotes() {
           window.history.replaceState({ userQuoteId, index: quoteIndex }, '', `/user-quote/${userQuoteId}`);
         } else if (quoteId) {
         const newPath = `/quote/${quoteId}`;
-        if (!pathMatch || parseInt(pathMatch[1], 10) !== quoteId || quoteIdParam) {
+          if (!pathMatch || pathMatch[1] !== String(quoteId) || quoteIdParam) {
           window.history.replaceState({ quoteId, index: quoteIndex }, '', newPath);
           }
         }
@@ -623,47 +636,66 @@ export default function SwipeQuotes() {
         const bgId = data.backgroundId;
         
         if (bgId && (bgId === 'custom' || bgId.startsWith('custom_'))) {
-          // Try to load custom image from localStorage
-          try {
-            // Check new multiple images format first
-            const customImagesJson = localStorage.getItem('quoteswipe_custom_images');
-            if (customImagesJson) {
-              const customImages = JSON.parse(customImagesJson);
-              const customImage = customImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
-              if (customImage) {
-                bg = {
-                  id: customImage.id,
-                  name: customImage.name,
-                  url: customImage.url,
-                  thumbnail: customImage.url,
-                  overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                  textColor: '#ffffff',
-                  authorColor: '#e5e5e5',
-                  categoryBg: 'rgba(255,255,255,0.15)',
-                  categoryText: '#ffffff',
-                };
+          // First try to use customBackgrounds from the same API response
+          const serverCustomImages = data.customBackgrounds || [];
+          const customImage = serverCustomImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
+          
+          if (customImage) {
+            bg = {
+              id: customImage.id,
+              name: customImage.name,
+              url: customImage.url,
+              thumbnail: customImage.url,
+              overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+              textColor: '#ffffff',
+              authorColor: '#e5e5e5',
+              categoryBg: 'rgba(255,255,255,0.15)',
+              categoryText: '#ffffff',
+            };
+          }
+          
+          // Fallback to localStorage if not found on server
+          if (!bg) {
+            try {
+              const customImagesJson = localStorage.getItem('quoteswipe_custom_images');
+              if (customImagesJson) {
+                const customImages = JSON.parse(customImagesJson);
+                const localImage = customImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
+                if (localImage) {
+                  bg = {
+                    id: localImage.id,
+                    name: localImage.name,
+                    url: localImage.url,
+                    thumbnail: localImage.url,
+                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                    textColor: '#ffffff',
+                    authorColor: '#e5e5e5',
+                    categoryBg: 'rgba(255,255,255,0.15)',
+                    categoryText: '#ffffff',
+                  };
+                }
               }
-            }
-            
-            // Fallback to old single image format for backward compatibility
-            if (!bg) {
-              const customImageUrl = localStorage.getItem('quoteswipe_custom_bg');
-              if (customImageUrl) {
-                bg = {
-                  id: 'custom',
-                  name: 'My Photo',
-                  url: customImageUrl,
-                  thumbnail: customImageUrl,
-                  overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                  textColor: '#ffffff',
-                  authorColor: '#e5e5e5',
-                  categoryBg: 'rgba(255,255,255,0.15)',
-                  categoryText: '#ffffff',
-                };
+              
+              // Fallback to old single image format for backward compatibility
+              if (!bg) {
+                const customImageUrl = localStorage.getItem('quoteswipe_custom_bg');
+                if (customImageUrl) {
+                  bg = {
+                    id: 'custom',
+                    name: 'My Photo',
+                    url: customImageUrl,
+                    thumbnail: customImageUrl,
+                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                    textColor: '#ffffff',
+                    authorColor: '#e5e5e5',
+                    categoryBg: 'rgba(255,255,255,0.15)',
+                    categoryText: '#ffffff',
+                  };
+                }
               }
+            } catch (e) {
+              console.error('Failed to load custom background from localStorage:', e);
             }
-          } catch (e) {
-            console.error('Failed to load custom background:', e);
           }
         } else {
           bg = BACKGROUND_IMAGES.find(b => b.id === bgId);
@@ -1333,10 +1365,19 @@ export default function SwipeQuotes() {
   };
 
   const handleSave = async () => {
+    // Prevent multiple clicks during animation
+    if (isDragging || isAnimating) return;
+    
     const filteredQuotes = getFilteredQuotes();
     const currentQuote = filteredQuotes[currentIndex];
 
     if (currentQuote) {
+      // Start the visual animation immediately
+      setIsAnimating(true);
+      setSwipeDirection('right');
+      setDragOffset({ x: 300, y: 0 });
+      
+      // Save to database in parallel with animation
       if (isAuthenticated) {
         try {
           await fetch('/api/user/saved', {
@@ -1351,7 +1392,12 @@ export default function SwipeQuotes() {
       } else {
         setSavedQuotes([...savedQuotes, currentQuote]);
       }
-      setTimeout(() => handleSwipe('right'), 200);
+      
+      // After animation completes, move to next quote
+      setTimeout(() => {
+        handleSwipe('right');
+        setIsAnimating(false);
+      }, 300);
     }
   };
 
@@ -1389,9 +1435,9 @@ export default function SwipeQuotes() {
   };
 
   // Handle navigation to a specific quote from sidebar
-  const handleQuoteNavigation = useCallback(async (quoteId: number, category?: string) => {
-    // Find the quote index in the current quotes array
-    let quoteIndex = quotes.findIndex(q => q.id === quoteId);
+  const handleQuoteNavigation = useCallback(async (quoteId: string | number, category?: string) => {
+    // Find the quote index in the current quotes array (compare as strings)
+    let quoteIndex = quotes.findIndex(q => String(q.id) === String(quoteId));
     
     if (quoteIndex !== -1) {
       // Quote is in current stack, navigate to it
@@ -1419,8 +1465,8 @@ export default function SwipeQuotes() {
           const fetchedQuotes = data.quotes || [];
           setQuotes(fetchedQuotes);
           
-          // Find the quote index in the new quotes array
-          const newQuoteIndex = fetchedQuotes.findIndex((q: Quote) => q.id === quoteId);
+          // Find the quote index in the new quotes array (compare as strings)
+          const newQuoteIndex = fetchedQuotes.findIndex((q: Quote) => String(q.id) === String(quoteId));
           if (newQuoteIndex !== -1) {
             setCurrentIndex(newQuoteIndex);
             window.history.pushState({}, '', `/quote/${quoteId}`);
@@ -1592,8 +1638,8 @@ export default function SwipeQuotes() {
         onCategoryToggle={handleCategoryToggle}
         onLoginClick={() => setShowAuthModal(true)}
         onLogout={handleLogout}
-        onSavedQuoteDelete={(quoteId) => {
-          setSavedQuotes(savedQuotes.filter(q => q.id !== quoteId));
+        onSavedQuoteDelete={(quoteId: string | number) => {
+          setSavedQuotes(savedQuotes.filter(q => String(q.id) !== String(quoteId)));
         }}
         onQuoteClick={handleQuoteNavigation}
         onCustomizeClick={() => setShowCustomizationModal(true)}
@@ -1609,8 +1655,8 @@ export default function SwipeQuotes() {
           setViewingUserQuote(quote);
         }}
         userQuotes={userQuotes}
-        onUserQuoteDelete={(quoteId) => {
-          setUserQuotes(userQuotes.filter(q => q.id !== quoteId));
+        onUserQuoteDelete={(quoteId: string | number) => {
+          setUserQuotes(userQuotes.filter(q => String(q.id) !== String(quoteId)));
         }}
         onRefreshUserQuotes={fetchUserQuotes}
       />
@@ -1699,7 +1745,7 @@ export default function SwipeQuotes() {
       <SearchModal
         isOpen={showSearchModal}
         onClose={() => setShowSearchModal(false)}
-            onQuoteSelect={(quoteId: number, category?: string) => {
+            onQuoteSelect={(quoteId: string | number, category?: string) => {
               // Close modal first for better UX
               setShowSearchModal(false);
               // Use the same navigation handler as sidebar
@@ -1719,8 +1765,8 @@ export default function SwipeQuotes() {
             }}
             onSuccess={(quote, cacheInvalidated) => {
               if (editingQuote) {
-                // Update existing quote
-                setUserQuotes(userQuotes.map(q => q.id === quote.id ? quote : q));
+                // Update existing quote (compare as strings)
+                setUserQuotes(userQuotes.map(q => String(q.id) === String(quote.id) ? quote : q));
               } else {
                 // Add new quote
                 setUserQuotes([quote, ...userQuotes]);
@@ -2107,20 +2153,27 @@ export default function SwipeQuotes() {
                 setEditingQuote(null);
                 setShowCreateQuoteModal(true);
               } else {
-                toast('Login to create your own quotes', {
-                  icon: '✍️',
+                toast('Login to create your own quotes with photo backgrounds!', {
+                  icon: '📷',
                   duration: 3000,
                 });
                 setShowAuthModal(true);
               }
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all hover:scale-105 active:scale-95"
+            className="group relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all hover:scale-105 active:scale-95"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9"/>
               <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
             </svg>
             Create Quote
+            {/* Camera badge */}
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                <circle cx="12" cy="13" r="3"/>
+              </svg>
+            </span>
           </button>
           
           {/* Customize Card Button */}

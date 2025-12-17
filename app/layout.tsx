@@ -1,11 +1,34 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { 
+  Geist, 
+  Geist_Mono, 
+  Playfair_Display,
+  Merriweather,
+  Lora,
+  Crimson_Text,
+  Cormorant_Garamond,
+  Roboto,
+  Open_Sans,
+  Lato,
+  Poppins,
+  Montserrat,
+  Inter,
+  Nunito,
+  Raleway,
+  Source_Sans_3,
+  Dancing_Script,
+  Pacifico,
+  Great_Vibes,
+  Sacramento,
+  JetBrains_Mono,
+} from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import CustomToaster from "@/components/CustomToaster";
 import CookieConsent from "@/components/CookieConsent";
 
+// System fonts
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -16,10 +39,122 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Serif fonts (Elegant)
 const playfairDisplay = Playfair_Display({
-  variable: "--font-display",
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const merriweather = Merriweather({
+  variable: "--font-merriweather",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const crimsonText = Crimson_Text({
+  variable: "--font-crimson",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const cormorantGaramond = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+// Sans-serif fonts (Modern)
+const roboto = Roboto({
+  variable: "--font-roboto",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+});
+
+const openSans = Open_Sans({
+  variable: "--font-opensans",
+  subsets: ["latin"],
+  weight: ["300", "400", "600", "700"],
+});
+
+const lato = Lato({
+  variable: "--font-lato",
+  subsets: ["latin"],
+  weight: ["300", "400", "700"],
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
+
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+});
+
+const raleway = Raleway({
+  variable: "--font-raleway",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+});
+
+const sourceSans = Source_Sans_3({
+  variable: "--font-sourcesans",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+});
+
+// Script/Handwriting fonts
+const dancingScript = Dancing_Script({
+  variable: "--font-dancing",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const pacifico = Pacifico({
+  variable: "--font-pacifico",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
+const greatVibes = Great_Vibes({
+  variable: "--font-greatvibes",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
+const sacramento = Sacramento({
+  variable: "--font-sacramento",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
+// Monospace fonts
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quoteswipe.com';
@@ -379,7 +514,18 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} antialiased`}
+        className={`
+          ${geistSans.variable} ${geistMono.variable}
+          ${playfairDisplay.variable} ${merriweather.variable} ${lora.variable} 
+          ${crimsonText.variable} ${cormorantGaramond.variable}
+          ${roboto.variable} ${openSans.variable} ${lato.variable} 
+          ${poppins.variable} ${montserrat.variable} ${inter.variable}
+          ${nunito.variable} ${raleway.variable} ${sourceSans.variable}
+          ${dancingScript.variable} ${pacifico.variable} 
+          ${greatVibes.variable} ${sacramento.variable}
+          ${jetbrainsMono.variable}
+          antialiased
+        `}
       >
         <ThemeProvider>
           <LanguageProvider>

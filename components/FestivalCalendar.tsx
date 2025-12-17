@@ -12,7 +12,7 @@ interface ScheduledEmail {
   subject: string;
   scheduled_date: string;
   scheduled_time: string;
-  quote_id: number | null;
+  quote_id: string | number | null;
   custom_message: string | null;
   status: 'pending' | 'sent' | 'failed' | 'cancelled';
   recipient_count: number;
@@ -25,7 +25,7 @@ interface User {
 }
 
 interface Quote {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
 }
@@ -40,7 +40,7 @@ interface FestivalCalendarProps {
     subject: string;
     scheduled_date: string;
     scheduled_time: string;
-    quote_id: number | null;
+    quote_id: string | number | null;
     custom_message: string;
     user_ids: number[];
   }) => Promise<void>;
@@ -97,7 +97,7 @@ export default function FestivalCalendar({
     title: '',
     subject: '',
     scheduled_time: '09:00',
-    quote_id: null as number | null,
+    quote_id: null as string | number | null,
     custom_message: '',
     user_ids: [] as number[],
     selectAll: false,

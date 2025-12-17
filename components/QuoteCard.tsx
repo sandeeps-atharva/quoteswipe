@@ -11,7 +11,7 @@ import { CardTheme, FontStyle, BackgroundImage, DEFAULT_THEME, DEFAULT_FONT, BAC
 export type { CardTheme, FontStyle, BackgroundImage };
 
 interface Quote {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   category: string;

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Gradient background -->
+  <circle cx="60" cy="60" r="56" fill="url(#waveGrad)"/>
+  
+  <!-- Wave pattern -->
+  <path d="M20 65 Q35 50, 50 65 T80 65 T110 65" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.3"/>
+  <path d="M15 75 Q30 60, 45 75 T75 75 T105 75" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+  
+  <!-- Floating quote card -->
+  <rect x="35" y="28" width="50" height="64" rx="10" fill="white" filter="url(#shadow)"/>
+  
+  <!-- Quote content -->
+  <text x="42" y="52" font-family="Georgia, serif" font-size="24" fill="url(#waveGrad)" font-weight="bold">"</text>
+  <rect x="45" y="58" width="30" height="3" rx="1.5" fill="#ddd"/>
+  <rect x="45" y="66" width="24" height="3" rx="1.5" fill="#eee"/>
+  <text x="62" y="82" font-family="Georgia, serif" font-size="24" fill="url(#waveGrad)" font-weight="bold">"</text>
+  
+  <defs>
+    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="50%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#ec4899"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+</svg>
+

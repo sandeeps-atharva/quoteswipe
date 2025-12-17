@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Quote, User, ArrowRight } from 'lucide-react';
 
 interface SearchResult {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   category: string;
@@ -14,7 +14,7 @@ interface SearchResult {
 interface SearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onQuoteSelect: (quoteId: number, category?: string) => void;
+  onQuoteSelect: (quoteId: string | number, category?: string) => void;
 }
 
 // Cache quotes to avoid repeated API calls

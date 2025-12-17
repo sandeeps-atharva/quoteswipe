@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, Sparkles, Users, Target, Zap, Globe, Quote, MessageSquare, Palette, PenLine } from 'lucide-react';
+import { Heart, Sparkles, Users, Target, Zap, Globe, Quote, MessageSquare, Palette, PenLine, Camera, Image as ImageIcon, Share2, Lock } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import LegalPageLayout, { SectionCard } from '@/components/LegalPageLayout';
@@ -122,7 +122,7 @@ export default function About() {
     {
       icon: <PenLine className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />,
       title: "Create Your Own Quotes",
-      description: "Write your own inspirational quotes with custom backgrounds, themes, and fonts. Share publicly or keep private.",
+      description: "Write your own inspirational quotes, upload photos or take pictures for backgrounds, customize with 60+ themes & 75+ fonts. Share publicly or keep private.",
       isNew: true
     },
     {
@@ -244,10 +244,57 @@ export default function About() {
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30" />
           <Quote className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-auto mb-3 sm:mb-4 opacity-50" />
           <blockquote className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-display italic mb-2 sm:mb-3 md:mb-4 relative px-2">
-            "The only way to do great work is to love what you do."
+            &ldquo;The only way to do great work is to love what you do.&rdquo;
           </blockquote>
           <p className="text-white/80 text-sm sm:text-base">— Steve Jobs</p>
         </div>
+
+        {/* Create Your Own Quote - Feature Highlight */}
+        <SectionCard className="mb-6 sm:mb-8 relative overflow-hidden ring-2 ring-purple-500/30 dark:ring-purple-400/30">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute -top-1 -right-1">
+            <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold rounded-bl-xl rounded-tr-xl uppercase">
+              ✨ New Feature
+            </span>
+          </div>
+          
+          <div className="relative">
+            <div className="flex items-center gap-2 sm:gap-3 mb-4">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20">
+                <PenLine className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Create Your Own Quotes</h3>
+            </div>
+            
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">
+              Express yourself with beautifully designed quote cards. Write your own inspirational quotes and customize them with your personal touch.
+            </p>
+            
+            {/* Feature Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {[
+                { icon: <Camera className="w-5 h-5" />, label: "Take Photo", desc: "Use your camera" },
+                { icon: <ImageIcon className="w-5 h-5" />, label: "Upload Image", desc: "From gallery" },
+                { icon: <Palette className="w-5 h-5" />, label: "60+ Themes", desc: "Beautiful styles" },
+                { icon: <Share2 className="w-5 h-5" />, label: "Share", desc: "Public or Private" },
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-center">
+                  <div className="text-purple-500 mb-1">{item.icon}</div>
+                  <span className="text-xs font-semibold text-gray-900 dark:text-white">{item.label}</span>
+                  <span className="text-[10px] text-gray-500">{item.desc}</span>
+                </div>
+              ))}
+            </div>
+            
+            <button
+              onClick={handleStartSwiping}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg"
+            >
+              <PenLine className="w-4 h-4" />
+              Start Creating Now
+            </button>
+          </div>
+        </SectionCard>
 
         {/* Values */}
         <SectionCard className="mb-6 sm:mb-8">

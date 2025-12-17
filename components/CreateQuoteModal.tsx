@@ -4,19 +4,19 @@ import { useState, useEffect } from 'react';
 import { X, Sparkles, PenLine, User, Tag, Loader2, Check, Globe, Lock } from 'lucide-react';
 
 interface Category {
-  id: number;
+  id: string | number;
   name: string;
   icon: string;
 }
 
 interface UserQuote {
-  id: number;
+  id: string | number;
   text: string;
   author: string;
   theme_id?: string;
   font_id?: string;
   background_id?: string;
-  category_id?: number;
+  category_id?: string | number;
   category?: string;
   category_icon?: string;
   is_public?: number;
@@ -39,7 +39,7 @@ export default function CreateQuoteModal({
 }: CreateQuoteModalProps) {
   const [text, setText] = useState('');
   const [author, setAuthor] = useState('');
-  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [categoryId, setCategoryId] = useState<string | number | null>(null);
   const [isPublic, setIsPublic] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
