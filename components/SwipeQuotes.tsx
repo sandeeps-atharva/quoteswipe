@@ -1133,7 +1133,7 @@ export default function SwipeQuotes() {
     }
   };
 
-  const handleSwipe = async (direction: 'left' | 'right') => {
+  const handleSwipe = (direction: 'left' | 'right') => {
     const filteredQuotes = getFilteredQuotes();
     const currentQuote = filteredQuotes[currentIndex];
 
@@ -1144,39 +1144,25 @@ export default function SwipeQuotes() {
       if (!alreadyLiked) {
         setLastLikedQuote(currentQuote);
         
+        // OPTIMISTIC UPDATE: Update UI immediately
+        setLikedQuotes(prev => [...prev, currentQuote]);
+        setDislikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
+        setQuotes(prev => prev.map(q => 
+          q.id === currentQuote.id 
+            ? { ...q, likes_count: (q.likes_count || 0) + 1 }
+            : q
+        ));
+        
+        // API call in background (fire and forget)
         if (isAuthenticated) {
-          try {
-            const response = await fetch('/api/user/likes', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ quoteId: currentQuote.id }),
-            });
-            const data = await response.json();
-            
-            // Only update if it's a new like (not already liked)
-            if (!data.alreadyLiked) {
-              setLikedQuotes(prev => [...prev, currentQuote]);
-              // Remove from dislikes if was disliked before
-              setDislikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
-              // Update likes count in the quote
-              setQuotes(prev => prev.map(q => 
-                q.id === currentQuote.id 
-                  ? { ...q, likes_count: (q.likes_count || 0) + 1 }
-                  : q
-              ));
-            }
-          } catch (error) {
+          fetch('/api/user/likes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quoteId: currentQuote.id }),
+          }).catch(error => {
             console.error('Like quote error:', error);
-          }
-        } else {
-          // Guest user - track locally
-          setLikedQuotes(prev => [...prev, currentQuote]);
-          setDislikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
-          setQuotes(prev => prev.map(q => 
-            q.id === currentQuote.id 
-              ? { ...q, likes_count: (q.likes_count || 0) + 1 }
-              : q
-          ));
+            // Silently fail - UI already updated
+          });
         }
       } else {
         // Already liked - just set as last liked for undo tracking
@@ -1187,39 +1173,25 @@ export default function SwipeQuotes() {
       const alreadyDisliked = dislikedQuotes.some(q => q.id === currentQuote.id);
       
       if (!alreadyDisliked) {
+        // OPTIMISTIC UPDATE: Update UI immediately
+        setDislikedQuotes(prev => [...prev, currentQuote]);
+        setLikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
+        setQuotes(prev => prev.map(q => 
+          q.id === currentQuote.id 
+            ? { ...q, dislikes_count: (q.dislikes_count || 0) + 1 }
+            : q
+        ));
+        
+        // API call in background (fire and forget)
         if (isAuthenticated) {
-          try {
-            const response = await fetch('/api/user/dislikes', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ quoteId: currentQuote.id }),
-            });
-            const data = await response.json();
-            
-            // Only update if it's a new dislike (not already disliked)
-            if (!data.alreadyDisliked) {
-              setDislikedQuotes(prev => [...prev, currentQuote]);
-              // Remove from likes if was liked before
-              setLikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
-              // Update dislikes count in the quote
-              setQuotes(prev => prev.map(q => 
-                q.id === currentQuote.id 
-                  ? { ...q, dislikes_count: (q.dislikes_count || 0) + 1 }
-                  : q
-              ));
-            }
-          } catch (error) {
+          fetch('/api/user/dislikes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quoteId: currentQuote.id }),
+          }).catch(error => {
             console.error('Dislike quote error:', error);
-          }
-        } else {
-          // Guest user - track locally
-          setDislikedQuotes(prev => [...prev, currentQuote]);
-          setLikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
-          setQuotes(prev => prev.map(q => 
-            q.id === currentQuote.id 
-              ? { ...q, dislikes_count: (q.dislikes_count || 0) + 1 }
-              : q
-          ));
+            // Silently fail - UI already updated
+          });
         }
       }
       setLastLikedQuote(null);
@@ -1364,7 +1336,7 @@ export default function SwipeQuotes() {
     }, 300);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     // Prevent multiple clicks during animation
     if (isDragging || isAnimating) return;
     
@@ -1377,20 +1349,19 @@ export default function SwipeQuotes() {
       setSwipeDirection('right');
       setDragOffset({ x: 300, y: 0 });
       
-      // Save to database in parallel with animation
+      // OPTIMISTIC UPDATE: Update UI immediately
+      setSavedQuotes(prev => [...prev, currentQuote]);
+      
+      // API call in background (fire and forget)
       if (isAuthenticated) {
-        try {
-          await fetch('/api/user/saved', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quoteId: currentQuote.id }),
-          });
-          setSavedQuotes([...savedQuotes, currentQuote]);
-        } catch (error) {
+        fetch('/api/user/saved', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId: currentQuote.id }),
+        }).catch(error => {
           console.error('Save quote error:', error);
-        }
-      } else {
-        setSavedQuotes([...savedQuotes, currentQuote]);
+          // Silently fail - UI already updated
+        });
       }
       
       // After animation completes, move to next quote
