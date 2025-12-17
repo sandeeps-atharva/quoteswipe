@@ -919,12 +919,12 @@ const CustomImageButton = memo(function CustomImageButton({ background, isSelect
             unoptimized
           />
         )}
-        {/* Delete button - shows on hover */}
+        {/* Delete button - visible on mobile, hover on desktop */}
         <button
           onClick={handleDelete}
-          className="absolute top-0.5 right-0.5 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+          className="absolute top-0.5 right-0.5 p-1.5 bg-red-500 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 active:scale-90 transition-all shadow-lg z-10"
         >
-          <Trash2 size={10} className="text-white" />
+          <Trash2 size={12} className="text-white" />
         </button>
       </div>
       <span className="text-[9px] sm:text-xs font-medium text-purple-600 dark:text-purple-400 block text-center truncate">

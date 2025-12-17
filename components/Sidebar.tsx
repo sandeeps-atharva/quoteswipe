@@ -379,7 +379,7 @@ export default function Sidebar({
                 ) : (
                   <button onClick={() => setIsEditingName(true)} className="flex items-center gap-1.5 group">
                     <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">{profileData.user.name}</span>
-                    <Edit2 size={12} className="text-gray-400 opacity-0 group-hover:opacity-100 shrink-0" />
+                    <Edit2 size={12} className="text-gray-400 opacity-50 sm:opacity-0 sm:group-hover:opacity-100 shrink-0" />
                   </button>
                 )}
                 <p className="text-xs text-gray-500 truncate">{profileData.user.email}</p>
@@ -564,13 +564,13 @@ export default function Sidebar({
                     <Loader2 size={18} className="animate-spin text-yellow-500" />
                   </div>
                 )}
-                {/* Compact Actions */}
-                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                  <button onClick={(e) => handleShareQuote(e, quote)} className="p-1 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 rounded transition-all" title="Share">
-                    <Share2 size={12} className="text-blue-500" />
+                {/* Compact Actions - visible on mobile, hover on desktop */}
+                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                  <button onClick={(e) => handleShareQuote(e, quote)} className="p-1.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 active:scale-95 rounded transition-all" title="Share">
+                    <Share2 size={14} className="text-blue-500" />
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDeleteQuote(quote.id); }} className="p-1 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 rounded transition-all" title="Delete">
-                    <Trash2 size={12} className="text-red-500" />
+                  <button onClick={(e) => { e.stopPropagation(); handleDeleteQuote(quote.id); }} className="p-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 active:scale-95 rounded transition-all" title="Delete">
+                    <Trash2 size={14} className="text-red-500" />
                   </button>
                 </div>
                 
@@ -632,13 +632,13 @@ export default function Sidebar({
                     <Loader2 size={18} className="animate-spin text-pink-500" />
                   </div>
                 )}
-                {/* Compact Share */}
+                {/* Compact Share - visible on mobile */}
                 <button
                   onClick={(e) => handleShareQuote(e, quote)}
-                  className="absolute top-2 right-2 p-1 bg-pink-100 dark:bg-pink-900/30 hover:bg-pink-200 rounded opacity-0 group-hover:opacity-100 transition-all"
+                  className="absolute top-2 right-2 p-1.5 bg-pink-100 dark:bg-pink-900/30 hover:bg-pink-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                   title="Share"
                 >
-                  <Share2 size={12} className="text-pink-500" />
+                  <Share2 size={14} className="text-pink-500" />
                 </button>
                 
                 <div className="flex items-start gap-2">
@@ -704,13 +704,13 @@ export default function Sidebar({
                     <Loader2 size={18} className="animate-spin text-gray-400" />
                   </div>
                 )}
-                {/* Compact Share */}
+                {/* Compact Share - visible on mobile */}
                 <button
                   onClick={(e) => handleShareQuote(e, quote)}
-                  className="absolute top-2 right-2 p-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded opacity-0 group-hover:opacity-100 transition-all"
+                  className="absolute top-2 right-2 p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                   title="Share"
                 >
-                  <Share2 size={12} className="text-gray-500" />
+                  <Share2 size={14} className="text-gray-500" />
                 </button>
                 
                 <div className="flex items-start gap-2">
@@ -825,28 +825,28 @@ export default function Sidebar({
                   )}
                 </div>
                 
-                {/* Actions */}
-                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                {/* Actions - visible on mobile, hover on desktop */}
+                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
                   <button
                     onClick={(e) => { e.stopPropagation(); onViewQuoteClick?.(quote); onClose(); }}
-                    className="p-1.5 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 rounded-lg transition-all"
+                    className="p-1.5 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 active:scale-95 rounded-lg transition-all"
                     title="View as Card"
                   >
-                    <Eye size={12} className="text-purple-500" />
+                    <Eye size={14} className="text-purple-500" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); onEditQuoteClick?.(quote); onClose(); }}
-                    className="p-1.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 rounded-lg transition-all"
+                    className="p-1.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 active:scale-95 rounded-lg transition-all"
                     title="Edit"
                   >
-                    <Edit2 size={12} className="text-blue-500" />
+                    <Edit2 size={14} className="text-blue-500" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDeleteUserQuote(quote.id); }}
-                    className="p-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 rounded-lg transition-all"
+                    className="p-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 active:scale-95 rounded-lg transition-all"
                     title="Delete"
                   >
-                    <Trash2 size={12} className="text-red-500" />
+                    <Trash2 size={14} className="text-red-500" />
                   </button>
                 </div>
                 
