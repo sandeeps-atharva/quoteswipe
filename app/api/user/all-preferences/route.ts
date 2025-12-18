@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
     const collection = await getCollection('user_preferences');
     
     // Use projection to fetch only needed fields (faster query)
-    const prefs = await collection.findOne(
+    const prefs: any = await collection.findOne(
       { user_id: userId },
       {
         projection: {
@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(DEFAULTS);
     }
 
-    // Build response object (avoid repeated field access)
+    // Build response object
     const response: AllPreferencesResponse = {
       selectedCategories: parseJsonField(prefs.selected_categories),
       themeId: prefs.card_theme_id || DEFAULTS.themeId,

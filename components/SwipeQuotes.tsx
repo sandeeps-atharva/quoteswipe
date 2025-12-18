@@ -66,8 +66,9 @@ interface UserQuote {
   category_id?: string | number;
   category?: string;
   category_icon?: string;
-  is_public?: number;
+  is_public?: number | boolean;
   created_at?: string;
+  custom_background?: string;
 }
 
 // Client-side cache utilities for rarely-changing data

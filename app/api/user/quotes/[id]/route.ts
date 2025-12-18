@@ -40,7 +40,7 @@ export async function GET(
         $or: [
           { id: catId },
           { id: String(catId) },
-          { _id: toObjectId(catId) }
+          { _id: toObjectId(catId) as any }
         ]
       });
     }
@@ -163,7 +163,7 @@ export async function PUT(
         $or: [
           { id: catId },
           { id: String(catId) },
-          { _id: toObjectId(catId) }
+          { _id: toObjectId(catId) as any }
         ]
       });
     }

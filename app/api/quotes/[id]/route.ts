@@ -106,7 +106,7 @@ async function fetchUserQuote(
   if (rawQuote.user_id) {
     const user = await usersCollection.findOne({
       $or: [
-        { _id: toObjectId(rawQuote.user_id) },
+        { _id: toObjectId(rawQuote.user_id) as any },
         { id: rawQuote.user_id }
       ]
     }) as any;
