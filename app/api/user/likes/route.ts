@@ -89,19 +89,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ quotes: [] }, { status: 200 });
     }
 
-    // Get quotes
-    const quotes = await quotesCollection.find({ _id: { $in: quoteIds } }).toArray() as any[];
+    // Get quotes - try both string id and ObjectId matching
+    const stringIds = quoteIds.map(id => String(id));
+    const objectIds = quoteIds.filter(id => id !== null);
+    
+    const quotes = await quotesCollection.find({
+      $or: [
+        { id: { $in: stringIds } },
+        { _id: { $in: objectIds } }
+      ]
+    }).toArray() as any[];
 
     // Get categories
-    const categoryIds = [...new Set(quotes.map((q: any) => q.category_id).filter(Boolean))];
-    const categories = await categoriesCollection.find({ _id: { $in: categoryIds } }).toArray() as any[];
-    const categoryMap = new Map(categories.map((c: any) => [c._id.toString(), c]));
+    const categories = await categoriesCollection.find({}).toArray() as any[];
+    const categoryMap = new Map(categories.map((c: any) => [c.id || c._id?.toString(), c]));
 
     // Transform quotes
     const result = quotes.map((q: any) => {
-      const category = q.category_id ? categoryMap.get(q.category_id.toString()) : null;
+      const category = categoryMap.get(q.category_id) || categoryMap.get(String(q.category_id));
       return {
-        id: q._id.toString(),
+        id: q.id || q._id?.toString(),
         text: q.text,
         author: q.author,
         category: category?.name || 'Unknown',

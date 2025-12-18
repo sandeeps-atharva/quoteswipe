@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { invalidateQuotesCache } from '@/app/api/quotes/route';
+import { isQuotePublic } from '@/lib/helpers';
 
 // GET - Fetch a single quote
 export async function GET(
@@ -31,11 +32,16 @@ export async function GET(
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
-    // Get category info
+    // Get category info - handle both string and ObjectId
     let category: any = null;
     if (quote.category_id) {
+      const catId = quote.category_id;
       category = await categoriesCollection.findOne({
-        $or: [{ id: quote.category_id }, { _id: quote.category_id }]
+        $or: [
+          { id: catId },
+          { id: String(catId) },
+          { _id: toObjectId(catId) }
+        ]
       });
     }
 
@@ -93,7 +99,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
-    const wasPublic = existing.is_public === true;
+    const wasPublic = isQuotePublic(existing.is_public);
     const body = await request.json();
     const { text, author, categoryId, themeId, fontId, backgroundId, isPublic, customBackground } = body;
 
@@ -138,26 +144,31 @@ export async function PUT(
       );
     }
 
-    // Update quote
+    // Update quote using the exact _id from found document
     await userQuotesCollection.updateOne(
-      { $or: [{ id: id }, { _id: toObjectId(id) as any }] },
+      { _id: existing._id },
       { $set: updates }
     );
 
-    // Fetch updated quote
+    // Fetch updated quote using exact _id
     const updatedQuote: any = await userQuotesCollection.findOne({
-      $or: [{ id: id }, { _id: toObjectId(id) as any }]
+      _id: existing._id
     });
 
-    // Get category info
+    // Get category info - handle both string and ObjectId
     let category: any = null;
     if (updatedQuote?.category_id) {
+      const catId = updatedQuote.category_id;
       category = await categoriesCollection.findOne({
-        $or: [{ id: updatedQuote.category_id }, { _id: updatedQuote.category_id }]
+        $or: [
+          { id: catId },
+          { id: String(catId) },
+          { _id: toObjectId(catId) }
+        ]
       });
     }
 
-    const isNowPublic = updatedQuote?.is_public === true;
+    const isNowPublic = isQuotePublic(updatedQuote?.is_public);
 
     // Invalidate cache if visibility changed
     if (wasPublic || isNowPublic) {
@@ -220,7 +231,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
-    const wasPublic = existing.is_public === true;
+    const wasPublic = isQuotePublic(existing.is_public);
 
     // Delete the quote
     await userQuotesCollection.deleteOne({

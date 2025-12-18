@@ -34,11 +34,11 @@ export async function GET() {
     const totalSaved = await savedCollection.countDocuments();
     const totalLikes = await likesCollection.countDocuments();
 
-    // Get average rating from feedback
+    // Get average rating from feedback - handle both boolean and number for is_approved
     let avgRating = '5.0';
     try {
       const ratingResult = await feedbackCollection.aggregate([
-        { $match: { is_approved: true } },
+        { $match: { $or: [{ is_approved: true }, { is_approved: 1 }] } },
         { $group: { _id: null, avgRating: { $avg: '$rating' } } }
       ]).toArray() as any[];
       if (ratingResult[0]?.avgRating) {
@@ -48,12 +48,14 @@ export async function GET() {
       avgRating = '5.0';
     }
 
-    // Get total testimonials
+    // Get total testimonials - handle both boolean and number
     let totalTestimonials = 0;
     try {
       totalTestimonials = await feedbackCollection.countDocuments({
-        is_testimonial: true,
-        is_approved: true
+        $and: [
+          { $or: [{ is_testimonial: true }, { is_testimonial: 1 }] },
+          { $or: [{ is_approved: true }, { is_approved: 1 }] }
+        ]
       });
     } catch {
       totalTestimonials = 0;

@@ -12,7 +12,7 @@ export type { CardTheme, FontStyle, BackgroundImage };
 
 // Custom images storage key (for non-authenticated users)
 const CUSTOM_IMAGES_KEY = 'quoteswipe_custom_images';
-const MAX_CUSTOM_IMAGES = 5; // Maximum number of custom images
+const MAX_CUSTOM_IMAGES = 20; // Maximum number of custom images
 
 interface CustomImageData {
   id: string;
@@ -78,6 +78,7 @@ function CardCustomization({
   // Multiple custom images state
   const [customImages, setCustomImages] = useState<CustomImageData[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
 
   // Load custom images - from server if authenticated, localStorage otherwise
   useEffect(() => {
@@ -174,6 +175,41 @@ function CardCustomization({
     }
   }, []);
 
+  // Compress image before upload for faster uploads
+  const compressImage = useCallback((file: File, maxWidth = 800, quality = 0.7): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = document.createElement('img');
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob(
+            (blob) => blob ? resolve(blob) : reject(new Error('Failed to compress')),
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
   // Handle image upload - to server if authenticated, localStorage otherwise
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -201,9 +237,12 @@ function CardCustomization({
 
     try {
       if (isAuthenticated) {
-        // Upload to server for authenticated users
+        // Compress image before upload for faster uploads
+        const compressedBlob = await compressImage(file);
+        const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+        
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', compressedFile);
         
         const response = await fetch('/api/user/upload-background', {
           method: 'POST',
@@ -214,14 +253,12 @@ function CardCustomization({
           const data = await response.json();
           const newImageData = data.background;
           
-          // Add to local state
           setCustomImages(prev => [...prev, newImageData]);
           
-          // Select the newly uploaded image
           const newBackground = createCustomBackground(newImageData);
           setSelectedBackground(newBackground);
           
-          toast.success('Image uploaded! 📸 Saved to your account.');
+          toast.success('Image uploaded! 📸');
         } else {
           const error = await response.json();
           toast.error(error.error || 'Failed to upload image');
@@ -229,63 +266,38 @@ function CardCustomization({
         
         setIsUploading(false);
       } else {
-        // Store in localStorage for guests
+        // Compress and store in localStorage for guests
+        const compressedBlob = await compressImage(file);
         const reader = new FileReader();
         reader.onload = (event) => {
-          const base64 = event.target?.result as string;
+          const resizedBase64 = event.target?.result as string;
           
-          const img = document.createElement('img');
-          img.onload = () => {
-            const maxWidth = 800;
-            let width = img.width;
-            let height = img.height;
-            
-            if (width > maxWidth) {
-              height = (height * maxWidth) / width;
-              width = maxWidth;
-            }
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, width, height);
-            
-            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.75);
-            
-            const newImageData: CustomImageData = {
-              id: generateImageId(),
-              url: resizedBase64,
-              name: `Photo ${customImages.length + 1}`,
-              createdAt: Date.now(),
-            };
-            
-            try {
-              const updatedImages = [...customImages, newImageData];
-              saveCustomImages(updatedImages);
-              
-              const newBackground = createCustomBackground(newImageData);
-              setSelectedBackground(newBackground);
-              
-              toast.success('Image uploaded! 📸 Login to sync across devices.');
-            } catch (storageError) {
-              toast.error('Storage full. Remove some images first.');
-              console.error('Storage error:', storageError);
-            }
-            
-            setIsUploading(false);
+          const newImageData: CustomImageData = {
+            id: generateImageId(),
+            url: resizedBase64,
+            name: `Photo ${customImages.length + 1}`,
+            createdAt: Date.now(),
           };
-          img.onerror = () => {
-            toast.error('Failed to process image');
-            setIsUploading(false);
-          };
-          img.src = base64;
+          
+          try {
+            const updatedImages = [...customImages, newImageData];
+            saveCustomImages(updatedImages);
+            
+            const newBackground = createCustomBackground(newImageData);
+            setSelectedBackground(newBackground);
+            
+            toast.success('Image uploaded! 📸 Login to sync.');
+          } catch (storageError) {
+            toast.error('Storage full. Remove some images first.');
+          }
+          
+          setIsUploading(false);
         };
         reader.onerror = () => {
           toast.error('Failed to read image');
           setIsUploading(false);
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(compressedBlob);
       }
     } catch (error) {
       toast.error('Failed to upload image');
@@ -296,13 +308,15 @@ function CardCustomization({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, [customImages, saveCustomImages, isAuthenticated]);
+  }, [customImages, saveCustomImages, isAuthenticated, compressImage]);
 
   // Handle remove specific custom image - from server if authenticated
   const handleRemoveCustomImage = useCallback(async (imageId: string) => {
-    if (isAuthenticated) {
-      // Delete from server
-      try {
+    setDeletingImageId(imageId);
+    
+    try {
+      if (isAuthenticated) {
+        // Delete from server
         const response = await fetch('/api/user/upload-background', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -318,19 +332,21 @@ function CardCustomization({
         } else {
           toast.error('Failed to remove image');
         }
-      } catch (error) {
-        toast.error('Failed to remove image');
+      } else {
+        // Remove from localStorage
+        const updatedImages = customImages.filter(img => img.id !== imageId);
+        saveCustomImages(updatedImages);
+        
+        if (selectedBackground.id === imageId) {
+          setSelectedBackground(BACKGROUND_IMAGES[0]);
+        }
+        
+        toast.success('Image removed');
       }
-    } else {
-      // Remove from localStorage
-      const updatedImages = customImages.filter(img => img.id !== imageId);
-      saveCustomImages(updatedImages);
-      
-      if (selectedBackground.id === imageId) {
-        setSelectedBackground(BACKGROUND_IMAGES[0]);
-      }
-      
-      toast.success('Image removed');
+    } catch (error) {
+      toast.error('Failed to remove image');
+    } finally {
+      setDeletingImageId(null);
     }
   }, [customImages, selectedBackground.id, saveCustomImages, isAuthenticated]);
 
@@ -396,7 +412,7 @@ function CardCustomization({
     cameraInputRef.current?.click();
   }, []);
 
-  // Handle camera capture - reuse the same upload logic
+  // Handle camera capture - reuse compression logic
   const handleCameraCapture = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -410,10 +426,13 @@ function CardCustomization({
     setIsCapturing(true);
 
     try {
+      // Compress image for faster upload
+      const compressedBlob = await compressImage(file);
+      
       if (isAuthenticated) {
-        // Upload to server for authenticated users
+        const compressedFile = new File([compressedBlob], 'camera.jpg', { type: 'image/jpeg' });
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('image', compressedFile);
         
         const response = await fetch('/api/user/upload-background', {
           method: 'POST',
@@ -429,7 +448,7 @@ function CardCustomization({
           const newBackground = createCustomBackground(newImageData);
           setSelectedBackground(newBackground);
           
-          toast.success('Photo captured! 📷 Saved to your account.');
+          toast.success('Photo captured! 📷');
         } else {
           const error = await response.json();
           toast.error(error.error || 'Failed to save photo');
@@ -438,59 +457,34 @@ function CardCustomization({
         // Store in localStorage for guests
         const reader = new FileReader();
         reader.onload = (event) => {
-          const base64 = event.target?.result as string;
+          const resizedBase64 = event.target?.result as string;
           
-          const img = document.createElement('img');
-          img.onload = () => {
-            const maxWidth = 800;
-            let width = img.width;
-            let height = img.height;
-            
-            if (width > maxWidth) {
-              height = (height * maxWidth) / width;
-              width = maxWidth;
-            }
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, width, height);
-            
-            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.75);
-            
-            const newImageData: CustomImageData = {
-              id: generateImageId(),
-              url: resizedBase64,
-              name: `Camera ${customImages.length + 1}`,
-              createdAt: Date.now(),
-            };
-            
-            try {
-              const updatedImages = [...customImages, newImageData];
-              saveCustomImages(updatedImages);
-              
-              const newBackground = createCustomBackground(newImageData);
-              setSelectedBackground(newBackground);
-              
-              toast.success('Photo captured! 📷 Login to sync across devices.');
-            } catch (storageError) {
-              toast.error('Storage full. Remove some photos first.');
-            }
-            
-            setIsCapturing(false);
+          const newImageData: CustomImageData = {
+            id: generateImageId(),
+            url: resizedBase64,
+            name: `Camera ${customImages.length + 1}`,
+            createdAt: Date.now(),
           };
-          img.onerror = () => {
-            toast.error('Failed to process photo');
-            setIsCapturing(false);
-          };
-          img.src = base64;
+          
+          try {
+            const updatedImages = [...customImages, newImageData];
+            saveCustomImages(updatedImages);
+            
+            const newBackground = createCustomBackground(newImageData);
+            setSelectedBackground(newBackground);
+            
+            toast.success('Photo captured! 📷 Login to sync.');
+          } catch (storageError) {
+            toast.error('Storage full. Remove some photos first.');
+          }
+          
+          setIsCapturing(false);
         };
         reader.onerror = () => {
           toast.error('Failed to read photo');
           setIsCapturing(false);
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(compressedBlob);
         return; // Exit early, setIsCapturing handled in callbacks
       }
     } catch (error) {
@@ -503,7 +497,7 @@ function CardCustomization({
     if (cameraInputRef.current) {
       cameraInputRef.current.value = '';
     }
-  }, [customImages, saveCustomImages, isAuthenticated]);
+  }, [customImages, saveCustomImages, isAuthenticated, compressImage]);
 
   if (!isOpen) return null;
 
@@ -648,74 +642,74 @@ function CardCustomization({
 
           {activeTab === 'images' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Your photos ({customImages.length}/{MAX_CUSTOM_IMAGES})
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                  {customImages.length}/{MAX_CUSTOM_IMAGES}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {/* Camera capture button */}
                   <button
                     onClick={triggerCameraInput}
                     disabled={isCapturing || isUploading || customImages.length >= MAX_CUSTOM_IMAGES}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="flex items-center justify-center gap-1 h-7 px-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Take a photo"
                   >
                     {isCapturing ? (
-                      <>
-                        <Loader2 size={12} className="animate-spin" />
-                        Capturing...
-                      </>
+                      <Loader2 size={12} className="animate-spin" />
                     ) : (
-                      <>
-                        <Camera size={12} />
-                        <span className="hidden sm:inline">Capture</span>
-                      </>
+                      <Camera size={12} />
                     )}
+                    <span>Camera</span>
                   </button>
                   
                   {/* File upload button */}
                   <button
                     onClick={triggerFileInput}
                     disabled={isUploading || isCapturing || customImages.length >= MAX_CUSTOM_IMAGES}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="flex items-center justify-center gap-1 h-7 px-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Upload from gallery"
                   >
                     {isUploading ? (
-                      <>
-                        <Loader2 size={12} className="animate-spin" />
-                        Uploading...
-                      </>
+                      <Loader2 size={12} className="animate-spin" />
                     ) : (
-                      <>
-                        <Plus size={12} />
-                        <span className="hidden sm:inline">Gallery</span>
-                      </>
+                      <Upload size={12} />
                     )}
+                    <span>Upload</span>
                   </button>
                 </div>
               </div>
               
-              {/* Custom Images Section */}
-              {customImages.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
-                    Your Photos
-                  </p>
+              {/* Custom Images Section - show loader or images */}
+              <div className="space-y-2">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
+                  Your Photos
+                </p>
+                {isLoadingImages ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 size={20} className="animate-spin text-purple-500" />
+                    <span className="ml-2 text-xs text-gray-500">Loading...</span>
+                  </div>
+                ) : customImages.length > 0 ? (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
                     {customBackgrounds.map((bg) => (
                       <CustomImageButton
                         key={bg.id}
                         background={bg}
                         isSelected={selectedBackground.id === bg.id}
+                        isDeleting={deletingImageId === bg.id}
                         onClick={handleBackgroundSelect}
                         onDelete={() => handleRemoveCustomImage(bg.id)}
                       />
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-[10px] text-gray-400 text-center py-3">
+                    No photos yet. Tap Capture or Upload to add.
+                  </p>
+                )}
+              </div>
               
-              {/* Preset Images Section */}
+              {/* Preset Images Section - always visible */}
               <div className="space-y-2">
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
                   Preset Backgrounds
@@ -882,19 +876,20 @@ const ThemeButton = memo(function ThemeButton({ theme, isSelected, onClick }: Th
 interface CustomImageButtonProps {
   background: BackgroundImage;
   isSelected: boolean;
+  isDeleting: boolean;
   onClick: (bg: BackgroundImage) => void;
   onDelete: () => void;
 }
 
-const CustomImageButton = memo(function CustomImageButton({ background, isSelected, onClick, onDelete }: CustomImageButtonProps) {
+const CustomImageButton = memo(function CustomImageButton({ background, isSelected, isDeleting, onClick, onDelete }: CustomImageButtonProps) {
   const handleClick = useCallback(() => {
-    onClick(background);
-  }, [onClick, background]);
+    if (!isDeleting) onClick(background);
+  }, [onClick, background, isDeleting]);
 
   const handleDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete();
-  }, [onDelete]);
+    if (!isDeleting) onDelete();
+  }, [onDelete, isDeleting]);
 
   return (
     <div
@@ -902,7 +897,9 @@ const CustomImageButton = memo(function CustomImageButton({ background, isSelect
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-      className={`relative p-1.5 sm:p-2 rounded-lg sm:rounded-xl border-2 transition-all active:scale-95 group cursor-pointer ${
+      className={`relative p-1.5 sm:p-2 rounded-lg sm:rounded-xl border-2 transition-all group cursor-pointer ${
+        isDeleting ? 'opacity-60 pointer-events-none' : 'active:scale-95'
+      } ${
         isSelected
           ? 'border-blue-500 ring-1 sm:ring-2 ring-blue-200 dark:ring-blue-800'
           : 'border-purple-400 dark:border-purple-600'
@@ -915,27 +912,35 @@ const CustomImageButton = memo(function CustomImageButton({ background, isSelect
             alt={background.name}
             width={80}
             height={100}
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover ${isDeleting ? 'blur-sm' : ''}`}
             unoptimized
           />
         )}
+        {/* Loading overlay when deleting */}
+        {isDeleting && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <Loader2 size={20} className="text-white animate-spin" />
+          </div>
+        )}
         {/* Delete button - visible on mobile, hover on desktop */}
-        <button
-          onClick={handleDelete}
-          className="absolute top-0.5 right-0.5 p-1.5 bg-red-500 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 active:scale-90 transition-all shadow-lg z-10"
-        >
-          <Trash2 size={12} className="text-white" />
-        </button>
+        {!isDeleting && (
+          <button
+            onClick={handleDelete}
+            className="absolute top-0.5 right-0.5 p-1.5 bg-red-500 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 active:scale-90 transition-all shadow-lg z-10"
+          >
+            <Trash2 size={12} className="text-white" />
+          </button>
+        )}
       </div>
       <span className="text-[9px] sm:text-xs font-medium text-purple-600 dark:text-purple-400 block text-center truncate">
-        {background.name}
+        {isDeleting ? 'Deleting...' : background.name}
       </span>
-      {isSelected && (
+      {isSelected && !isDeleting && (
         <div className="absolute -top-0.5 -right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 rounded-full flex items-center justify-center">
           <Check size={10} className="text-white sm:w-3 sm:h-3" />
         </div>
       )}
-      {!isSelected && (
+      {!isSelected && !isDeleting && (
         <div className="absolute -top-0.5 -right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-purple-500 rounded-full flex items-center justify-center">
           <span className="text-[8px] text-white">✨</span>
         </div>

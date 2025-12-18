@@ -20,13 +20,18 @@ export async function GET(request: NextRequest) {
       .sort({ created_at: -1 })
       .toArray() as any[];
 
-    // Get categories for mapping
+    // Get categories for mapping - store by multiple key formats
     const categories = await categoriesCollection.find({}).toArray() as any[];
-    const categoryMap = new Map(categories.map((c: any) => [c.id || c._id?.toString(), c]));
+    const categoryMap = new Map<string, any>();
+    categories.forEach((c: any) => {
+      if (c.id) categoryMap.set(String(c.id), c);
+      if (c._id) categoryMap.set(c._id.toString(), c);
+    });
 
     // Transform quotes
     const formattedQuotes = quotes.map((q: any) => {
-      const category = categoryMap.get(q.category_id) || categoryMap.get(String(q.category_id));
+      const catId = q.category_id;
+      const category = catId ? (categoryMap.get(String(catId)) || categoryMap.get(catId)) : null;
       return {
         id: q.id || q._id?.toString(),
         text: q.text,

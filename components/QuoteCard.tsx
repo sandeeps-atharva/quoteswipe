@@ -270,8 +270,9 @@ function QuoteCard({
           
           {/* Header Section - Category & Likes */}
           <div className="flex items-center justify-between flex-shrink-0">
-            {/* Category Tag - Pill with proper background */}
+            {/* Category Tag - Pill with proper background (hidden during download via data-hide-on-download) */}
             <div 
+              data-hide-on-download="true"
               className="inline-flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-full"
               style={{ 
                 background: hasBackgroundImage 

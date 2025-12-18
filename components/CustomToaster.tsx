@@ -10,7 +10,7 @@ export default function CustomToaster() {
         top: 16,
       }}
       toastOptions={{
-        duration: 3500,
+        duration: 2000,
         style: {
           background: 'transparent',
           boxShadow: 'none',
@@ -101,7 +101,7 @@ export default function CustomToaster() {
                   : 'bg-blue-500'
               }`}
               style={{
-                animation: 'shrink 3500ms linear forwards',
+                animation: 'shrink 2000ms linear forwards',
               }}
             />
           </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, User, Bookmark, LogOut, ArrowLeft, Trash2, Search, Heart, ThumbsDown, Mail, Calendar, Shield, Edit2, Check, Lock, Loader2, Eye, ChevronRight, Share2, ExternalLink, MessageSquare, Info, Palette, PenLine, Plus, Globe, Camera, Image as ImageIcon } from 'lucide-react';
+import { isQuotePublic } from '@/lib/helpers';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -33,7 +34,7 @@ interface UserQuote {
   category?: string;
   category_icon?: string;
   category_id?: string | number;
-  is_public?: number;
+  is_public?: boolean | number;
   created_at?: string;
 }
 
@@ -52,6 +53,7 @@ interface SidebarProps {
   onCategoryToggle: (category: string) => void;
   onLoginClick: () => void;
   onLogout: () => void;
+  isLoggingOut?: boolean;
   onSavedQuoteDelete?: (quoteId: string | number) => void;
   onQuoteClick?: (quoteId: string | number, category?: string) => void;
   onCustomizeClick?: () => void;
@@ -80,6 +82,7 @@ export default function Sidebar({
   onCategoryToggle,
   onLoginClick,
   onLogout,
+  isLoggingOut = false,
   onSavedQuoteDelete,
   onQuoteClick,
   onCustomizeClick,
@@ -473,13 +476,20 @@ export default function Sidebar({
     
     setNavigatingQuoteId(quoteId);
     
+    // Close sidebar first so user sees the main content immediately
+    onClose();
+    
     try {
       if (onQuoteClick) {
         await onQuoteClick(quoteId, category);
-        onClose();
       } else {
         // Fallback: navigate directly using window.location
-        window.location.href = `/quote/${quoteId}`;
+        const idStr = String(quoteId);
+        if (idStr.startsWith('user_')) {
+          window.location.href = `/user-quote/${idStr.replace('user_', '')}`;
+        } else {
+          window.location.href = `/quote/${quoteId}`;
+        }
       }
     } catch (error) {
       console.error('Navigation error:', error);
@@ -493,7 +503,10 @@ export default function Sidebar({
   // Handle share quote
   const handleShareQuote = async (e: React.MouseEvent, quote: SavedQuote) => {
     e.stopPropagation(); // Prevent triggering the quote click
-    const shareUrl = `${window.location.origin}/quote/${quote.id}`;
+    const idStr = String(quote.id);
+    const shareUrl = idStr.startsWith('user_') 
+      ? `${window.location.origin}/user-quote/${idStr.replace('user_', '')}`
+      : `${window.location.origin}/quote/${quote.id}`;
     const shareText = `"${quote.text}" — ${quote.author}`;
     
     if (navigator.share) {
@@ -805,14 +818,14 @@ export default function Sidebar({
                 key={quote.id}
                 onClick={() => { onViewQuoteClick?.(quote); onClose(); }}
                 className={`group relative rounded-xl p-3 border hover:shadow-md transition-all cursor-pointer ${
-                  quote.is_public === 1 
+                  isQuotePublic(quote.is_public)
                     ? 'bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-900/10 dark:to-emerald-900/10 border-green-100 dark:border-green-900/30 hover:border-green-200 dark:hover:border-green-800' 
                     : 'bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10 border-purple-100 dark:border-purple-900/30 hover:border-purple-200 dark:hover:border-purple-800'
                 }`}
               >
                 {/* Public/Private Badge */}
                 <div className="absolute top-2 left-2">
-                  {quote.is_public === 1 ? (
+                  {isQuotePublic(quote.is_public) ? (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded text-[9px] font-medium">
                       <Globe size={8} />
                       Public
@@ -852,7 +865,7 @@ export default function Sidebar({
                 
                 <div className="flex items-start gap-2 pr-20 pt-5">
                   <div className="shrink-0 mt-0.5">
-                    <PenLine size={14} className={quote.is_public === 1 ? 'text-green-400' : 'text-purple-400'} />
+                    <PenLine size={14} className={isQuotePublic(quote.is_public) ? 'text-green-400' : 'text-purple-400'} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs sm:text-sm text-gray-900 dark:text-white leading-snug line-clamp-3">"{quote.text}"</p>
@@ -1220,10 +1233,20 @@ export default function Sidebar({
             {isAuthenticated ? (
               <button
                 onClick={onLogout}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-blue-500 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all text-sm font-semibold active:scale-[0.98]"
+                disabled={isLoggingOut}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-blue-500 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all text-sm font-semibold active:scale-[0.98] ${isLoggingOut ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                <LogOut size={16} />
-                <span>Sign Out</span>
+                {isLoggingOut ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Signing Out...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogOut size={16} />
+                    <span>Sign Out</span>
+                  </>
+                )}
               </button>
             ) : (
               <button

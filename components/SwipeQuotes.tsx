@@ -12,6 +12,7 @@ import LanguageSelector from './LanguageSelector';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useTheme } from '@/contexts/ThemeContext';
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
+import { isQuotePublic } from '@/lib/helpers';
 
 // Lazy load modals for better initial bundle size
 const AuthModal = lazy(() => import('./AuthModal'));
@@ -132,6 +133,7 @@ export default function SwipeQuotes() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showInstagramModal, setShowInstagramModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -161,6 +163,14 @@ export default function SwipeQuotes() {
   const [preferencesLoaded, setPreferencesLoaded] = useState(false); // Track if preferences have been loaded
   const initStarted = useRef(false); // Prevent double initialization
   
+  // Navigation state: prevents category change from triggering a refetch
+  // when navigating to a specific quote from sidebar (liked/saved/created)
+  const isManuallyNavigating = useRef(false);
+  
+  // Login state: prevents resetting currentIndex when user logs in
+  // (preserves the quote they were viewing)
+  const isLoggingIn = useRef(false);
+  
   // Card Customization
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
   const [cardTheme, setCardTheme] = useState<CardTheme>(CARD_THEMES[0]);
@@ -183,6 +193,7 @@ export default function SwipeQuotes() {
     likes_count?: number;
     isUserQuote?: boolean;
     is_public?: number | boolean;
+    custom_background?: string;
   } | null>(null);
   
   // Pre-generated image for sharing (used when sharing from viewing modal)
@@ -266,28 +277,73 @@ export default function SwipeQuotes() {
           });
         }
         
-        // For authenticated users, fetch preferences and user data in parallel
+        // For authenticated users, fetch all preferences + user data in parallel (optimized)
         if (isUserAuthenticated) {
           isLoadingPreferences.current = true;
           
-          const [prefsResponse, likesRes, dislikesRes, savedRes, cardStyleRes, userQuotesRes] = await Promise.all([
-            fetch('/api/user/preferences', { credentials: 'include' }),
+          // Combined API reduces 6 calls to 5 (preferences + card-style merged)
+          const [allPrefsRes, likesRes, dislikesRes, savedRes, userQuotesRes] = await Promise.all([
+            fetch('/api/user/all-preferences', { credentials: 'include' }),
             fetch('/api/user/likes', { credentials: 'include' }),
             fetch('/api/user/dislikes', { credentials: 'include' }),
             fetch('/api/user/saved', { credentials: 'include' }),
-            fetch('/api/user/card-style', { credentials: 'include' }),
             fetch('/api/user/quotes', { credentials: 'include' }),
           ]);
           
-          // Handle preferences
-          let userCategories: string[] = [];
-          if (prefsResponse.ok) {
-            const prefsData = await prefsResponse.json();
-            if (prefsData.selectedCategories && Array.isArray(prefsData.selectedCategories)) {
-              userCategories = prefsData.selectedCategories;
+          // Handle combined preferences (categories + card style)
+          if (allPrefsRes.ok) {
+            const data = await allPrefsRes.json();
+            
+            // Apply categories
+            if (Array.isArray(data.selectedCategories)) {
+              setSelectedCategories(data.selectedCategories);
             }
+            
+            // Apply card style
+            const theme = CARD_THEMES.find(t => t.id === data.themeId);
+            const font = FONT_STYLES.find(f => f.id === data.fontId);
+            setCardTheme(theme || CARD_THEMES[0]);
+            setFontStyle(font || FONT_STYLES[0]);
+            
+            // Resolve background (reuse helper defined later in component)
+            const bgId = data.backgroundId;
+            const customBgs = data.customBackgrounds || [];
+            let bg: BackgroundImage = BACKGROUND_IMAGES[0];
+            
+            if (bgId && bgId !== 'none') {
+              if (bgId === 'custom' || bgId.startsWith('custom_')) {
+                const serverImg = customBgs.find((img: { id: string }) => img.id === bgId);
+                if (serverImg) {
+                  bg = {
+                    id: serverImg.id, name: serverImg.name, url: serverImg.url, thumbnail: serverImg.url,
+                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                    textColor: '#ffffff', authorColor: '#e5e5e5',
+                    categoryBg: 'rgba(255,255,255,0.15)', categoryText: '#ffffff',
+                  };
+                } else {
+                  // Fallback to localStorage
+                  try {
+                    const localJson = localStorage.getItem('quoteswipe_custom_images');
+                    if (localJson) {
+                      const localImgs = JSON.parse(localJson);
+                      const localImg = localImgs.find((img: { id: string }) => img.id === bgId);
+                      if (localImg) {
+                        bg = {
+                          id: localImg.id, name: localImg.name, url: localImg.url, thumbnail: localImg.url,
+                          overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                          textColor: '#ffffff', authorColor: '#e5e5e5',
+                          categoryBg: 'rgba(255,255,255,0.15)', categoryText: '#ffffff',
+                        };
+                      }
+                    }
+                  } catch {}
+                }
+              } else {
+                bg = BACKGROUND_IMAGES.find(b => b.id === bgId) || BACKGROUND_IMAGES[0];
+              }
+            }
+            setBackgroundImage(bg);
           }
-          setSelectedCategories(userCategories);
           
           // Handle user data
           if (likesRes.ok) {
@@ -302,99 +358,13 @@ export default function SwipeQuotes() {
             const savedData = await savedRes.json();
             setSavedQuotes(savedData.quotes || []);
           }
-          
-          // Handle card style preferences
-          if (cardStyleRes.ok) {
-            const cardStyleData = await cardStyleRes.json();
-            const savedTheme = CARD_THEMES.find(t => t.id === cardStyleData.themeId);
-            const savedFont = FONT_STYLES.find(f => f.id === cardStyleData.fontId);
-            
-            // Handle background - check for custom image (multiple images supported)
-            let savedBg: BackgroundImage | undefined;
-            const bgId = cardStyleData.backgroundId;
-            
-            if (bgId && (bgId === 'custom' || bgId.startsWith('custom_'))) {
-              // First try to use customBackgrounds from server response
-              const serverCustomImages = cardStyleData.customBackgrounds || [];
-              const serverImage = serverCustomImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
-              
-              if (serverImage) {
-                savedBg = {
-                  id: serverImage.id,
-                  name: serverImage.name,
-                  url: serverImage.url,
-                  thumbnail: serverImage.url,
-                  overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                  textColor: '#ffffff',
-                  authorColor: '#e5e5e5',
-                  categoryBg: 'rgba(255,255,255,0.15)',
-                  categoryText: '#ffffff',
-                };
-              }
-              
-              // Fallback to localStorage if not found on server
-              if (!savedBg) {
-                try {
-                  const customImagesJson = localStorage.getItem('quoteswipe_custom_images');
-                  if (customImagesJson) {
-                    const customImages = JSON.parse(customImagesJson);
-                    const customImage = customImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
-                    if (customImage) {
-                      savedBg = {
-                        id: customImage.id,
-                        name: customImage.name,
-                        url: customImage.url,
-                        thumbnail: customImage.url,
-                        overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                        textColor: '#ffffff',
-                        authorColor: '#e5e5e5',
-                        categoryBg: 'rgba(255,255,255,0.15)',
-                        categoryText: '#ffffff',
-                      };
-                    }
-                  }
-                  
-                  // Fallback to old single image format for backward compatibility
-                  if (!savedBg) {
-                    const customImageUrl = localStorage.getItem('quoteswipe_custom_bg');
-                    if (customImageUrl) {
-                      savedBg = {
-                        id: 'custom',
-                        name: 'My Photo',
-                        url: customImageUrl,
-                        thumbnail: customImageUrl,
-                        overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                        textColor: '#ffffff',
-                        authorColor: '#e5e5e5',
-                        categoryBg: 'rgba(255,255,255,0.15)',
-                        categoryText: '#ffffff',
-                      };
-                    }
-                  }
-                } catch (e) {
-                  console.error('Failed to load custom background from localStorage:', e);
-                }
-              }
-            } else {
-              savedBg = BACKGROUND_IMAGES.find(b => b.id === bgId);
-            }
-            
-            // Use found theme/font/background or fallback to defaults
-            setCardTheme(savedTheme || CARD_THEMES[0]);
-            setFontStyle(savedFont || FONT_STYLES[0]);
-            setBackgroundImage(savedBg || BACKGROUND_IMAGES[0]);
-          }
-          
-          // Handle user quotes
           if (userQuotesRes.ok) {
             const userQuotesData = await userQuotesRes.json();
             setUserQuotes(userQuotesData.quotes || []);
           }
           
           setPreferencesLoaded(true);
-          setTimeout(() => {
-            isLoadingPreferences.current = false;
-          }, 100);
+          setTimeout(() => { isLoadingPreferences.current = false; }, 100);
         } else {
           // For guests, mark preferences as loaded immediately
           setPreferencesLoaded(true);
@@ -433,6 +403,12 @@ export default function SwipeQuotes() {
 
   // Fetch quotes when categories change (after app is ready)
   useEffect(() => {
+    // Skip if we're manually navigating to a quote (prevents overwriting the navigated quote)
+    if (isManuallyNavigating.current) {
+      isManuallyNavigating.current = false;
+      return;
+    }
+    
     // Wait for app to be ready
     if (!isAppReady) return;
     
@@ -622,94 +598,85 @@ export default function SwipeQuotes() {
     }
   };
 
-  // Fetch user's card style preferences
-  const fetchCardStyle = async () => {
+  // Helper: Create custom BackgroundImage object
+  const createCustomBg = (img: { id: string; name: string; url: string }): BackgroundImage => ({
+    id: img.id,
+    name: img.name,
+    url: img.url,
+    thumbnail: img.url,
+    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+    textColor: '#ffffff',
+    authorColor: '#e5e5e5',
+    categoryBg: 'rgba(255,255,255,0.15)',
+    categoryText: '#ffffff',
+  });
+
+  // Helper: Resolve background ID to BackgroundImage object
+  const resolveBackground = (bgId: string | undefined, serverBgs: Array<{ id: string; url: string; name: string }>): BackgroundImage => {
+    if (!bgId || bgId === 'none') return BACKGROUND_IMAGES[0];
+
+    // Check for custom background
+    if (bgId === 'custom' || bgId.startsWith('custom_')) {
+      // Try server-provided backgrounds first
+      const serverImg = serverBgs.find(img => img.id === bgId);
+      if (serverImg) return createCustomBg(serverImg);
+
+      // Fallback to localStorage
+      try {
+        const localJson = localStorage.getItem('quoteswipe_custom_images');
+        if (localJson) {
+          const localImgs = JSON.parse(localJson);
+          const localImg = localImgs.find((img: { id: string }) => img.id === bgId);
+          if (localImg) return createCustomBg(localImg);
+        }
+        // Legacy single image
+        const legacyUrl = localStorage.getItem('quoteswipe_custom_bg');
+        if (legacyUrl && bgId === 'custom') {
+          return createCustomBg({ id: 'custom', name: 'My Photo', url: legacyUrl });
+        }
+      } catch (e) {
+        console.error('Failed to load custom background:', e);
+      }
+    }
+
+    return BACKGROUND_IMAGES.find(b => b.id === bgId) || BACKGROUND_IMAGES[0];
+  };
+
+  // Fetch ALL user preferences in single optimized call (categories + card style)
+  const fetchAllPreferences = async () => {
     try {
-      const response = await fetch('/api/user/card-style', { credentials: 'include' });
+      isLoadingPreferences.current = true;
+      const response = await fetch('/api/user/all-preferences', { credentials: 'include' });
+      
       if (response.ok) {
         const data = await response.json();
-        const theme = CARD_THEMES.find(t => t.id === data.themeId);
-        const font = FONT_STYLES.find(f => f.id === data.fontId);
         
-        // Handle background - check for custom image (multiple images supported)
-        let bg: BackgroundImage | undefined;
-        const bgId = data.backgroundId;
-        
-        if (bgId && (bgId === 'custom' || bgId.startsWith('custom_'))) {
-          // First try to use customBackgrounds from the same API response
-          const serverCustomImages = data.customBackgrounds || [];
-          const customImage = serverCustomImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
-          
-          if (customImage) {
-            bg = {
-              id: customImage.id,
-              name: customImage.name,
-              url: customImage.url,
-              thumbnail: customImage.url,
-              overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-              textColor: '#ffffff',
-              authorColor: '#e5e5e5',
-              categoryBg: 'rgba(255,255,255,0.15)',
-              categoryText: '#ffffff',
-            };
-          }
-          
-          // Fallback to localStorage if not found on server
-          if (!bg) {
-            try {
-              const customImagesJson = localStorage.getItem('quoteswipe_custom_images');
-              if (customImagesJson) {
-                const customImages = JSON.parse(customImagesJson);
-                const localImage = customImages.find((img: { id: string; url: string; name: string }) => img.id === bgId);
-                if (localImage) {
-                  bg = {
-                    id: localImage.id,
-                    name: localImage.name,
-                    url: localImage.url,
-                    thumbnail: localImage.url,
-                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                    textColor: '#ffffff',
-                    authorColor: '#e5e5e5',
-                    categoryBg: 'rgba(255,255,255,0.15)',
-                    categoryText: '#ffffff',
-                  };
-                }
-              }
-              
-              // Fallback to old single image format for backward compatibility
-              if (!bg) {
-                const customImageUrl = localStorage.getItem('quoteswipe_custom_bg');
-                if (customImageUrl) {
-                  bg = {
-                    id: 'custom',
-                    name: 'My Photo',
-                    url: customImageUrl,
-                    thumbnail: customImageUrl,
-                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                    textColor: '#ffffff',
-                    authorColor: '#e5e5e5',
-                    categoryBg: 'rgba(255,255,255,0.15)',
-                    categoryText: '#ffffff',
-                  };
-                }
-              }
-            } catch (e) {
-              console.error('Failed to load custom background from localStorage:', e);
-            }
-          }
-        } else {
-          bg = BACKGROUND_IMAGES.find(b => b.id === bgId);
+        // Apply category preferences
+        if (Array.isArray(data.selectedCategories)) {
+          setSelectedCategories(data.selectedCategories);
         }
         
-        // Use found theme/font/background or fallback to defaults
+        // Apply card style preferences
+        const theme = CARD_THEMES.find(t => t.id === data.themeId);
+        const font = FONT_STYLES.find(f => f.id === data.fontId);
+        const bg = resolveBackground(data.backgroundId, data.customBackgrounds || []);
+        
         setCardTheme(theme || CARD_THEMES[0]);
         setFontStyle(font || FONT_STYLES[0]);
-        setBackgroundImage(bg || BACKGROUND_IMAGES[0]);
+        setBackgroundImage(bg);
       }
+      
+      setPreferencesLoaded(true);
     } catch (error) {
-      console.error('Fetch card style error:', error);
+      console.error('Fetch all preferences error:', error);
+      setPreferencesLoaded(true);
+    } finally {
+      setTimeout(() => { isLoadingPreferences.current = false; }, 300);
     }
   };
+
+  // Legacy wrapper - kept for backward compatibility
+  const fetchCardStyle = async () => fetchAllPreferences();
 
   // Fetch user's created quotes
   const fetchUserQuotes = async () => {
@@ -724,63 +691,38 @@ export default function SwipeQuotes() {
     }
   };
 
-  // Save user's card style preferences
+  // Save user's card style preferences (uses combined API)
   const saveCardStyle = async (themeToSave?: CardTheme, fontToSave?: FontStyle, bgToSave?: BackgroundImage) => {
     try {
-      // Use passed values or fall back to current state
-      const themeId = themeToSave?.id || cardTheme.id;
-      const fontId = fontToSave?.id || fontStyle.id;
-      const backgroundId = bgToSave?.id || backgroundImage.id;
-      
-      const response = await fetch('/api/user/card-style', {
+      const response = await fetch('/api/user/all-preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ themeId, fontId, backgroundId }),
+        body: JSON.stringify({
+          themeId: themeToSave?.id || cardTheme.id,
+          fontId: fontToSave?.id || fontStyle.id,
+          backgroundId: bgToSave?.id || backgroundImage.id,
+        }),
       });
-      if (!response.ok) {
-        throw new Error('Failed to save card style');
-      }
+      if (!response.ok) throw new Error('Failed to save card style');
     } catch (error) {
       console.error('Save card style error:', error);
       throw error;
     }
   };
 
-  // Fetch user preferences (selected categories)
-  const fetchUserPreferences = async () => {
-    try {
-      isLoadingPreferences.current = true;
-      const response = await fetch('/api/user/preferences');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.selectedCategories && Array.isArray(data.selectedCategories)) {
-          // Set the categories (even if empty array)
-          setSelectedCategories(data.selectedCategories);
-        }
-      }
-      // Mark preferences as loaded (triggers quote fetch)
-      setPreferencesLoaded(true);
-    } catch (error) {
-      console.error('Fetch user preferences error:', error);
-      // Still mark as loaded even on error so quotes can load
-      setPreferencesLoaded(true);
-    } finally {
-      // Small delay to ensure state is set before allowing saves
-      setTimeout(() => {
-        isLoadingPreferences.current = false;
-      }, 300);
-    }
-  };
+  // Legacy wrapper - kept for backward compatibility  
+  const fetchUserPreferences = async () => fetchAllPreferences();
 
-  // Save user preferences when selectedCategories changes (for authenticated users)
+  // Save category preferences (uses combined API)
   const saveUserPreferences = async (categories: string[]) => {
     if (!isAuthenticated || isLoadingPreferences.current) return;
     
     try {
-      await fetch('/api/user/preferences', {
+      await fetch('/api/user/all-preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ selectedCategories: categories }),
       });
     } catch (error) {
@@ -799,9 +741,13 @@ export default function SwipeQuotes() {
   };
 
   const fetchQuotes = async (isCategoryChange = false) => {
+    // Check if we should preserve the current quote (during login)
+    const shouldPreserveQuote = isLoggingIn.current;
+    const currentQuoteId = quotes[currentIndex]?.id;
+    
     try {
       setIsLoadingQuotes(true);
-      if (isCategoryChange) {
+      if (isCategoryChange && !shouldPreserveQuote) {
         setIsChangingCategories(true);
       }
       
@@ -819,6 +765,24 @@ export default function SwipeQuotes() {
       
       const cacheKey = `quotes_${categoriesKey}_${isAuthenticated ? 'auth' : 'guest'}`;
       
+      // Helper to set quotes and optionally preserve current position
+      const applyQuotes = (quotesData: Quote[]) => {
+        setQuotes(quotesData);
+        
+        if (shouldPreserveQuote && currentQuoteId) {
+          // Try to find the same quote in the new array
+          const preservedIndex = quotesData.findIndex(q => String(q.id) === String(currentQuoteId));
+          if (preservedIndex !== -1) {
+            setCurrentIndex(preservedIndex);
+            return; // Keep current position
+          }
+        }
+        
+        // Reset to first quote
+        setCurrentIndex(0);
+        setSwipeHistory([]);
+      };
+      
       // Try to get from cache first (instant display)
       const cachedQuotes = getFromCache<Quote[]>(cacheKey, QUOTES_CACHE_DURATION);
       if (cachedQuotes && cachedQuotes.length > 0) {
@@ -826,9 +790,7 @@ export default function SwipeQuotes() {
         if (selectedCategories.length > 1) {
           quotesData = shuffleArray(quotesData);
         }
-        setQuotes(quotesData);
-        setCurrentIndex(0);
-        setSwipeHistory([]);
+        applyQuotes(quotesData);
         setDragOffset({ x: 0, y: 0 });
         setSwipeDirection(null);
         setIsDragging(false);
@@ -856,7 +818,7 @@ export default function SwipeQuotes() {
           }
         }).catch(() => {});
         
-        if (isCategoryChange) {
+        if (isCategoryChange && !shouldPreserveQuote) {
           setTimeout(() => setIsChangingCategories(false), 150);
         }
         return;
@@ -877,13 +839,11 @@ export default function SwipeQuotes() {
         }
         
         // Shorter delay since we already have loading state
-        if (isCategoryChange) {
+        if (isCategoryChange && !shouldPreserveQuote) {
           await new Promise(resolve => setTimeout(resolve, 50));
         }
         
-        setQuotes(quotesData);
-        setCurrentIndex(0);
-        setSwipeHistory([]);
+        applyQuotes(quotesData);
         setDragOffset({ x: 0, y: 0 });
         setSwipeDirection(null);
         setIsDragging(false);
@@ -893,7 +853,8 @@ export default function SwipeQuotes() {
       console.error('Fetch quotes error:', error);
     } finally {
       setIsLoadingQuotes(false);
-      if (isCategoryChange) {
+      isLoggingIn.current = false; // Reset login flag
+      if (isCategoryChange && !shouldPreserveQuote) {
         setTimeout(() => setIsChangingCategories(false), 200);
       }
     }
@@ -976,6 +937,9 @@ export default function SwipeQuotes() {
       throw new Error(data.error || 'Login failed');
     }
 
+    // Set flag to preserve current quote during login transition
+    isLoggingIn.current = true;
+    
     setIsAuthenticated(true);
     setUser(data.user);
     setShowAuthModal(false);
@@ -990,7 +954,7 @@ export default function SwipeQuotes() {
     await fetchUserData();
     // Refetch categories to show all categories for authenticated users
     await fetchCategories();
-    // Load user's saved category preferences
+    // Load user's saved category preferences (this will trigger fetchQuotes with isLoggingIn=true)
     await fetchUserPreferences();
     
     // Show success toast
@@ -1010,6 +974,9 @@ export default function SwipeQuotes() {
       throw new Error(data.error || 'Registration failed');
     }
 
+    // Set flag to preserve current quote during registration transition
+    isLoggingIn.current = true;
+    
     setIsAuthenticated(true);
     setUser(data.user);
     setShowAuthModal(false);
@@ -1026,12 +993,15 @@ export default function SwipeQuotes() {
     await fetchCategories();
     // New users won't have preferences yet, but set the flag to allow saving
     isLoadingPreferences.current = false;
+    isLoggingIn.current = false; // Reset since no preferences fetch for new users
     
     // Show success toast
     toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
   };
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
+    
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       
@@ -1086,6 +1056,8 @@ export default function SwipeQuotes() {
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to logout. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -1401,89 +1373,93 @@ export default function SwipeQuotes() {
       category_icon: quote.category_icon || '✨',
       isUserQuote: true,
       is_public: quote.is_public,
+      custom_background: quote.custom_background,
     });
     setShowShareModal(true);
   };
 
-  // Handle navigation to a specific quote from sidebar
+  // Build URL path for a quote (handles both regular and user quotes)
+  const getQuotePath = useCallback((id: string | number): string => {
+    const idStr = String(id);
+    return idStr.startsWith('user_') 
+      ? `/user-quote/${idStr.replace('user_', '')}` 
+      : `/quote/${idStr}`;
+  }, []);
+
+  // Add category to selection without triggering a refetch
+  const addCategoryWithoutRefetch = useCallback((category: string) => {
+    if (!selectedCategories.includes(category)) {
+      isManuallyNavigating.current = true;
+      setSelectedCategories(prev => [...prev, category]);
+    }
+  }, [selectedCategories]);
+
+  // Navigate to a specific quote and update UI state
+  const navigateToQuote = useCallback((quote: Quote, index: number) => {
+    setCurrentIndex(index);
+    window.history.pushState({}, '', getQuotePath(quote.id));
+  }, [getQuotePath]);
+
+  // Handle navigation to a specific quote from sidebar (liked/saved/created quotes)
   const handleQuoteNavigation = useCallback(async (quoteId: string | number, category?: string) => {
-    // Find the quote index in the current quotes array (compare as strings)
-    let quoteIndex = quotes.findIndex(q => String(q.id) === String(quoteId));
+    const quoteIdStr = String(quoteId);
     
-    if (quoteIndex !== -1) {
-      // Quote is in current stack, navigate to it
-      setCurrentIndex(quoteIndex);
-      window.history.pushState({}, '', `/quote/${quoteId}`);
+    // 1. Check if quote exists in current feed
+    const existingIndex = quotes.findIndex(q => String(q.id) === quoteIdStr);
+    if (existingIndex !== -1) {
+      navigateToQuote(quotes[existingIndex], existingIndex);
       return;
     }
     
-    // Quote's category is not selected, add it and fetch quotes
-    if (category) {
-      const newSelectedCategories = selectedCategories.includes(category) 
-        ? selectedCategories 
-        : [...selectedCategories, category];
-      
-      if (!selectedCategories.includes(category)) {
-        setSelectedCategories(newSelectedCategories);
+    // 2. Fetch the specific quote directly
+    setIsLoadingQuotes(true);
+    
+    try {
+      const response = await fetch(`/api/quotes/${quoteId}`);
+      if (response.ok) {
+        const { quote } = await response.json();
+        if (quote) {
+          // Add to feed (avoid duplicates)
+          setQuotes(prev => {
+            const exists = prev.some(q => String(q.id) === String(quote.id));
+            return exists ? prev : [quote, ...prev];
+          });
+          navigateToQuote(quote, 0);
+          
+          // Include category in filter (without triggering refetch)
+          if (category) addCategoryWithoutRefetch(category);
+          
+          setIsLoadingQuotes(false);
+          return;
+        }
       }
-      setIsLoadingQuotes(true);
       
-      try {
-        // Fetch quotes with the category included
-        const response = await fetch(`/api/quotes?categories=${newSelectedCategories.join(',')}`);
-        if (response.ok) {
-          const data = await response.json();
-          const fetchedQuotes = data.quotes || [];
+      // 3. Fallback: Fetch quotes with category included
+      if (category) {
+        addCategoryWithoutRefetch(category);
+        
+        const categoriesForFetch = selectedCategories.includes(category)
+          ? selectedCategories
+          : [...selectedCategories, category];
+        
+        const quotesResponse = await fetch(`/api/quotes?categories=${categoriesForFetch.join(',')}`);
+        if (quotesResponse.ok) {
+          const { quotes: fetchedQuotes = [] } = await quotesResponse.json();
           setQuotes(fetchedQuotes);
           
-          // Find the quote index in the new quotes array (compare as strings)
-          const newQuoteIndex = fetchedQuotes.findIndex((q: Quote) => String(q.id) === String(quoteId));
-          if (newQuoteIndex !== -1) {
-            setCurrentIndex(newQuoteIndex);
-            window.history.pushState({}, '', `/quote/${quoteId}`);
-          } else {
-            // Quote still not found, fetch it directly
-            const quoteResponse = await fetch(`/api/quotes/${quoteId}`);
-            if (quoteResponse.ok) {
-              const quoteData = await quoteResponse.json();
-              if (quoteData.quote) {
-                // Add the quote to the beginning of the array
-                setQuotes(prev => [quoteData.quote, ...prev]);
-                setCurrentIndex(0);
-                window.history.pushState({}, '', `/quote/${quoteId}`);
-              }
-            }
+          const foundIndex = fetchedQuotes.findIndex((q: Quote) => String(q.id) === quoteIdStr);
+          if (foundIndex !== -1) {
+            navigateToQuote(fetchedQuotes[foundIndex], foundIndex);
           }
-        }
-      } catch (error) {
-        console.error('Error fetching quotes:', error);
-        toast.error('Failed to load quote');
-      } finally {
-        setIsLoadingQuotes(false);
-      }
-      return;
-    }
-    
-    // No category provided, try to fetch the quote directly
-    try {
-      setIsLoadingQuotes(true);
-      const quoteResponse = await fetch(`/api/quotes/${quoteId}`);
-      if (quoteResponse.ok) {
-        const quoteData = await quoteResponse.json();
-        if (quoteData.quote) {
-          // Add the quote to the beginning of the array
-          setQuotes(prev => [quoteData.quote, ...prev]);
-          setCurrentIndex(0);
-          window.history.pushState({}, '', `/quote/${quoteId}`);
         }
       }
     } catch (error) {
-      console.error('Error fetching quote:', error);
+      console.error('Quote navigation error:', error);
       toast.error('Failed to load quote');
     } finally {
       setIsLoadingQuotes(false);
     }
-  }, [quotes, selectedCategories]);
+  }, [quotes, selectedCategories, navigateToQuote, addCategoryWithoutRefetch]);
 
   // Use refs to track state for event handlers to avoid re-attaching listeners
   const isDraggingRef = useRef(isDragging);
@@ -1609,6 +1585,7 @@ export default function SwipeQuotes() {
         onCategoryToggle={handleCategoryToggle}
         onLoginClick={() => setShowAuthModal(true)}
         onLogout={handleLogout}
+        isLoggingOut={isLoggingOut}
         onSavedQuoteDelete={(quoteId: string | number) => {
           setSavedQuotes(savedQuotes.filter(q => String(q.id) !== String(quoteId)));
         }}
@@ -1641,6 +1618,9 @@ export default function SwipeQuotes() {
         onLogin={handleLogin}
         onRegister={handleRegister}
         onGoogleSuccess={async (googleUser) => {
+          // Set flag to preserve current quote during login transition
+          isLoggingIn.current = true;
+          
           setIsAuthenticated(true);
           setUser(googleUser);
           setShowAuthModal(false);
@@ -1653,9 +1633,9 @@ export default function SwipeQuotes() {
           } catch {}
           
           await fetchUserData();
-              await fetchCardStyle();
+          await fetchCardStyle();
           await fetchCategories();
-          // Load user's saved category preferences
+          // Load user's saved category preferences (this will trigger fetchQuotes with isLoggingIn=true)
           await fetchUserPreferences();
           
           // Show success toast
@@ -1677,6 +1657,9 @@ export default function SwipeQuotes() {
             }}
             quote={shareQuote}
             preGeneratedImage={preGeneratedShareImage}
+            cardTheme={cardTheme}
+            fontStyle={fontStyle}
+            backgroundImage={backgroundImage}
           />
         </Suspense>
       )}
@@ -1822,6 +1805,10 @@ export default function SwipeQuotes() {
                       const originalTransform = quoteCardElement.style.transform;
                       const originalTransition = quoteCardElement.style.transition;
                       
+                      // Hide elements marked with data-hide-on-download (like category)
+                      const hideElements = quoteCardElement.querySelectorAll('[data-hide-on-download="true"]') as NodeListOf<HTMLElement>;
+                      hideElements.forEach(el => el.style.display = 'none');
+                      
                       // Reset transform for clean capture
                       quoteCardElement.style.transform = 'none';
                       quoteCardElement.style.transition = 'none';
@@ -1840,6 +1827,9 @@ export default function SwipeQuotes() {
                           overflow: 'hidden',
                         },
                       });
+                      
+                      // Restore hidden elements
+                      hideElements.forEach(el => el.style.display = '');
                       
                       // Restore original styles
                       quoteCardElement.style.transform = originalTransform;
@@ -1895,11 +1885,11 @@ export default function SwipeQuotes() {
             {/* Quote info */}
             <div className="mt-4 text-center">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-                viewingUserQuote.is_public === 1 
+                isQuotePublic(viewingUserQuote.is_public)
                   ? 'bg-green-500/20 text-green-300' 
                   : 'bg-gray-500/20 text-gray-300'
               }`}>
-                {viewingUserQuote.is_public === 1 ? (
+                {isQuotePublic(viewingUserQuote.is_public) ? (
                   <>
                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
                     Public - Visible to everyone

@@ -7,7 +7,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 // Allowed image types
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 // Maximum custom backgrounds per user
-const MAX_BACKGROUNDS = 5;
+const MAX_BACKGROUNDS = 20;
 // Maximum Base64 size (approximately 7MB to allow for Base64 overhead)
 const MAX_BASE64_SIZE = 7 * 1024 * 1024;
 

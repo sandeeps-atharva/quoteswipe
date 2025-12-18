@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Sparkles, PenLine, User, Tag, Loader2, Check, Globe, Lock } from 'lucide-react';
+import { isQuotePublic } from '@/lib/helpers';
 
 interface Category {
   id: string | number;
@@ -19,7 +20,7 @@ interface UserQuote {
   category_id?: string | number;
   category?: string;
   category_icon?: string;
-  is_public?: number;
+  is_public?: boolean | number;
 }
 
 interface CreateQuoteModalProps {
@@ -55,7 +56,7 @@ export default function CreateQuoteModal({
         setText(editQuote.text);
         setAuthor(editQuote.author === 'Me' ? '' : editQuote.author);
         setCategoryId(editQuote.category_id || null);
-        setIsPublic(editQuote.is_public === 1);
+        setIsPublic(isQuotePublic(editQuote.is_public));
       } else {
         setText('');
         setAuthor('');
