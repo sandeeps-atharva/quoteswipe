@@ -34,7 +34,10 @@ export async function GET(request: NextRequest) {
       auth_provider: user.google_id ? 'google' : 'email',
     };
     
-    return NextResponse.json({ user: userResponse }, { status: 200 });
+    return NextResponse.json({ 
+      user: userResponse,
+      onboarding_complete: user.onboarding_complete ?? true  // Default true for existing users
+    }, { status: 200 });
   } catch (error) {
     console.error('Get user error:', error);
     return NextResponse.json(

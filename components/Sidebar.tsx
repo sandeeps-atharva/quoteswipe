@@ -1185,20 +1185,20 @@ export default function Sidebar({
               {/* Selected Categories - Compact */}
               {selectedCategories.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 flex flex-wrap gap-1.5 min-w-0">
+                  <div className="flex-1 flex flex-wrap gap-2 min-w-0">
                     {selectedCategories.slice(0, 3).map((catName) => {
                       const cat = categories.find(c => c.name === catName);
                       return cat && (
-                        <span key={cat.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-[10px] sm:text-xs font-medium rounded-full">
+                        <span key={cat.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-[11px] sm:text-xs font-medium rounded-full shadow-sm">
                           {cat.icon} {cat.name}
-                          <button onClick={(e) => { e.stopPropagation(); onCategoryToggle(catName); }} className="hover:bg-white/20 rounded-full">
-                            <X size={10} />
+                          <button onClick={(e) => { e.stopPropagation(); onCategoryToggle(catName); }} className="hover:bg-white/20 rounded-full p-0.5 -mr-1">
+                            <X size={12} />
                           </button>
                         </span>
                       );
                     })}
                     {selectedCategories.length > 3 && (
-                      <span className="inline-flex items-center px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] sm:text-xs font-medium rounded-full">
+                      <span className="inline-flex items-center px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[11px] sm:text-xs font-medium rounded-full">
                         +{selectedCategories.length - 3}
                       </span>
                     )}
@@ -1245,15 +1245,15 @@ export default function Sidebar({
                       <button
                         key={category.id}
                         onClick={() => { onCategoryToggle(category.name); onClose(); }}
-                        className={`flex items-center gap-2 p-2 sm:p-2.5 rounded-lg sm:rounded-xl transition-all ${
+                        className={`flex items-center gap-2.5 px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-xl transition-all ${
                           isSelected
-                            ? 'bg-gradient-to-r from-blue-500 to-pink-500 text-white shadow-md'
+                            ? 'bg-gradient-to-r from-blue-500 to-pink-500 text-white shadow-lg ring-2 ring-blue-300/50'
                             : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
                         }`}
                       >
-                        <span className="text-base sm:text-lg shrink-0">{category.icon}</span>
+                        <span className="text-lg sm:text-xl shrink-0">{category.icon}</span>
                         <span className="flex-1 text-left text-xs sm:text-sm font-medium truncate">{category.name}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${isSelected ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                        <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shrink-0 font-medium ${isSelected ? 'bg-white/25' : 'bg-gray-200 dark:bg-gray-700'}`}>
                           {category.count}
                         </span>
                       </button>

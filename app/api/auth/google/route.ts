@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
         profile_picture: picture || null,
         email_verified: email_verified || false,
         role: 'user',
+        onboarding_complete: false,  // New users need onboarding
         created_at: new Date(),
       } as any);
 
@@ -162,11 +163,16 @@ export async function POST(request: NextRequest) {
     // Generate JWT token
     const token = generateToken({ userId, email });
 
+    // Get onboarding status for existing users
+    const onboardingComplete = isNewUser ? false : (existingUser?.onboarding_complete ?? true);
+
     // Create response
     const response = NextResponse.json(
       { 
         message: isNewUser ? 'Account created successfully' : 'Login successful', 
-        user: { id: userId, name: userName, email, auth_provider: 'google' } 
+        user: { id: userId, name: userName, email, auth_provider: 'google' },
+        isNewUser,
+        onboarding_complete: onboardingComplete
       },
       { status: isNewUser ? 201 : 200 }
     );

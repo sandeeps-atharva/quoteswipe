@@ -21,6 +21,7 @@ const InstagramFollowModal = lazy(() => import('./InstagramFollowModal'));
 const SearchModal = lazy(() => import('./SearchModal'));
 const CardCustomization = lazy(() => import('./CardCustomization'));
 const CreateQuoteModal = lazy(() => import('./CreateQuoteModal'));
+const CategoryOnboarding = lazy(() => import('./CategoryOnboarding'));
 
 // Modal loading fallback
 const ModalLoader = () => (
@@ -183,6 +184,10 @@ export default function SwipeQuotes() {
   const [userQuotes, setUserQuotes] = useState<UserQuote[]>([]);
   const [editingQuote, setEditingQuote] = useState<UserQuote | null>(null);
   const [viewingUserQuote, setViewingUserQuote] = useState<UserQuote | null>(null);
+  
+  // Category Onboarding for new users
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [allCategoriesForOnboarding, setAllCategoriesForOnboarding] = useState<Category[]>([]);
   
   // Quote to share (can be either regular quote or user quote)
   const [shareQuote, setShareQuote] = useState<{
@@ -368,6 +373,7 @@ export default function SwipeQuotes() {
           setTimeout(() => { isLoadingPreferences.current = false; }, 100);
         } else {
           // For guests, mark preferences as loaded immediately
+          // Note: Guests only get 1 category (limited by API) and no onboarding
           setPreferencesLoaded(true);
         }
         
@@ -560,6 +566,19 @@ export default function SwipeQuotes() {
         fetchUserData();
         // Load user's saved category preferences
         fetchUserPreferences();
+        
+        // Check if user needs onboarding (not completed yet)
+        if (data.onboarding_complete === false) {
+          // Fetch all categories for onboarding
+          try {
+            const onboardingCatsRes = await fetch('/api/categories?onboarding=true');
+            if (onboardingCatsRes.ok) {
+              const onboardingData = await onboardingCatsRes.json();
+              setAllCategoriesForOnboarding(onboardingData.categories || []);
+            }
+          } catch {}
+          setShowOnboarding(true);
+        }
       } else {
         // Explicitly set to false if not authenticated
         setIsAuthenticated(false);
@@ -958,6 +977,19 @@ export default function SwipeQuotes() {
     // Load user's saved category preferences (this will trigger fetchQuotes with isLoggingIn=true)
     await fetchUserPreferences();
     
+    // Check if user needs onboarding (not completed yet)
+    if (data.onboarding_complete === false) {
+      // Fetch all categories for onboarding
+      try {
+        const onboardingCatsRes = await fetch('/api/categories?onboarding=true');
+        if (onboardingCatsRes.ok) {
+          const onboardingData = await onboardingCatsRes.json();
+          setAllCategoriesForOnboarding(onboardingData.categories || []);
+        }
+      } catch {}
+      setShowOnboarding(true);
+    }
+    
     // Show success toast
     toast.success(`Welcome back, ${data.user.name}! 👋`);
   };
@@ -996,8 +1028,22 @@ export default function SwipeQuotes() {
     isLoadingPreferences.current = false;
     isLoggingIn.current = false; // Reset since no preferences fetch for new users
     
-    // Show success toast
-    toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
+    // Show onboarding for new users
+    if (data.onboarding_complete === false) {
+      // Fetch all categories for onboarding
+      try {
+        const onboardingCatsRes = await fetch('/api/categories?onboarding=true');
+        if (onboardingCatsRes.ok) {
+          const onboardingData = await onboardingCatsRes.json();
+          setAllCategoriesForOnboarding(onboardingData.categories || []);
+        }
+      } catch {}
+      setShowOnboarding(true);
+      toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
+    } else {
+      // Show success toast
+      toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
+    }
   };
 
   const handleLogout = async () => {
@@ -1609,6 +1655,53 @@ export default function SwipeQuotes() {
         }}
         onRefreshUserQuotes={fetchUserQuotes}
       />
+
+      {/* Category Onboarding for newly signed-up users */}
+      {showOnboarding && allCategoriesForOnboarding.length > 0 && isAuthenticated && (
+        <Suspense fallback={<ModalLoader />}>
+          <CategoryOnboarding
+            categories={allCategoriesForOnboarding}
+            onComplete={async (selected) => {
+              setSelectedCategories(selected);
+              setShowOnboarding(false);
+              
+              // Save to database and mark onboarding complete
+              try {
+                await fetch('/api/user/all-preferences', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    selectedCategories: selected,
+                    markOnboardingComplete: true 
+                  }),
+                });
+              } catch (err) {
+                console.error('Failed to save onboarding preferences:', err);
+              }
+              
+              // Fetch quotes with selected categories
+              fetchQuotes(true);
+              toast.success(`Great choices! Showing ${selected.length} categories 🎉`);
+            }}
+            onSkip={async () => {
+              setShowOnboarding(false);
+              
+              // Mark onboarding complete in database (no categories selected = show all)
+              try {
+                await fetch('/api/user/all-preferences', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ markOnboardingComplete: true }),
+                });
+              } catch (err) {
+                console.error('Failed to mark onboarding complete:', err);
+              }
+              
+              toast('Explore all categories!', { icon: '🌟' });
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* Lazy-loaded modals wrapped in Suspense for better performance */}
       {showAuthModal && (

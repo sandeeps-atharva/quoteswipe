@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       email,
       password: hashedPassword,
       role: 'user',
+      onboarding_complete: false,  // New users need onboarding
       created_at: new Date(),
     } as any);
 
@@ -79,7 +80,12 @@ export async function POST(request: NextRequest) {
 
     // Set cookie
     const response = NextResponse.json(
-      { message: 'User created successfully', user: { id: userId, name, email, auth_provider: 'email' } },
+      { 
+        message: 'User created successfully', 
+        user: { id: userId, name, email, auth_provider: 'email' },
+        isNewUser: true,
+        onboarding_complete: false
+      },
       { status: 201 }
     );
 

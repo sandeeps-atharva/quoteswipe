@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
 
     // Set cookie
     const response = NextResponse.json(
-      { message: 'Login successful', user: { id: user._id.toString(), name: user.name, email: user.email, auth_provider: 'email' } },
+      { 
+        message: 'Login successful', 
+        user: { id: user._id.toString(), name: user.name, email: user.email, auth_provider: 'email' },
+        onboarding_complete: user.onboarding_complete ?? true  // Default true for existing users
+      },
       { status: 200 }
     );
 

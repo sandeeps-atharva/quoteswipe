@@ -129,7 +129,7 @@
 
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 
 // ============================================================================
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { selectedCategories, themeId, fontId, backgroundId } = body;
+    const { selectedCategories, themeId, fontId, backgroundId, markOnboardingComplete } = body;
 
     // Validate early
     if (selectedCategories !== undefined && !Array.isArray(selectedCategories)) {
@@ -266,6 +266,15 @@ export async function POST(request: NextRequest) {
       },
       { upsert: true }
     );
+
+    // Mark onboarding as complete in users collection if requested
+    if (markOnboardingComplete) {
+      const usersCollection = await getCollection('users');
+      await usersCollection.updateOne(
+        { _id: toObjectId(userId) as any },
+        { $set: { onboarding_complete: true } }
+      );
+    }
 
     return NextResponse.json({ success: true, ...body });
   } catch (error) {

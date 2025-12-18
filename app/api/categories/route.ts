@@ -66,14 +66,17 @@ export async function GET(request: NextRequest) {
     if (searchParams.get('refresh') === 'true') {
       invalidateCategoriesCache();
     }
+    
+    // Check if this is for onboarding (show all categories even for guests)
+    const isOnboarding = searchParams.get('onboarding') === 'true';
 
     const categories = await getCategoriesFromCache();
 
     const totalCategories = categories.length;
 
-    // For non-authenticated users, limit to only 1 category
+    // For non-authenticated users, limit to only 1 category (unless onboarding)
     let limitedCategories = categories;
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !isOnboarding) {
       limitedCategories = categories.slice(0, 1);
     }
 
@@ -81,7 +84,7 @@ export async function GET(request: NextRequest) {
       {
         categories: limitedCategories,
         totalCategories: totalCategories, // Total count for login prompt
-        isLimited: !isAuthenticated && totalCategories > 1
+        isLimited: !isAuthenticated && !isOnboarding && totalCategories > 1
       },
       { status: 200 }
     );
