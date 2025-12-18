@@ -619,7 +619,7 @@ export default function FestivalCalendar({
                   <option value="">No quote</option>
                   {quotes.slice(0, 50).map(quote => (
                     <option key={quote.id} value={quote.id}>
-                      {quote.text.substring(0, 50)}... — {quote.author}
+                      {quote.text.substring(0, 50)}{quote.author ? `... — ${quote.author}` : '...'}
                     </option>
                   ))}
                 </select>

@@ -54,7 +54,7 @@ export default function CreateQuoteModal({
     if (isOpen) {
       if (editQuote) {
         setText(editQuote.text);
-        setAuthor(editQuote.author === 'Me' ? '' : editQuote.author);
+        setAuthor(editQuote.author || '');
         setCategoryId(editQuote.category_id || null);
         setIsPublic(isQuotePublic(editQuote.is_public));
       } else {
@@ -98,7 +98,7 @@ export default function CreateQuoteModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: text.trim(),
-          author: author.trim() || 'Me',
+          author: author.trim(),
           categoryId,
           isPublic,
         }),
@@ -210,7 +210,7 @@ export default function CreateQuoteModal({
               type="text"
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
-              placeholder="Leave empty for 'Me'"
+              placeholder="Author name (optional)"
               className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm"
               maxLength={100}
             />

@@ -306,9 +306,11 @@ function AuthorSection({ author, colors, hasBackgroundImage }: AuthorSectionProp
       <div className="w-14 h-px mb-4" style={{ background: colors.divider }} />
       
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium tracking-wide" style={textStyle}>
-          — {author}
-        </p>
+        {author ? (
+          <p className="text-sm font-medium tracking-wide" style={textStyle}>
+            — {author}
+          </p>
+        ) : <div />}
         
         <div className="flex items-center gap-1.5" style={{ opacity: colors.isDark ? 0.7 : 0.6 }}>
           <Image 
@@ -575,7 +577,7 @@ export default function ShareModal({
 
   // Generate quote text for sharing
   const getShareText = useCallback((includeUrl = false) => {
-    const text = `"${quote.text}" - ${quote.author}`;
+    const text = quote.author ? `"${quote.text}" — ${quote.author}` : `"${quote.text}"`;
     if (includeUrl && isPublicQuote) {
       return `${text}\n\n${getQuoteUrl()}`;
     }
@@ -619,9 +621,10 @@ export default function ShareModal({
     const previewCard = previewRef.current?.querySelector('[data-preview-card="true"]') as HTMLElement;
     if (!previewCard) return null;
 
+    // 2K Quality settings - generates 1920×2400 pixel image
     const imageOptions = {
       quality: 1.0,
-      pixelRatio: 3,
+      pixelRatio: 6, // 6x for 2K quality (320×6=1920, 400×6=2400)
       cacheBust: true,
       width: previewCard.offsetWidth,
       height: previewCard.offsetHeight,
@@ -631,9 +634,9 @@ export default function ShareModal({
     try {
       return await toPng(previewCard, imageOptions);
     } catch {
-      // Fallback with lower quality
+      // Fallback with lower quality if device can't handle 2K
       try {
-        return await toPng(previewCard, { ...imageOptions, quality: 0.95, pixelRatio: 2 });
+        return await toPng(previewCard, { ...imageOptions, pixelRatio: 4 });
       } catch {
         return null;
       }
@@ -642,9 +645,12 @@ export default function ShareModal({
 
   // Get filename for download
   const getFilename = useCallback(() => {
-    const authorName = quote.author.replace(/\s+/g, '-').toLowerCase();
     const quoteIdStr = String(quote.id).replace('user_', 'my-');
-    return `quote-${quoteIdStr}-${authorName}.png`;
+    if (quote.author) {
+      const authorName = quote.author.replace(/\s+/g, '-').toLowerCase();
+      return `quote-${quoteIdStr}-${authorName}.png`;
+    }
+    return `quote-${quoteIdStr}.png`;
   }, [quote.author, quote.id]);
 
   // Download image handler

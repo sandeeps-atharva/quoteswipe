@@ -385,16 +385,18 @@ function QuoteCard({
             {/* Author name and Logo row */}
             <div className="flex items-center justify-between">
               {/* Author name - Simple sans-serif */}
-              <p 
-                className="text-xs sm:text-sm md:text-base font-medium tracking-wide"
-                style={{ 
-                  color: colors.authorColor,
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                  textShadow: hasBackgroundImage ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
-                }}
-              >
-                — {quote.author}
-              </p>
+              {quote.author ? (
+                <p 
+                  className="text-xs sm:text-sm md:text-base font-medium tracking-wide"
+                  style={{ 
+                    color: colors.authorColor,
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    textShadow: hasBackgroundImage ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                  }}
+                >
+                  — {quote.author}
+                </p>
+              ) : <div />}
               
               {/* Logo */}
               <div 

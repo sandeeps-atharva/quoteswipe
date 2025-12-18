@@ -83,21 +83,25 @@ export async function generateMetadata({ params }: QuotePageProps): Promise<Meta
   }
 
   const truncatedQuote = truncateText(quote.text, 100);
-  const fullTitle = `"${truncatedQuote}" - ${quote.author}`;
-  const description = `Read this inspiring ${quote.category.toLowerCase()} quote by ${quote.author}. Discover more motivational quotes on QuoteSwipe.`;
+  const hasAuthor = Boolean(quote.author);
+  const fullTitle = hasAuthor ? `"${truncatedQuote}" — ${quote.author}` : `"${truncatedQuote}"`;
+  const description = hasAuthor 
+    ? `Read this inspiring ${quote.category.toLowerCase()} quote by ${quote.author}. Discover more motivational quotes on QuoteSwipe.`
+    : `Read this inspiring ${quote.category.toLowerCase()} quote. Discover more motivational quotes on QuoteSwipe.`;
+
+  const keywords = [
+    `${quote.category} quotes`,
+    'inspirational quotes',
+    'motivational quotes',
+    quote.category,
+    ...(hasAuthor ? [`${quote.author} quotes`, quote.author] : []),
+  ];
 
   return {
     title: fullTitle,
     description: description,
-    keywords: [
-      `${quote.author} quotes`,
-      `${quote.category} quotes`,
-      'inspirational quotes',
-      'motivational quotes',
-      quote.author,
-      quote.category,
-    ],
-    authors: [{ name: quote.author }],
+    keywords: keywords,
+    ...(hasAuthor && { authors: [{ name: quote.author }] }),
     openGraph: {
       title: fullTitle,
       description: description,
@@ -109,17 +113,17 @@ export async function generateMetadata({ params }: QuotePageProps): Promise<Meta
           url: '/og-image.png',
           width: 1200,
           height: 630,
-          alt: `Quote by ${quote.author}`,
+          alt: hasAuthor ? `Quote by ${quote.author}` : `${quote.category} Quote`,
         },
       ],
-      authors: [quote.author],
+      ...(hasAuthor && { authors: [quote.author] }),
       section: quote.category,
-      tags: [quote.category, 'quotes', 'inspiration', quote.author],
+      tags: [quote.category, 'quotes', 'inspiration', ...(hasAuthor ? [quote.author] : [])],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `"${truncatedQuote}" - ${quote.author}`,
-      description: `${quote.category} quote by ${quote.author}`,
+      title: fullTitle,
+      description: hasAuthor ? `${quote.category} quote by ${quote.author}` : `${quote.category} quote`,
       images: ['/og-image.png'],
     },
     alternates: {
@@ -127,7 +131,7 @@ export async function generateMetadata({ params }: QuotePageProps): Promise<Meta
     },
     other: {
       // Structured data for the quote
-      'quote:author': quote.author,
+      ...(hasAuthor && { 'quote:author': quote.author }),
       'quote:category': quote.category,
     },
   };

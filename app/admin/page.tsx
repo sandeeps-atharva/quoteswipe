@@ -581,7 +581,7 @@ export default function AdminDashboard() {
                   <option value="" className="bg-slate-800">Choose a quote...</option>
                   {quotes.map(quote => (
                     <option key={quote.id} value={quote.id} className="bg-slate-800">
-                      {quote.text.substring(0, 50)}... — {quote.author}
+                      {quote.text.substring(0, 50)}{quote.author ? `... — ${quote.author}` : '...'}
                     </option>
                   ))}
                 </select>

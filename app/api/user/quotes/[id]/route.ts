@@ -129,7 +129,7 @@ export async function PUT(
     const updates: any = { updated_at: new Date() };
 
     if (text !== undefined) updates.text = text.trim();
-    if (author !== undefined) updates.author = author.trim() || 'Me';
+    if (author !== undefined) updates.author = author.trim();
     if (categoryId !== undefined) updates.category_id = categoryId || null;
     if (themeId !== undefined) updates.theme_id = themeId;
     if (fontId !== undefined) updates.font_id = fontId;

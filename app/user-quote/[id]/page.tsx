@@ -96,21 +96,25 @@ export async function generateMetadata({ params }: UserQuotePageProps): Promise<
 
   const truncatedQuote = truncateText(quote.text, 100);
   const category = quote.category || 'Personal';
-  const fullTitle = `"${truncatedQuote}" - ${quote.author}`;
-  const description = `Read this ${category.toLowerCase()} quote by ${quote.author}. Created by ${quote.creator_name} on QuoteSwipe.`;
+  const hasAuthor = Boolean(quote.author);
+  const fullTitle = hasAuthor ? `"${truncatedQuote}" — ${quote.author}` : `"${truncatedQuote}"`;
+  const description = hasAuthor 
+    ? `Read this ${category.toLowerCase()} quote by ${quote.author}. Created by ${quote.creator_name} on QuoteSwipe.`
+    : `Read this ${category.toLowerCase()} quote. Created by ${quote.creator_name} on QuoteSwipe.`;
+
+  const keywords = [
+    `${category} quotes`,
+    'inspirational quotes',
+    'user created quotes',
+    category,
+    ...(hasAuthor ? [`${quote.author} quotes`, quote.author] : []),
+  ];
 
   return {
     title: fullTitle,
     description: description,
-    keywords: [
-      `${quote.author} quotes`,
-      `${category} quotes`,
-      'inspirational quotes',
-      'user created quotes',
-      quote.author,
-      category,
-    ],
-    authors: [{ name: quote.author }],
+    keywords: keywords,
+    ...(hasAuthor && { authors: [{ name: quote.author }] }),
     openGraph: {
       title: fullTitle,
       description: description,
@@ -122,24 +126,24 @@ export async function generateMetadata({ params }: UserQuotePageProps): Promise<
           url: '/og-image.png',
           width: 1200,
           height: 630,
-          alt: `Quote by ${quote.author}`,
+          alt: hasAuthor ? `Quote by ${quote.author}` : `${category} Quote`,
         },
       ],
-      authors: [quote.author],
+      ...(hasAuthor && { authors: [quote.author] }),
       section: category,
-      tags: [category, 'quotes', 'user-created', quote.author],
+      tags: [category, 'quotes', 'user-created', ...(hasAuthor ? [quote.author] : [])],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `"${truncatedQuote}" - ${quote.author}`,
-      description: `${category} quote by ${quote.author}`,
+      title: fullTitle,
+      description: hasAuthor ? `${category} quote by ${quote.author}` : `${category} quote`,
       images: ['/og-image.png'],
     },
     alternates: {
       canonical: `${siteUrl}/user-quote/${quote.id}`,
     },
     other: {
-      'quote:author': quote.author,
+      ...(hasAuthor && { 'quote:author': quote.author }),
       'quote:category': category,
       'quote:creator': quote.creator_name,
     },

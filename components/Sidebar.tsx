@@ -107,6 +107,7 @@ export default function Sidebar({
   const [navigatingQuoteId, setNavigatingQuoteId] = useState<string | number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [collectionSearch, setCollectionSearch] = useState('');
   const [showUpdatePasswordModal, setShowUpdatePasswordModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
   
@@ -239,6 +240,11 @@ export default function Sidebar({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Reset collection search when view changes
+  useEffect(() => {
+    setCollectionSearch('');
+  }, [currentView]);
+
   const filteredCategories = useMemo(() => {
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase().trim();
@@ -248,6 +254,37 @@ export default function Sidebar({
     }
     return categories;
   }, [categories, debouncedSearchQuery]);
+
+  // Filter quotes based on search
+  const filteredLikedQuotes = useMemo(() => {
+    if (!collectionSearch.trim()) return likedQuotes;
+    const q = collectionSearch.toLowerCase();
+    return likedQuotes.filter(quote =>
+      quote.text.toLowerCase().includes(q) ||
+      quote.author.toLowerCase().includes(q) ||
+      quote.category?.toLowerCase().includes(q)
+    );
+  }, [likedQuotes, collectionSearch]);
+
+  const filteredSavedQuotes = useMemo(() => {
+    if (!collectionSearch.trim()) return savedQuotes;
+    const q = collectionSearch.toLowerCase();
+    return savedQuotes.filter(quote =>
+      quote.text.toLowerCase().includes(q) ||
+      quote.author.toLowerCase().includes(q) ||
+      quote.category?.toLowerCase().includes(q)
+    );
+  }, [savedQuotes, collectionSearch]);
+
+  const filteredDislikedQuotes = useMemo(() => {
+    if (!collectionSearch.trim()) return dislikedQuotes;
+    const q = collectionSearch.toLowerCase();
+    return dislikedQuotes.filter(quote =>
+      quote.text.toLowerCase().includes(q) ||
+      quote.author.toLowerCase().includes(q) ||
+      quote.category?.toLowerCase().includes(q)
+    );
+  }, [dislikedQuotes, collectionSearch]);
 
   const fetchSavedQuotes = async () => {
     setIsLoadingSaved(true);
@@ -534,21 +571,40 @@ export default function Sidebar({
     });
   };
 
-  // Render Collections View - Compact Design
+  // Render Collections View - Saved Quotes with Search
   const renderCollectionsView = () => (
     <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-200">
-      {/* Compact Header */}
-      <div className="p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-        <button onClick={() => setCurrentView('main')} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors text-sm">
-          <ArrowLeft size={16} />
-          <span>Back</span>
-        </button>
+      {/* Header with Search */}
+      <div className="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2">
         <div className="flex items-center gap-2">
-          <Bookmark size={16} className="text-yellow-500" fill="currentColor" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            {isLoadingSaved ? <Loader2 size={14} className="animate-spin" /> : savedQuotes.length}
-          </span>
+          <button onClick={() => setCurrentView('main')} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors shrink-0">
+            <ArrowLeft size={16} className="text-gray-500" />
+          </button>
+          <div className="flex-1 relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search saved quotes..."
+              value={collectionSearch}
+              onChange={(e) => setCollectionSearch(e.target.value)}
+              className="w-full pl-8 pr-8 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
+            {collectionSearch && (
+              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg shrink-0">
+            <Bookmark size={14} className="text-yellow-500" fill="currentColor" />
+            <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
+              {isLoadingSaved ? <Loader2 size={12} className="animate-spin" /> : savedQuotes.length}
+            </span>
+          </div>
         </div>
+        {collectionSearch && (
+          <p className="text-[10px] text-gray-500 pl-9">Found {filteredSavedQuotes.length} of {savedQuotes.length}</p>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3">
@@ -564,9 +620,15 @@ export default function Sidebar({
             <p className="font-medium text-gray-900 dark:text-white text-sm mb-1">No saved quotes</p>
             <p className="text-xs text-gray-500">Tap save on quotes you love</p>
           </div>
+        ) : filteredSavedQuotes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <Search size={28} className="text-gray-300 mb-2" />
+            <p className="text-xs text-gray-500">No quotes match "{collectionSearch}"</p>
+            <button onClick={() => setCollectionSearch('')} className="text-xs text-yellow-500 hover:text-yellow-600 mt-2">Clear search</button>
+          </div>
         ) : (
           <div className="space-y-2">
-            {savedQuotes.map((quote) => (
+            {filteredSavedQuotes.map((quote) => (
               <div 
                 key={quote.id} 
                 onClick={() => handleQuoteClick(quote.id, quote.category)}
@@ -577,7 +639,6 @@ export default function Sidebar({
                     <Loader2 size={18} className="animate-spin text-yellow-500" />
                   </div>
                 )}
-                {/* Compact Actions - visible on mobile, hover on desktop */}
                 <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
                   <button onClick={(e) => handleShareQuote(e, quote)} className="p-1.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 active:scale-95 rounded transition-all" title="Share">
                     <Share2 size={14} className="text-blue-500" />
@@ -586,12 +647,11 @@ export default function Sidebar({
                     <Trash2 size={14} className="text-red-500" />
                   </button>
                 </div>
-                
                 <div className="flex items-start gap-2">
                   <span className="text-lg shrink-0">{quote.category_icon}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs sm:text-sm text-gray-900 dark:text-white leading-snug line-clamp-2">"{quote.text}"</p>
-                    <p className="text-[10px] sm:text-xs text-gray-500 mt-1">— {quote.author}</p>
+                    {quote.author && <p className="text-[10px] sm:text-xs text-gray-500 mt-1">— {quote.author}</p>}
                   </div>
                 </div>
               </div>
@@ -602,21 +662,40 @@ export default function Sidebar({
     </div>
   );
 
-  // Render Liked Quotes View - Compact Design
+  // Render Liked Quotes View with Search
   const renderLikedView = () => (
     <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-200">
-      {/* Compact Header */}
-      <div className="p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-        <button onClick={() => setCurrentView('profile')} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors text-sm">
-          <ArrowLeft size={16} />
-          <span>Profile</span>
-        </button>
+      {/* Header with Search */}
+      <div className="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2">
         <div className="flex items-center gap-2">
-          <Heart size={16} className="text-pink-500" fill="currentColor" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            {isLoadingLiked ? <Loader2 size={14} className="animate-spin" /> : likedQuotes.length}
-          </span>
+          <button onClick={() => setCurrentView('profile')} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors shrink-0">
+            <ArrowLeft size={16} className="text-gray-500" />
+          </button>
+          <div className="flex-1 relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search liked quotes..."
+              value={collectionSearch}
+              onChange={(e) => setCollectionSearch(e.target.value)}
+              className="w-full pl-8 pr-8 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+            />
+            {collectionSearch && (
+              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-pink-50 dark:bg-pink-900/20 rounded-lg shrink-0">
+            <Heart size={14} className="text-pink-500" fill="currentColor" />
+            <span className="text-sm font-semibold text-pink-600 dark:text-pink-400">
+              {isLoadingLiked ? <Loader2 size={12} className="animate-spin" /> : likedQuotes.length}
+            </span>
+          </div>
         </div>
+        {collectionSearch && (
+          <p className="text-[10px] text-gray-500 pl-9">Found {filteredLikedQuotes.length} of {likedQuotes.length}</p>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3">
@@ -632,9 +711,15 @@ export default function Sidebar({
             <p className="font-medium text-gray-900 dark:text-white text-sm mb-1">No liked quotes</p>
             <p className="text-xs text-gray-500">Swipe right on quotes you love</p>
           </div>
+        ) : filteredLikedQuotes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <Search size={28} className="text-gray-300 mb-2" />
+            <p className="text-xs text-gray-500">No quotes match "{collectionSearch}"</p>
+            <button onClick={() => setCollectionSearch('')} className="text-xs text-pink-500 hover:text-pink-600 mt-2">Clear search</button>
+          </div>
         ) : (
           <div className="space-y-2">
-            {likedQuotes.map((quote) => (
+            {filteredLikedQuotes.map((quote) => (
               <div 
                 key={quote.id} 
                 onClick={() => handleQuoteClick(quote.id, quote.category)}
@@ -645,7 +730,6 @@ export default function Sidebar({
                     <Loader2 size={18} className="animate-spin text-pink-500" />
                   </div>
                 )}
-                {/* Compact Share - visible on mobile */}
                 <button
                   onClick={(e) => handleShareQuote(e, quote)}
                   className="absolute top-2 right-2 p-1.5 bg-pink-100 dark:bg-pink-900/30 hover:bg-pink-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
@@ -653,7 +737,6 @@ export default function Sidebar({
                 >
                   <Share2 size={14} className="text-pink-500" />
                 </button>
-                
                 <div className="flex items-start gap-2">
                   <div className="shrink-0 mt-0.5">
                     <Heart size={14} className="text-pink-400" fill="currentColor" />
@@ -662,7 +745,7 @@ export default function Sidebar({
                     <p className="text-xs sm:text-sm text-gray-900 dark:text-white leading-snug line-clamp-2">"{quote.text}"</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm">{quote.category_icon}</span>
-                      <p className="text-[10px] sm:text-xs text-gray-500 truncate">— {quote.author}</p>
+                      {quote.author && <p className="text-[10px] sm:text-xs text-gray-500 truncate">— {quote.author}</p>}
                     </div>
                   </div>
                 </div>
@@ -674,21 +757,40 @@ export default function Sidebar({
     </div>
   );
 
-  // Render Disliked Quotes View - Compact Design
+  // Render Disliked/Skipped Quotes View with Search
   const renderDislikedView = () => (
     <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-200">
-      {/* Compact Header */}
-      <div className="p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-        <button onClick={() => setCurrentView('profile')} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors text-sm">
-          <ArrowLeft size={16} />
-          <span>Profile</span>
-        </button>
+      {/* Header with Search */}
+      <div className="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2">
         <div className="flex items-center gap-2">
-          <ThumbsDown size={16} className="text-gray-400" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            {isLoadingDisliked ? <Loader2 size={14} className="animate-spin" /> : dislikedQuotes.length}
-          </span>
+          <button onClick={() => setCurrentView('profile')} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors shrink-0">
+            <ArrowLeft size={16} className="text-gray-500" />
+          </button>
+          <div className="flex-1 relative">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search skipped quotes..."
+              value={collectionSearch}
+              onChange={(e) => setCollectionSearch(e.target.value)}
+              className="w-full pl-8 pr-8 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            />
+            {collectionSearch && (
+              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg shrink-0">
+            <ThumbsDown size={14} className="text-gray-400" />
+            <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+              {isLoadingDisliked ? <Loader2 size={12} className="animate-spin" /> : dislikedQuotes.length}
+            </span>
+          </div>
         </div>
+        {collectionSearch && (
+          <p className="text-[10px] text-gray-500 pl-9">Found {filteredDislikedQuotes.length} of {dislikedQuotes.length}</p>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3">
@@ -704,9 +806,15 @@ export default function Sidebar({
             <p className="font-medium text-gray-900 dark:text-white text-sm mb-1">No skipped quotes</p>
             <p className="text-xs text-gray-500">Swipe left to skip quotes</p>
           </div>
+        ) : filteredDislikedQuotes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <Search size={28} className="text-gray-300 mb-2" />
+            <p className="text-xs text-gray-500">No quotes match "{collectionSearch}"</p>
+            <button onClick={() => setCollectionSearch('')} className="text-xs text-gray-500 hover:text-gray-600 mt-2">Clear search</button>
+          </div>
         ) : (
           <div className="space-y-2">
-            {dislikedQuotes.map((quote) => (
+            {filteredDislikedQuotes.map((quote) => (
               <div 
                 key={quote.id} 
                 onClick={() => handleQuoteClick(quote.id, quote.category)}
@@ -717,7 +825,6 @@ export default function Sidebar({
                     <Loader2 size={18} className="animate-spin text-gray-400" />
                   </div>
                 )}
-                {/* Compact Share - visible on mobile */}
                 <button
                   onClick={(e) => handleShareQuote(e, quote)}
                   className="absolute top-2 right-2 p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
@@ -725,7 +832,6 @@ export default function Sidebar({
                 >
                   <Share2 size={14} className="text-gray-500" />
                 </button>
-                
                 <div className="flex items-start gap-2">
                   <div className="shrink-0 mt-0.5">
                     <ThumbsDown size={14} className="text-gray-300 dark:text-gray-600" />
@@ -734,7 +840,7 @@ export default function Sidebar({
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-snug line-clamp-2">"{quote.text}"</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm opacity-50">{quote.category_icon}</span>
-                      <p className="text-[10px] sm:text-xs text-gray-400 truncate">— {quote.author}</p>
+                      {quote.author && <p className="text-[10px] sm:text-xs text-gray-400 truncate">— {quote.author}</p>}
                     </div>
                   </div>
                 </div>
@@ -871,7 +977,7 @@ export default function Sidebar({
                     <p className="text-xs sm:text-sm text-gray-900 dark:text-white leading-snug line-clamp-3">"{quote.text}"</p>
                     <div className="flex items-center gap-2 mt-1.5">
                       {quote.category_icon && <span className="text-sm">{quote.category_icon}</span>}
-                      <p className="text-[10px] sm:text-xs text-gray-500">— {quote.author}</p>
+                      {quote.author && <p className="text-[10px] sm:text-xs text-gray-500">— {quote.author}</p>}
                     </div>
                     {quote.created_at && (
                       <p className="text-[9px] text-gray-400 mt-1">{formatDate(quote.created_at)}</p>

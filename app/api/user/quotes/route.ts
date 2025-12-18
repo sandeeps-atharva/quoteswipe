@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     const newQuote = {
       user_id: userId,
       text: text.trim(),
-      author: author?.trim() || 'Me',
+      author: author?.trim() || '',
       category_id: categoryId || null,
       theme_id: themeId || 'default',
       font_id: fontId || 'default',
