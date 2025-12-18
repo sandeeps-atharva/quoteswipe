@@ -27,6 +27,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import CustomToaster from "@/components/CustomToaster";
 import CookieConsent from "@/components/CookieConsent";
+import InstallAppModal from "@/components/InstallAppModal";
 
 // System fonts
 const geistSans = Geist({
@@ -532,6 +533,7 @@ export default function RootLayout({
             <CustomToaster />
             {children}
             <CookieConsent />
+            <InstallAppModal />
           </LanguageProvider>
         </ThemeProvider>
       </body>
