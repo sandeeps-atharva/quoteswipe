@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Sparkles, PenLine, User, Tag, Loader2, Check, Globe, Lock } from 'lucide-react';
+import { X, Sparkles, PenLine, User, Tag, Loader2, Check, Globe, Lock, Crown } from 'lucide-react';
 import { isQuotePublic } from '@/lib/helpers';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import Link from 'next/link';
 
 interface Category {
   id: string | number;
@@ -29,6 +31,7 @@ interface CreateQuoteModalProps {
   onSuccess: (quote: UserQuote, cacheInvalidated?: boolean) => void;
   categories: Category[];
   editQuote?: UserQuote | null;
+  userQuotesCount?: number;
 }
 
 export default function CreateQuoteModal({
@@ -37,6 +40,7 @@ export default function CreateQuoteModal({
   onSuccess,
   categories,
   editQuote,
+  userQuotesCount = 0,
 }: CreateQuoteModalProps) {
   const [text, setText] = useState('');
   const [author, setAuthor] = useState('');
@@ -45,6 +49,11 @@ export default function CreateQuoteModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [charCount, setCharCount] = useState(0);
+
+  // Subscription context for feature limits
+  const { getLimit, isLimitReached } = useSubscription();
+  const quotesLimit = getLimit('createdQuotesLimit');
+  const isQuoteLimitReached = !editQuote && isLimitReached('createdQuotesLimit', userQuotesCount);
 
   const isEditing = !!editQuote;
   const maxChars = 500;
@@ -167,6 +176,48 @@ export default function CreateQuoteModal({
 
         {/* Content */}
         <div className="px-5 py-4 sm:px-6 sm:py-5 overflow-y-auto max-h-[calc(90vh-180px)] space-y-4">
+          {/* Quote Limit Warning */}
+          {isQuoteLimitReached && (
+            <div className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-200 dark:border-purple-800 rounded-xl">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                  <Crown size={18} className="text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Quote limit reached</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                    You've created {userQuotesCount}/{quotesLimit} quotes. Upgrade to Pro for unlimited quotes!
+                  </p>
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold rounded-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+                  >
+                    <Crown size={12} />
+                    Upgrade to Pro
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Quota indicator for non-editing mode */}
+          {!isEditing && !isQuoteLimitReached && quotesLimit !== -1 && (
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-xs">
+              <span className="text-gray-600 dark:text-gray-400">
+                Quotes: <span className="font-semibold">{userQuotesCount}/{quotesLimit}</span>
+              </span>
+              {userQuotesCount >= quotesLimit - 1 && (
+                <Link 
+                  href="/pricing" 
+                  className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium hover:underline"
+                >
+                  <Crown size={12} />
+                  Upgrade
+                </Link>
+              )}
+            </div>
+          )}
+
           {/* Quote Text */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -317,13 +368,18 @@ export default function CreateQuoteModal({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={isLoading || text.trim().length < minChars}
+              disabled={isLoading || text.trim().length < minChars || isQuoteLimitReached}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-purple-500/30 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
             >
               {isLoading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
                   <span>Saving...</span>
+                </>
+              ) : isQuoteLimitReached ? (
+                <>
+                  <Lock size={16} />
+                  <span>Limit Reached</span>
                 </>
               ) : (
                 <>

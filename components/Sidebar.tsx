@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { X, User, Bookmark, LogOut, ArrowLeft, Trash2, Search, Heart, ThumbsDown, Mail, Calendar, Shield, Edit2, Check, Lock, Loader2, Eye, ChevronRight, Share2, ExternalLink, MessageSquare, Info, Palette, PenLine, Plus, Globe, Camera, Image as ImageIcon } from 'lucide-react';
+import { X, User, Bookmark, LogOut, ArrowLeft, Trash2, Search, Heart, ThumbsDown, Mail, Calendar, Shield, Edit2, Check, Lock, Loader2, Eye, ChevronRight, Share2, ExternalLink, MessageSquare, Info, Palette, PenLine, Plus, Globe, Camera, Image as ImageIcon, Crown } from 'lucide-react';
 import { isQuotePublic } from '@/lib/helpers';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import UpdatePasswordModal from './UpdatePasswordModal';
 import toast from 'react-hot-toast';
 
@@ -94,6 +95,12 @@ export default function Sidebar({
   onRefreshUserQuotes,
 }: SidebarProps) {
   const { theme } = useTheme();
+  const { subscription, getLimit, isPro } = useSubscription();
+  
+  // Subscription limits
+  const categoriesLimit = getLimit('categoriesLimit');
+  const savedQuotesLimit = getLimit('savedQuotesLimit');
+  
   const [currentView, setCurrentView] = useState<ViewType>('main');
   const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
   const [likedQuotes, setLikedQuotes] = useState<SavedQuote[]>([]);
@@ -514,7 +521,7 @@ export default function Sidebar({
                   </button>
                 )}
                 <p className="text-xs text-gray-500 truncate">{profileData.user.email}</p>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
                     profileData.user.auth_provider === 'google' ? 'bg-gray-100 dark:bg-gray-800 text-gray-500' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                   }`}>
@@ -524,6 +531,44 @@ export default function Sidebar({
                 </div>
               </div>
             </div>
+
+            {/* Subscription Plan Card */}
+            <Link
+              href="/pricing"
+              className={`block p-3 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                isPro
+                  ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-200 dark:border-purple-800'
+                  : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    isPro 
+                      ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                  }`}>
+                    <Crown size={16} />
+                  </div>
+                  <div>
+                    <p className={`text-sm font-semibold ${isPro ? 'text-purple-600 dark:text-purple-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {subscription?.planDetails?.name || 'Free Plan'}
+                    </p>
+                    <p className="text-[10px] text-gray-500">
+                      {isPro ? 'Active subscription' : 'Upgrade for more features'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-gray-400" />
+              </div>
+              {!isPro && (
+                <div className="mt-2 flex items-center gap-2 text-[10px]">
+                  <span className="text-amber-600 dark:text-amber-400">
+                    📊 {categoriesLimit} categories • {savedQuotesLimit} saved • 5 downloads/day
+                  </span>
+                </div>
+              )}
+            </Link>
 
             {/* Stats Grid - Compact */}
             <div className="grid grid-cols-4 gap-2">
@@ -1330,7 +1375,117 @@ export default function Sidebar({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {groupedCategories.map((group) => (
+                  {/* Free Categories Section - Only show for free users */}
+                  {categoriesLimit !== -1 && (
+                    <>
+                      {/* Free Categories Header */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-gray-900 py-1.5 z-10">
+                          <span className="text-base">🆓</span>
+                          <h3 className="text-sm font-bold text-green-600 dark:text-green-400">
+                            Free Categories
+                          </h3>
+                          <div className="flex-1 h-px bg-gradient-to-r from-green-200 dark:from-green-700 to-transparent" />
+                          <span className="text-[10px] text-green-500 font-medium bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded">
+                            {categoriesLimit} available
+                          </span>
+                        </div>
+                        
+                        {/* Free Categories Grid - Specific basic categories */}
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                          {(() => {
+                            // Define truly basic/generic free category names (not trending/premium)
+                            const freeCategoryNames = ['Wisdom', 'Happiness', 'Gratitude'];
+                            const allCategories = groupedCategories.flatMap(g => g.categories);
+                            // Find these specific categories, or fallback to last N if not found
+                            let freeCategories = allCategories.filter(c => 
+                              freeCategoryNames.some(name => c.name.toLowerCase().includes(name.toLowerCase()))
+                            ).slice(0, categoriesLimit);
+                            // If not enough found, take from the end (less trending)
+                            if (freeCategories.length < categoriesLimit) {
+                              const remaining = allCategories
+                                .filter(c => !freeCategories.some(fc => fc.id === c.id))
+                                .slice(-( categoriesLimit - freeCategories.length));
+                              freeCategories = [...freeCategories, ...remaining];
+                            }
+                            return freeCategories.map((category) => {
+                              const isSelected = selectedCategories.includes(category.name);
+                              return (
+                                <button
+                                  key={category.id}
+                                  onClick={() => { onCategoryToggle(category.name); onClose(); }}
+                                  className={`flex items-center gap-2.5 px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-xl transition-all ${
+                                    isSelected
+                                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg ring-2 ring-green-300/50'
+                                      : 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 text-gray-700 dark:text-gray-300 border border-green-200 dark:border-green-800'
+                                  }`}
+                                >
+                                  <span className="text-lg sm:text-xl shrink-0">{category.icon}</span>
+                                  <span className="flex-1 text-left text-xs sm:text-sm font-medium truncate">{category.name}</span>
+                                  <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shrink-0 font-medium ${isSelected ? 'bg-white/25' : 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400'}`}>
+                                    {category.count}
+                                  </span>
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* Pro Categories Header */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-gray-900 py-1.5 z-10">
+                          <span className="text-base">👑</span>
+                          <h3 className="text-sm font-bold text-purple-600 dark:text-purple-400">
+                            Pro Categories
+                          </h3>
+                          <div className="flex-1 h-px bg-gradient-to-r from-purple-200 dark:from-purple-700 to-transparent" />
+                          <Link 
+                            href="/pricing" 
+                            className="flex items-center gap-1 text-[10px] text-purple-500 font-medium bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
+                          >
+                            <Crown size={10} />
+                            Unlock All
+                          </Link>
+                        </div>
+                        
+                        {/* Locked Categories Grid */}
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                          {(() => {
+                            const freeCategoryNames = ['Wisdom', 'Happiness', 'Gratitude'];
+                            const allCategories = groupedCategories.flatMap(g => g.categories);
+                            // Get free categories first
+                            let freeCategories = allCategories.filter(c => 
+                              freeCategoryNames.some(name => c.name.toLowerCase().includes(name.toLowerCase()))
+                            ).slice(0, categoriesLimit);
+                            if (freeCategories.length < categoriesLimit) {
+                              const remaining = allCategories
+                                .filter(c => !freeCategories.some(fc => fc.id === c.id))
+                                .slice(-(categoriesLimit - freeCategories.length));
+                              freeCategories = [...freeCategories, ...remaining];
+                            }
+                            const freeCategoryIds = new Set(freeCategories.map(c => c.id));
+                            // All categories except free ones
+                            const lockedCategories = allCategories.filter(c => !freeCategoryIds.has(c.id));
+                            return lockedCategories.map((category) => (
+                              <Link
+                                key={category.id}
+                                href="/pricing"
+                                className="flex items-center gap-2.5 px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-xl transition-all bg-gray-100 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500 opacity-60 hover:opacity-80 border border-gray-200 dark:border-gray-700 border-dashed"
+                              >
+                                <span className="text-lg sm:text-xl shrink-0 grayscale">{category.icon}</span>
+                                <span className="flex-1 text-left text-xs sm:text-sm font-medium truncate">{category.name}</span>
+                                <Lock size={14} className="text-purple-400 shrink-0" />
+                              </Link>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Pro users see all categories grouped normally */}
+                  {categoriesLimit === -1 && groupedCategories.map((group) => (
                     <div key={group.id}>
                       {/* Group Header */}
                       <div className="flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-gray-900 py-1.5 z-10">

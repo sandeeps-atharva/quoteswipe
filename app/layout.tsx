@@ -25,6 +25,7 @@ import {
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import CustomToaster from "@/components/CustomToaster";
 import CookieConsent from "@/components/CookieConsent";
 import InstallAppModal from "@/components/InstallAppModal";
@@ -530,10 +531,12 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <LanguageProvider>
-            <CustomToaster />
-            {children}
-            <CookieConsent />
-            <InstallAppModal />
+            <SubscriptionProvider>
+              <CustomToaster />
+              {children}
+              <CookieConsent />
+              <InstallAppModal />
+            </SubscriptionProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

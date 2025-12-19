@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection } from '@/lib/db';
+import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { invalidateQuotesCache } from '@/app/api/quotes/route';
+import { getPlanFeatures, PlanId } from '@/lib/subscription';
 
 // GET - Fetch all user's quotes (both public and private)
 export async function GET(request: NextRequest) {
@@ -94,6 +95,23 @@ export async function POST(request: NextRequest) {
 
     const userQuotesCollection = await getCollection('user_quotes');
     const categoriesCollection = await getCollection('categories');
+    const usersCollection = await getCollection('users');
+
+    // Check subscription limit
+    const user = await usersCollection.findOne({ _id: toObjectId(userId) as any }) as { subscription_plan?: string } | null;
+    const userPlan = (user?.subscription_plan || 'free') as PlanId;
+    const features = getPlanFeatures(userPlan);
+    const quotesLimit = features.createdQuotesLimit;
+
+    if (quotesLimit !== -1) {
+      const totalQuotes = await userQuotesCollection.countDocuments({ user_id: userId });
+      if (totalQuotes >= quotesLimit) {
+        return NextResponse.json(
+          { error: 'Created quotes limit reached', code: 'LIMIT_REACHED', limit: quotesLimit, current: totalQuotes },
+          { status: 403 }
+        );
+      }
+    }
 
     // Rate limiting - max 10 quotes per day
     const today = new Date();

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
-import { X, Palette, Type, Check, Sparkles, Moon, Sun, Loader2, ImageIcon, Upload, Trash2, Plus, Camera } from 'lucide-react';
+import { X, Palette, Type, Check, Sparkles, Moon, Sun, Loader2, ImageIcon, Upload, Trash2, Plus, Camera, Lock, Crown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import Link from 'next/link';
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 // Re-export for backward compatibility
 export { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES };
@@ -69,6 +71,13 @@ function CardCustomization({
   const [isCapturing, setIsCapturing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  
+  // Subscription context for feature limits
+  const { subscription, isPro, getLimit, canAccess } = useSubscription();
+  const themesLimit = getLimit('themesCount');
+  const fontsLimit = getLimit('fontsCount');
+  const backgroundsLimit = getLimit('backgroundsCount');
+  const canUseCamera = canAccess('canUseCamera');
   
   // Local state for selections (only applied on save)
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>(currentTheme);
@@ -145,10 +154,35 @@ function CardCustomization({
     }
   }, [isOpen, currentTheme, currentFont, currentBackground]);
 
-  // Memoized theme lists
+  // Memoized theme lists with subscription limits
   const lightThemes = useMemo(() => CARD_THEMES.filter(t => !t.isDark), []);
   const darkThemes = useMemo(() => CARD_THEMES.filter(t => t.isDark), []);
-  const displayedThemes = useMemo(() => showLightThemes ? lightThemes : darkThemes, [showLightThemes, lightThemes, darkThemes]);
+  const allDisplayedThemes = useMemo(() => showLightThemes ? lightThemes : darkThemes, [showLightThemes, lightThemes, darkThemes]);
+  
+  // Apply subscription limit to themes
+  const displayedThemes = useMemo(() => {
+    if (themesLimit === -1) return allDisplayedThemes; // Unlimited
+    // Split into available and locked
+    return allDisplayedThemes;
+  }, [allDisplayedThemes, themesLimit]);
+  
+  // Check if a theme index is locked
+  const isThemeLocked = useCallback((index: number) => {
+    if (themesLimit === -1) return false;
+    return index >= themesLimit;
+  }, [themesLimit]);
+  
+  // Check if a font index is locked  
+  const isFontLocked = useCallback((index: number) => {
+    if (fontsLimit === -1) return false;
+    return index >= fontsLimit;
+  }, [fontsLimit]);
+  
+  // Check if a background index is locked
+  const isBackgroundLocked = useCallback((index: number) => {
+    if (backgroundsLimit === -1) return false;
+    return index >= backgroundsLimit;
+  }, [backgroundsLimit]);
 
   // Get preview colors (background image overrides theme colors when selected)
   const previewColors = useMemo(() => {
@@ -628,56 +662,98 @@ function CardCustomization({
 
               {/* Theme Grid */}
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                {displayedThemes.map((theme) => (
-                  <ThemeButton
-                    key={theme.id}
-                    theme={theme}
-                    isSelected={selectedTheme.id === theme.id}
-                    onClick={handleThemeSelect}
-                  />
-                ))}
+                {displayedThemes.map((theme, index) => {
+                  const locked = isThemeLocked(index);
+                  return (
+                    <div key={theme.id} className="relative">
+                      <ThemeButton
+                        theme={theme}
+                        isSelected={selectedTheme.id === theme.id}
+                        onClick={locked ? undefined : handleThemeSelect}
+                        disabled={locked}
+                      />
+                      {locked && (
+                        <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                            <Lock size={12} className="text-white" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+              {/* Upgrade prompt for themes */}
+              {themesLimit !== -1 && themesLimit < allDisplayedThemes.length && (
+                <Link 
+                  href="/pricing"
+                  className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-200 dark:border-purple-800 rounded-xl text-sm text-purple-600 dark:text-purple-400 hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
+                >
+                  <Crown size={16} />
+                  <span>Upgrade to unlock all {CARD_THEMES.length} themes</span>
+                </Link>
+              )}
             </div>
           )}
 
           {activeTab === 'images' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">
-                  {customImages.length}/{MAX_CUSTOM_IMAGES}
-                </p>
-                <div className="flex items-center gap-1">
-                  {/* Camera capture button */}
-                  <button
-                    onClick={triggerCameraInput}
-                    disabled={isCapturing || isUploading || customImages.length >= MAX_CUSTOM_IMAGES}
-                    className="flex items-center justify-center gap-1 h-7 px-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Take a photo"
-                  >
-                    {isCapturing ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Camera size={12} />
-                    )}
-                    <span>Camera</span>
-                  </button>
-                  
-                  {/* File upload button */}
-                  <button
-                    onClick={triggerFileInput}
-                    disabled={isUploading || isCapturing || customImages.length >= MAX_CUSTOM_IMAGES}
-                    className="flex items-center justify-center gap-1 h-7 px-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Upload from gallery"
-                  >
-                    {isUploading ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Upload size={12} />
-                    )}
-                    <span>Upload</span>
-                  </button>
+              {/* Camera/Upload Section - Pro Feature */}
+              {canUseCamera ? (
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                    {customImages.length}/{MAX_CUSTOM_IMAGES}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    {/* Camera capture button */}
+                    <button
+                      onClick={triggerCameraInput}
+                      disabled={isCapturing || isUploading || customImages.length >= MAX_CUSTOM_IMAGES}
+                      className="flex items-center justify-center gap-1 h-7 px-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Take a photo"
+                    >
+                      {isCapturing ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Camera size={12} />
+                      )}
+                      <span>Camera</span>
+                    </button>
+                    
+                    {/* File upload button */}
+                    <button
+                      onClick={triggerFileInput}
+                      disabled={isUploading || isCapturing || customImages.length >= MAX_CUSTOM_IMAGES}
+                      className="flex items-center justify-center gap-1 h-7 px-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Upload from gallery"
+                    >
+                      {isUploading ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Upload size={12} />
+                      )}
+                      <span>Upload</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <Link 
+                  href="/pricing"
+                  className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-200 dark:border-purple-800 rounded-xl hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Camera size={18} className="text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Custom Backgrounds</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Upload photos or use camera</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-purple-600 dark:text-purple-400 text-xs font-medium">
+                    <Crown size={14} />
+                    <span>Pro</span>
+                  </div>
+                </Link>
+              )}
               
               {/* Custom Images Section - show loader or images */}
               <div className="space-y-2">
@@ -711,33 +787,86 @@ function CardCustomization({
               
               {/* Preset Images Section - always visible */}
               <div className="space-y-2">
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
-                  Preset Backgrounds
-                </p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                  {BACKGROUND_IMAGES.map((bg) => (
-                    <ImageButton
-                      key={bg.id}
-                      background={bg}
-                      isSelected={selectedBackground.id === bg.id}
-                      onClick={handleBackgroundSelect}
-                    />
-                  ))}
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
+                    Preset Backgrounds
+                  </p>
+                  {backgroundsLimit !== -1 && (
+                    <p className="text-[10px] text-gray-400">
+                      {Math.min(backgroundsLimit, BACKGROUND_IMAGES.length)} / {BACKGROUND_IMAGES.length} available
+                    </p>
+                  )}
                 </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+                  {BACKGROUND_IMAGES.map((bg, index) => {
+                    const locked = isBackgroundLocked(index);
+                    return (
+                      <div key={bg.id} className="relative">
+                        <ImageButton
+                          background={bg}
+                          isSelected={selectedBackground.id === bg.id}
+                          onClick={locked ? undefined : handleBackgroundSelect}
+                          disabled={locked}
+                        />
+                        {locked && (
+                          <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                              <Lock size={12} className="text-white" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Upgrade prompt for backgrounds */}
+                {backgroundsLimit !== -1 && backgroundsLimit < BACKGROUND_IMAGES.length && (
+                  <Link 
+                    href="/pricing"
+                    className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-200 dark:border-purple-800 rounded-xl text-sm text-purple-600 dark:text-purple-400 hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
+                  >
+                    <Crown size={16} />
+                    <span>Upgrade to unlock all {BACKGROUND_IMAGES.length} backgrounds</span>
+                  </Link>
+                )}
               </div>
             </div>
           )}
 
           {activeTab === 'fonts' && (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-              {FONT_STYLES.map((font) => (
-                <FontButton
-                  key={font.id}
-                  font={font}
-                  isSelected={selectedFont.id === font.id}
-                  onClick={handleFontSelect}
-                />
-              ))}
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+                {FONT_STYLES.map((font, index) => {
+                  const locked = isFontLocked(index);
+                  return (
+                    <div key={font.id} className="relative">
+                      <FontButton
+                        font={font}
+                        isSelected={selectedFont.id === font.id}
+                        onClick={locked ? undefined : handleFontSelect}
+                        disabled={locked}
+                      />
+                      {locked && (
+                        <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                            <Lock size={12} className="text-white" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Upgrade prompt for fonts */}
+              {fontsLimit !== -1 && fontsLimit < FONT_STYLES.length && (
+                <Link 
+                  href="/pricing"
+                  className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-200 dark:border-purple-800 rounded-xl text-sm text-purple-600 dark:text-purple-400 hover:from-purple-500/20 hover:to-pink-500/20 transition-colors"
+                >
+                  <Crown size={16} />
+                  <span>Upgrade to unlock all {FONT_STYLES.length} fonts</span>
+                </Link>
+              )}
             </div>
           )}
         </div>
@@ -832,18 +961,24 @@ function CardCustomization({
 interface ThemeButtonProps {
   theme: CardTheme;
   isSelected: boolean;
-  onClick: (theme: CardTheme) => void;
+  onClick?: (theme: CardTheme) => void;
+  disabled?: boolean;
 }
 
-const ThemeButton = memo(function ThemeButton({ theme, isSelected, onClick }: ThemeButtonProps) {
+const ThemeButton = memo(function ThemeButton({ theme, isSelected, onClick, disabled }: ThemeButtonProps) {
   const handleClick = useCallback(() => {
-    onClick(theme);
-  }, [onClick, theme]);
+    if (!disabled && onClick) {
+      onClick(theme);
+    }
+  }, [onClick, theme, disabled]);
 
   return (
     <button
       onClick={handleClick}
-      className={`relative p-1.5 sm:p-2 rounded-lg sm:rounded-xl border-2 transition-all active:scale-95 ${
+      disabled={disabled}
+      className={`relative p-1.5 sm:p-2 rounded-lg sm:rounded-xl border-2 transition-all ${
+        disabled ? 'opacity-60 cursor-not-allowed' : 'active:scale-95'
+      } ${
         isSelected
           ? 'border-blue-500 ring-1 sm:ring-2 ring-blue-200 dark:ring-blue-800'
           : 'border-gray-200 dark:border-gray-700'
@@ -953,18 +1088,24 @@ const CustomImageButton = memo(function CustomImageButton({ background, isSelect
 interface ImageButtonProps {
   background: BackgroundImage;
   isSelected: boolean;
-  onClick: (bg: BackgroundImage) => void;
+  onClick?: (bg: BackgroundImage) => void;
+  disabled?: boolean;
 }
 
-const ImageButton = memo(function ImageButton({ background, isSelected, onClick }: ImageButtonProps) {
+const ImageButton = memo(function ImageButton({ background, isSelected, onClick, disabled }: ImageButtonProps) {
   const handleClick = useCallback(() => {
-    onClick(background);
-  }, [onClick, background]);
+    if (!disabled && onClick) {
+      onClick(background);
+    }
+  }, [onClick, background, disabled]);
 
   return (
     <button
       onClick={handleClick}
-      className={`relative p-1.5 sm:p-2 rounded-lg sm:rounded-xl border-2 transition-all active:scale-95 ${
+      disabled={disabled}
+      className={`relative p-1.5 sm:p-2 rounded-lg sm:rounded-xl border-2 transition-all ${
+        disabled ? 'opacity-60 cursor-not-allowed' : 'active:scale-95'
+      } ${
         isSelected
           ? 'border-blue-500 ring-1 sm:ring-2 ring-blue-200 dark:ring-blue-800'
           : 'border-gray-200 dark:border-gray-700'
@@ -1005,18 +1146,24 @@ const ImageButton = memo(function ImageButton({ background, isSelected, onClick 
 interface FontButtonProps {
   font: FontStyle;
   isSelected: boolean;
-  onClick: (font: FontStyle) => void;
+  onClick?: (font: FontStyle) => void;
+  disabled?: boolean;
 }
 
-const FontButton = memo(function FontButton({ font, isSelected, onClick }: FontButtonProps) {
+const FontButton = memo(function FontButton({ font, isSelected, onClick, disabled }: FontButtonProps) {
   const handleClick = useCallback(() => {
-    onClick(font);
-  }, [onClick, font]);
+    if (!disabled && onClick) {
+      onClick(font);
+    }
+  }, [onClick, font, disabled]);
 
   return (
     <button
       onClick={handleClick}
-      className={`relative p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-all active:scale-95 ${
+      disabled={disabled}
+      className={`relative p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-all ${
+        disabled ? 'opacity-60 cursor-not-allowed' : 'active:scale-95'
+      } ${
         isSelected
           ? 'border-blue-500 ring-1 sm:ring-2 ring-blue-200 dark:ring-blue-800'
           : 'border-gray-200 dark:border-gray-700'

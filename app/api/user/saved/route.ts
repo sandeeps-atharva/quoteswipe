@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCollection, toObjectId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { getPlanFeatures, PlanId } from '@/lib/subscription';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userSavedCollection = await getCollection('user_saved');
+    const usersCollection = await getCollection('users');
 
     // Check if already saved (upsert behavior)
     const existing: any = await userSavedCollection.findOne({
@@ -26,6 +28,22 @@ export async function POST(request: NextRequest) {
     });
 
     if (!existing) {
+      // Check subscription limit
+      const user = await usersCollection.findOne({ _id: toObjectId(userId) as any }) as { subscription_plan?: string } | null;
+      const userPlan = (user?.subscription_plan || 'free') as PlanId;
+      const features = getPlanFeatures(userPlan);
+      const savedLimit = features.savedQuotesLimit;
+
+      if (savedLimit !== -1) {
+        const savedCount = await userSavedCollection.countDocuments({ user_id: userId });
+        if (savedCount >= savedLimit) {
+          return NextResponse.json(
+            { error: 'Saved quotes limit reached', code: 'LIMIT_REACHED', limit: savedLimit, current: savedCount },
+            { status: 403 }
+          );
+        }
+      }
+
       await userSavedCollection.insertOne({
         user_id: userId,
         quote_id: quoteId,

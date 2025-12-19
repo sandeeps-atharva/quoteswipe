@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical, Type, Minus, Plus } from 'lucide-react';
+import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical, Type, Minus, Plus, Crown } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { isQuotePublic } from '@/lib/helpers';
 import Image from 'next/image';
+import Link from 'next/link';
 import { CardTheme, FontStyle, BackgroundImage, DEFAULT_THEME, DEFAULT_FONT, BACKGROUND_IMAGES } from '@/lib/constants';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 // ============================================================================
 // Types & Interfaces
@@ -419,26 +421,35 @@ function AuthorSection({ author, colors, hasBackgroundImage }: AuthorSectionProp
 interface FormatSelectorProps {
   selectedFormat: ShareFormat;
   onChange: (format: ShareFormatConfig) => void;
+  availableFormats: ShareFormatConfig[];
+  allFormatsAvailable: boolean;
 }
 
-function FormatSelector({ selectedFormat, onChange }: FormatSelectorProps) {
+function FormatSelector({ selectedFormat, onChange, availableFormats, allFormatsAvailable }: FormatSelectorProps) {
   return (
     <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-      {SHARE_FORMATS.map((format) => (
+      {SHARE_FORMATS.map((format) => {
+        const isLocked = !availableFormats.some(f => f.id === format.id);
+        return (
         <button
           key={format.id}
-          onClick={() => onChange(format)}
+          onClick={() => !isLocked && onChange(format)}
+          disabled={isLocked}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            isLocked ? 'opacity-50 cursor-not-allowed' : ''
+          } ${
             selectedFormat === format.id
               ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
           }`}
         >
-          {format.icon}
+          {isLocked ? <Lock size={12} className="text-amber-500" /> : format.icon}
           <span className="hidden sm:inline">{format.label}</span>
           <span className="text-[10px] opacity-70">{format.sublabel}</span>
+          {isLocked && <Crown size={10} className="text-amber-500" />}
         </button>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -742,14 +753,15 @@ interface ShareOptionsGridProps {
   onInstagram: () => void;
   onWhatsApp: () => void;
   onPinterest: () => void;
+  isDownloadDisabled?: boolean;
 }
 
-function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, onPinterest }: ShareOptionsGridProps) {
+function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, onPinterest, isDownloadDisabled }: ShareOptionsGridProps) {
   return (
     <div className="grid grid-cols-4 gap-2 sm:gap-3">
       <ShareButton
         onClick={onDownload}
-        disabled={isGenerating}
+        disabled={isGenerating || !!isDownloadDisabled}
         gradient="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50"
         iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
         shadowColor="shadow-blue-500/20 group-hover:shadow-blue-500/40"
@@ -812,7 +824,48 @@ export default function ShareModal({
   const [showPositionControl, setShowPositionControl] = useState(false);
   const [showFontSizeControl, setShowFontSizeControl] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<ShareFormatConfig>(DEFAULT_FORMAT);
+  const [dailyDownloads, setDailyDownloads] = useState(0);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // Subscription context for feature limits
+  const { subscription, isPro, getLimit, canAccess, isLimitReached } = useSubscription();
+  const downloadLimit = getLimit('dailyDownloadsLimit');
+  const canUseAllFormats = (subscription?.features.shareFormats?.length || 0) > 1;
+  const canUseFontSizeControl = canAccess('hasFontSizeControl');
+  const canUsePositionControl = canAccess('hasPositionControl');
+  const hasWatermark = subscription?.features.hasWatermark ?? true;
+
+  // Get today's download count from localStorage
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const stored = localStorage.getItem('quoteswipe_daily_downloads');
+    if (stored) {
+      const data = JSON.parse(stored);
+      if (data.date === today) {
+        setDailyDownloads(data.count);
+      } else {
+        localStorage.setItem('quoteswipe_daily_downloads', JSON.stringify({ date: today, count: 0 }));
+        setDailyDownloads(0);
+      }
+    }
+  }, [isOpen]);
+
+  // Track download
+  const trackDownload = useCallback(() => {
+    const today = new Date().toDateString();
+    const newCount = dailyDownloads + 1;
+    localStorage.setItem('quoteswipe_daily_downloads', JSON.stringify({ date: today, count: newCount }));
+    setDailyDownloads(newCount);
+  }, [dailyDownloads]);
+
+  // Check if download limit reached
+  const isDownloadLimitReached = downloadLimit !== -1 && dailyDownloads >= downloadLimit;
+
+  // Available formats based on subscription
+  const availableFormats = useMemo(() => {
+    if (canUseAllFormats) return SHARE_FORMATS;
+    return SHARE_FORMATS.filter(f => f.id === 'post'); // Free users only get Post format
+  }, [canUseAllFormats]);
 
   // Derived state
   const isUserQuote = quote.isUserQuote || String(quote.id).startsWith('user_');
@@ -926,6 +979,11 @@ export default function ShareModal({
 
   // Download image handler
   const handleDownload = useCallback(async () => {
+    // Check download limit
+    if (isDownloadLimitReached) {
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const imageUrl = await generateImage();
@@ -934,11 +992,12 @@ export default function ShareModal({
         link.download = getFilename();
         link.href = imageUrl;
         link.click();
+        trackDownload();
       }
     } finally {
       setIsGenerating(false);
     }
-  }, [generateImage, getFilename]);
+  }, [generateImage, getFilename, isDownloadLimitReached, trackDownload]);
 
   // Share to Instagram (opens story or post based on format)
   const handleInstagramShare = useCallback(async () => {
@@ -1060,7 +1119,9 @@ export default function ShareModal({
               {/* Format Selector */}
               <FormatSelector 
                 selectedFormat={selectedFormat.id} 
-                onChange={setSelectedFormat} 
+                onChange={setSelectedFormat}
+                availableFormats={availableFormats}
+                allFormatsAvailable={canUseAllFormats}
               />
             </div>
 
@@ -1105,33 +1166,43 @@ export default function ShareModal({
                 {/* Position Toggle */}
                 <button
                   onClick={() => {
+                    if (!canUsePositionControl) return;
                     setShowPositionControl(!showPositionControl);
                     if (!showPositionControl) setShowFontSizeControl(false);
                   }}
+                  disabled={!canUsePositionControl}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    !canUsePositionControl ? 'opacity-60 cursor-not-allowed' : ''
+                  } ${
                     showPositionControl 
                       ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <MoveVertical size={12} />
+                  {canUsePositionControl ? <MoveVertical size={12} /> : <Lock size={12} className="text-amber-500" />}
                   Position
+                  {!canUsePositionControl && <Crown size={10} className="text-amber-500" />}
                 </button>
 
                 {/* Font Size Toggle */}
                 <button
                   onClick={() => {
+                    if (!canUseFontSizeControl) return;
                     setShowFontSizeControl(!showFontSizeControl);
                     if (!showFontSizeControl) setShowPositionControl(false);
                   }}
+                  disabled={!canUseFontSizeControl}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    !canUseFontSizeControl ? 'opacity-60 cursor-not-allowed' : ''
+                  } ${
                     showFontSizeControl 
                       ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' 
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <Type size={12} />
+                  {canUseFontSizeControl ? <Type size={12} /> : <Lock size={12} className="text-amber-500" />}
                   Font Size
+                  {!canUseFontSizeControl && <Crown size={10} className="text-amber-500" />}
                 </button>
               </div>
               
@@ -1162,6 +1233,31 @@ export default function ShareModal({
             )}
           </div>
 
+          {/* Download Limit Warning */}
+          {downloadLimit !== -1 && (
+            <div className={`flex items-center justify-between p-3 rounded-xl text-xs ${
+              isDownloadLimitReached 
+                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' 
+                : 'bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700'
+            }`}>
+              <div className="flex items-center gap-2">
+                <Download size={14} className={isDownloadLimitReached ? 'text-red-500' : 'text-gray-400'} />
+                <span className={isDownloadLimitReached ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}>
+                  Daily downloads: <span className="font-semibold">{dailyDownloads}/{downloadLimit}</span>
+                </span>
+              </div>
+              {isDownloadLimitReached && (
+                <Link 
+                  href="/pricing" 
+                  className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium hover:underline"
+                >
+                  <Crown size={12} />
+                  Upgrade
+                </Link>
+              )}
+            </div>
+          )}
+
           {/* Copy Link / Private Notice */}
           {isPublicQuote ? (
             <CopyLinkSection url={getQuoteUrl()} copied={linkCopied} onCopy={handleCopyLink} />
@@ -1176,6 +1272,7 @@ export default function ShareModal({
             onInstagram={handleInstagramShare}
             onWhatsApp={handleWhatsAppShare}
             onPinterest={handlePinterestShare}
+            isDownloadDisabled={isDownloadLimitReached}
           />
 
           {/* More Options */}
