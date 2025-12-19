@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock } from 'lucide-react';
+import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { isQuotePublic } from '@/lib/helpers';
 import Image from 'next/image';
@@ -10,6 +10,19 @@ import { CardTheme, FontStyle, BackgroundImage, DEFAULT_THEME, DEFAULT_FONT, BAC
 // ============================================================================
 // Types & Interfaces
 // ============================================================================
+
+type ShareFormat = 'post' | 'story' | 'square';
+
+interface ShareFormatConfig {
+  id: ShareFormat;
+  label: string;
+  sublabel: string;
+  width: number;
+  height: number;
+  aspectRatio: string;
+  pixelRatio: number;
+  icon: React.ReactNode;
+}
 
 interface QuoteData {
   id: number | string;
@@ -41,6 +54,7 @@ interface PreviewCardProps {
   backgroundImage?: BackgroundImage;
   customBackground?: string;
   verticalOffset?: number;
+  format?: ShareFormatConfig;
 }
 
 interface ShareButtonProps {
@@ -68,11 +82,43 @@ const POSITION_MIN = -50;
 const POSITION_MAX = 50;
 const COPY_FEEDBACK_DURATION = 2000;
 
-const PREVIEW_CARD_WIDTH = 320;
-const PREVIEW_CARD_HEIGHT = 400;
-const PREVIEW_SCALE = 0.6;
-const PREVIEW_DISPLAY_WIDTH = PREVIEW_CARD_WIDTH * PREVIEW_SCALE;
-const PREVIEW_DISPLAY_HEIGHT = PREVIEW_CARD_HEIGHT * PREVIEW_SCALE;
+// Share format configurations
+const SHARE_FORMATS: ShareFormatConfig[] = [
+  {
+    id: 'post',
+    label: 'Post',
+    sublabel: '4:5',
+    width: 320,
+    height: 400,
+    aspectRatio: '4/5',
+    pixelRatio: 6, // 1920x2400
+    icon: <RectangleVertical size={16} />,
+  },
+  {
+    id: 'story',
+    label: 'Story',
+    sublabel: '9:16',
+    width: 270,
+    height: 480,
+    aspectRatio: '9/16',
+    pixelRatio: 4, // 1080x1920
+    icon: <Smartphone size={16} />,
+  },
+  {
+    id: 'square',
+    label: 'Square',
+    sublabel: '1:1',
+    width: 360,
+    height: 360,
+    aspectRatio: '1/1',
+    pixelRatio: 3, // 1080x1080
+    icon: <Square size={16} />,
+  },
+];
+
+const DEFAULT_FORMAT = SHARE_FORMATS[0];
+
+const PREVIEW_SCALE = 0.55;
 
 // ============================================================================
 // Typography Utilities
@@ -147,6 +193,7 @@ function PreviewCard({
   backgroundImage,
   customBackground,
   verticalOffset = 0,
+  format = DEFAULT_FORMAT,
 }: PreviewCardProps) {
   const textLength = quote.text.length;
   const hasBackgroundImage = !!(backgroundImage?.url || customBackground);
@@ -164,11 +211,24 @@ function PreviewCard({
     };
   }, [cardTheme, hasBackgroundImage]);
 
-  // Memoized typography calculations
-  const typography = useMemo(() => ({
-    fontSize: calculateFontSize(textLength, 14, 24),
-    lineHeight: calculateLineHeight(textLength),
-  }), [textLength]);
+  // Calculate font size based on format and text length
+  // These values match QuoteCard.tsx exactly for consistent text wrapping
+  const getBaseFontSize = (formatId: ShareFormat): { min: number; max: number } => {
+    switch (formatId) {
+      case 'story': return { min: 15, max: 22 }; // Slightly larger for tall story format
+      case 'square': return { min: 13, max: 19 }; // Same as QuoteCard sm breakpoint
+      default: return { min: 13, max: 19 }; // Same as QuoteCard sm breakpoint (320px)
+    }
+  };
+
+  // Memoized typography calculations - matches QuoteCard exactly
+  const typography = useMemo(() => {
+    const { min, max } = getBaseFontSize(format.id);
+    return {
+      fontSize: calculateFontSize(textLength, min, max),
+      lineHeight: calculateLineHeight(textLength),
+    };
+  }, [textLength, format.id]);
 
   // Memoized styles
   const cardStyle = useMemo(() => ({
@@ -185,6 +245,14 @@ function PreviewCard({
     fontSize: `${typography.fontSize}px`,
     lineHeight: typography.lineHeight,
     textShadow: hasBackgroundImage ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+    // Consistent word-breaking with QuoteCard
+    wordWrap: 'normal' as const,
+    overflowWrap: 'normal' as const,
+    wordBreak: 'keep-all' as const,
+    hyphens: 'none' as const,
+    WebkitHyphens: 'none' as const,
+    msHyphens: 'none' as const,
+    whiteSpace: 'normal' as const,
   }), [colors.text, fontStyle, typography, hasBackgroundImage]);
 
   // Vertical position calculations
@@ -204,8 +272,12 @@ function PreviewCard({
   return (
     <div 
       data-preview-card="true"
-      className="relative w-[320px] aspect-[4/5] flex flex-col overflow-hidden"
-      style={cardStyle}
+      className="relative flex flex-col overflow-hidden"
+      style={{
+        ...cardStyle,
+        width: `${format.width}px`,
+        height: `${format.height}px`,
+      }}
     >
       {/* Background Image Layer */}
       {hasBackgroundImage && actualBackgroundUrl && (
@@ -238,13 +310,13 @@ function PreviewCard({
         {/* Header spacer */}
         <div className="flex-shrink-0 h-6" />
 
-        {/* Quote Content Area */}
+        {/* Quote Content Area - matches QuoteCard py-6 at sm breakpoint */}
         <div 
-          className="flex-1 flex flex-col overflow-hidden transition-all duration-200"
+          className="flex-1 flex flex-col overflow-hidden transition-all duration-200 py-6"
           style={{ 
             justifyContent: getJustifyContent(),
-            paddingTop: padding.top,
-            paddingBottom: padding.bottom,
+            paddingTop: verticalOffset > 0 ? `${verticalOffset * 0.8}%` : undefined,
+            paddingBottom: verticalOffset < 0 ? `${Math.abs(verticalOffset) * 0.8}%` : undefined,
           }}
         >
           {/* Quote Mark */}
@@ -325,6 +397,37 @@ function AuthorSection({ author, colors, hasBackgroundImage }: AuthorSectionProp
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Format Selector Component
+// ============================================================================
+
+interface FormatSelectorProps {
+  selectedFormat: ShareFormat;
+  onChange: (format: ShareFormatConfig) => void;
+}
+
+function FormatSelector({ selectedFormat, onChange }: FormatSelectorProps) {
+  return (
+    <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+      {SHARE_FORMATS.map((format) => (
+        <button
+          key={format.id}
+          onClick={() => onChange(format)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            selectedFormat === format.id
+              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          {format.icon}
+          <span className="hidden sm:inline">{format.label}</span>
+          <span className="text-[10px] opacity-70">{format.sublabel}</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -560,6 +663,7 @@ export default function ShareModal({
   const [linkCopied, setLinkCopied] = useState(false);
   const [verticalOffset, setVerticalOffset] = useState(0);
   const [showPositionControl, setShowPositionControl] = useState(true);
+  const [selectedFormat, setSelectedFormat] = useState<ShareFormatConfig>(DEFAULT_FORMAT);
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Derived state
@@ -590,6 +694,7 @@ export default function ShareModal({
     setLinkCopied(false);
     setVerticalOffset(0);
     setShowPositionControl(true);
+    setSelectedFormat(DEFAULT_FORMAT);
   }, [isOpen, quote.id]);
 
   // Copy to clipboard utility
@@ -621,10 +726,11 @@ export default function ShareModal({
     const previewCard = previewRef.current?.querySelector('[data-preview-card="true"]') as HTMLElement;
     if (!previewCard) return null;
 
-    // 2K Quality settings - generates 1920×2400 pixel image
+    // Quality settings based on selected format
+    // Story: 1080×1920, Post: 1920×2400, Square: 1080×1080
     const imageOptions = {
       quality: 1.0,
-      pixelRatio: 6, // 6x for 2K quality (320×6=1920, 400×6=2400)
+      pixelRatio: selectedFormat.pixelRatio,
       cacheBust: true,
       width: previewCard.offsetWidth,
       height: previewCard.offsetHeight,
@@ -634,24 +740,25 @@ export default function ShareModal({
     try {
       return await toPng(previewCard, imageOptions);
     } catch {
-      // Fallback with lower quality if device can't handle 2K
+      // Fallback with lower quality if device can't handle high resolution
       try {
-        return await toPng(previewCard, { ...imageOptions, pixelRatio: 4 });
+        return await toPng(previewCard, { ...imageOptions, pixelRatio: Math.max(2, selectedFormat.pixelRatio - 2) });
       } catch {
         return null;
       }
     }
-  }, []);
+  }, [selectedFormat.pixelRatio]);
 
   // Get filename for download
   const getFilename = useCallback(() => {
     const quoteIdStr = String(quote.id).replace('user_', 'my-');
+    const formatSuffix = selectedFormat.id !== 'post' ? `-${selectedFormat.id}` : '';
     if (quote.author) {
       const authorName = quote.author.replace(/\s+/g, '-').toLowerCase();
-      return `quote-${quoteIdStr}-${authorName}.png`;
+      return `quote-${quoteIdStr}-${authorName}${formatSuffix}.png`;
     }
-    return `quote-${quoteIdStr}.png`;
-  }, [quote.author, quote.id]);
+    return `quote-${quoteIdStr}${formatSuffix}.png`;
+  }, [quote.author, quote.id, selectedFormat.id]);
 
   // Download image handler
   const handleDownload = useCallback(async () => {
@@ -669,13 +776,17 @@ export default function ShareModal({
     }
   }, [generateImage, getFilename]);
 
-  // Share to Instagram
+  // Share to Instagram (opens story or post based on format)
   const handleInstagramShare = useCallback(async () => {
     await handleDownload();
     setTimeout(() => {
-      window.open('https://www.instagram.com/create/story/', '_blank', 'noopener,noreferrer');
+      // Open different Instagram pages based on format
+      const instagramUrl = selectedFormat.id === 'story' 
+        ? 'https://www.instagram.com/create/story/' 
+        : 'https://www.instagram.com/';
+      window.open(instagramUrl, '_blank', 'noopener,noreferrer');
     }, 300);
-  }, [handleDownload]);
+  }, [handleDownload, selectedFormat.id]);
 
   // Share to WhatsApp
   const handleWhatsAppShare = useCallback(async () => {
@@ -776,41 +887,38 @@ export default function ShareModal({
         <div className="px-4 py-4 sm:px-6 sm:py-5 overflow-y-auto max-h-[calc(95vh-80px)]">
           {/* Preview Card with Position Control */}
           <div className="mb-4 sm:mb-5">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <ImageIcon size={14} className="text-gray-400" />
                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Preview</span>
               </div>
               
-              {/* Position control toggle */}
-              <button
-                onClick={() => setShowPositionControl(!showPositionControl)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  showPositionControl 
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                <MoveVertical size={12} />
-                Adjust
-              </button>
+              {/* Format Selector */}
+              <FormatSelector 
+                selectedFormat={selectedFormat.id} 
+                onChange={setSelectedFormat} 
+              />
             </div>
 
             {/* Preview Card Container */}
             <div 
               ref={previewRef}
-              className="flex justify-center items-center p-4 sm:p-6 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-gray-800 dark:via-gray-850 dark:to-gray-900 rounded-2xl min-h-[280px] sm:min-h-[320px]"
+              className="flex justify-center items-center p-4 sm:p-6 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-gray-800 dark:via-gray-850 dark:to-gray-900 rounded-2xl transition-all duration-300"
+              style={{ minHeight: `${selectedFormat.height * PREVIEW_SCALE + 48}px` }}
             >
               <div 
-                className="relative shadow-2xl rounded-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10"
-                style={{ width: `${PREVIEW_DISPLAY_WIDTH}px`, height: `${PREVIEW_DISPLAY_HEIGHT}px` }}
+                className="relative shadow-2xl rounded-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10 transition-all duration-300"
+                style={{ 
+                  width: `${selectedFormat.width * PREVIEW_SCALE}px`, 
+                  height: `${selectedFormat.height * PREVIEW_SCALE}px` 
+                }}
               >
                 <div 
-                  className="origin-top-left"
+                  className="origin-top-left transition-all duration-300"
                   style={{ 
                     transform: `scale(${PREVIEW_SCALE})`,
-                    width: `${PREVIEW_CARD_WIDTH}px`,
-                    height: `${PREVIEW_CARD_HEIGHT}px`,
+                    width: `${selectedFormat.width}px`,
+                    height: `${selectedFormat.height}px`,
                   }}
                 >
                   <PreviewCard
@@ -820,12 +928,34 @@ export default function ShareModal({
                     backgroundImage={backgroundImage}
                     customBackground={quote.custom_background}
                     verticalOffset={verticalOffset}
+                    format={selectedFormat}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Position Slider */}
+            {/* Position Slider Toggle & Control */}
+            <div className="mt-3 flex items-center justify-between">
+              <button
+                onClick={() => setShowPositionControl(!showPositionControl)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  showPositionControl 
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                <MoveVertical size={12} />
+                Adjust Position
+              </button>
+              
+              {/* Output size indicator */}
+              <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
+                {selectedFormat.id === 'story' && '1080×1920'}
+                {selectedFormat.id === 'post' && '1920×2400'}
+                {selectedFormat.id === 'square' && '1080×1080'}
+              </span>
+            </div>
+            
             {showPositionControl && (
               <PositionControl
                 value={verticalOffset}

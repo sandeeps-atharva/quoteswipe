@@ -12,7 +12,7 @@ export type { CardTheme, FontStyle, BackgroundImage };
 
 // Custom images storage key (for non-authenticated users)
 const CUSTOM_IMAGES_KEY = 'quoteswipe_custom_images';
-const MAX_CUSTOM_IMAGES = 20; // Maximum number of custom images
+const MAX_CUSTOM_IMAGES = 100; // Maximum number of custom images
 
 interface CustomImageData {
   id: string;
