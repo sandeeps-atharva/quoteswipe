@@ -134,6 +134,41 @@ export default function Sidebar({
   const [editName, setEditName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
 
+  // Category groups from database
+  interface CategoryGroupData {
+    id: string;
+    name: string;
+    label: string;
+    icon: string;
+    order: number;
+    keywords: string[];
+  }
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroupData[]>([]);
+  const [hasFetchedGroups, setHasFetchedGroups] = useState(false);
+
+  // Fetch category groups from API
+  useEffect(() => {
+    if (hasFetchedGroups) return;
+    
+    const fetchGroups = async () => {
+      try {
+        const response = await fetch('/api/category-groups');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.groups) {
+            setCategoryGroups(data.groups);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch category groups:', error);
+      } finally {
+        setHasFetchedGroups(true);
+      }
+    };
+    
+    fetchGroups();
+  }, [hasFetchedGroups]);
+
   // Reset view when sidebar closes
   useEffect(() => {
     if (!isOpen) {
@@ -245,6 +280,62 @@ export default function Sidebar({
     setCollectionSearch('');
   }, [currentView]);
 
+  // Group categories by their groups (from database)
+  const groupedCategories = useMemo(() => {
+    const searchResults = debouncedSearchQuery.trim()
+      ? categories.filter(category =>
+          category.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase().trim()) || 
+          category.icon.includes(debouncedSearchQuery)
+        )
+      : categories;
+
+    if (debouncedSearchQuery.trim()) {
+      // When searching, return flat list
+      return [{ id: 'search', label: `🔍 Search Results (${searchResults.length})`, icon: '🔍', categories: searchResults }];
+    }
+
+    // If no groups loaded yet, show all categories in one group
+    if (categoryGroups.length === 0) {
+      return [{ id: 'all', label: 'All Categories', icon: '📚', categories: categories }];
+    }
+
+    // Group categories based on database groups
+    const grouped: { id: string; label: string; icon: string; categories: Category[] }[] = [];
+    const assignedCategories = new Set<string>();
+
+    categoryGroups.forEach(group => {
+      const matchingCategories = categories.filter(cat => 
+        group.keywords.some(keyword => 
+          cat.name.toLowerCase() === keyword.toLowerCase()
+        ) && !assignedCategories.has(cat.name)
+      );
+      
+      if (matchingCategories.length > 0) {
+        matchingCategories.forEach(cat => assignedCategories.add(cat.name));
+        grouped.push({
+          id: group.id,
+          label: group.label,
+          icon: group.icon,
+          categories: matchingCategories,
+        });
+      }
+    });
+
+    // Add remaining categories to "More"
+    const remaining = categories.filter(cat => !assignedCategories.has(cat.name));
+    if (remaining.length > 0) {
+      grouped.push({
+        id: 'more',
+        label: 'More Categories',
+        icon: '✨',
+        categories: remaining,
+      });
+    }
+
+    return grouped;
+  }, [categories, debouncedSearchQuery, categoryGroups]);
+
+  // For backward compatibility (flat list)
   const filteredCategories = useMemo(() => {
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase().trim();
@@ -1230,35 +1321,54 @@ export default function Sidebar({
               </div>
             </div>
 
-            {/* Categories List - Compact Grid */}
+            {/* Categories List - Grouped with Headlines */}
             <div className="flex-1 overflow-y-auto custom-scrollbar px-3 sm:px-4 pb-3 sm:pb-4">
-              {filteredCategories.length === 0 ? (
+              {groupedCategories.length === 0 || (groupedCategories.length === 1 && groupedCategories[0].categories.length === 0) ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Search size={28} className="text-gray-300 mb-2" />
                   <p className="text-xs text-gray-500">No categories found</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                  {filteredCategories.map((category) => {
-                    const isSelected = selectedCategories.includes(category.name);
-                    return (
-                      <button
-                        key={category.id}
-                        onClick={() => { onCategoryToggle(category.name); onClose(); }}
-                        className={`flex items-center gap-2.5 px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-xl transition-all ${
-                          isSelected
-                            ? 'bg-gradient-to-r from-blue-500 to-pink-500 text-white shadow-lg ring-2 ring-blue-300/50'
-                            : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        <span className="text-lg sm:text-xl shrink-0">{category.icon}</span>
-                        <span className="flex-1 text-left text-xs sm:text-sm font-medium truncate">{category.name}</span>
-                        <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shrink-0 font-medium ${isSelected ? 'bg-white/25' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                          {category.count}
+                <div className="space-y-4">
+                  {groupedCategories.map((group) => (
+                    <div key={group.id}>
+                      {/* Group Header */}
+                      <div className="flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-gray-900 py-1.5 z-10">
+                        <span className="text-base">{group.icon}</span>
+                        <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                          {group.label}
+                        </h3>
+                        <div className="flex-1 h-px bg-gradient-to-r from-gray-200 dark:from-gray-700 to-transparent" />
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                          {group.categories.length}
                         </span>
-                      </button>
-                    );
-                  })}
+                      </div>
+                      
+                      {/* Categories Grid */}
+                      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                        {group.categories.map((category) => {
+                          const isSelected = selectedCategories.includes(category.name);
+                          return (
+                            <button
+                              key={category.id}
+                              onClick={() => { onCategoryToggle(category.name); onClose(); }}
+                              className={`flex items-center gap-2.5 px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-xl transition-all ${
+                                isSelected
+                                  ? 'bg-gradient-to-r from-blue-500 to-pink-500 text-white shadow-lg ring-2 ring-blue-300/50'
+                                  : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                              }`}
+                            >
+                              <span className="text-lg sm:text-xl shrink-0">{category.icon}</span>
+                              <span className="flex-1 text-left text-xs sm:text-sm font-medium truncate">{category.name}</span>
+                              <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shrink-0 font-medium ${isSelected ? 'bg-white/25' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                                {category.count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

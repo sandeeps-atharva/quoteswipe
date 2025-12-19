@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical } from 'lucide-react';
+import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical, Type, Minus, Plus } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { isQuotePublic } from '@/lib/helpers';
 import Image from 'next/image';
@@ -55,6 +55,7 @@ interface PreviewCardProps {
   customBackground?: string;
   verticalOffset?: number;
   format?: ShareFormatConfig;
+  fontSizePx?: number; // 0 = auto, otherwise direct px value
 }
 
 interface ShareButtonProps {
@@ -81,6 +82,11 @@ const POSITION_STEP = 10;
 const POSITION_MIN = -50;
 const POSITION_MAX = 50;
 const COPY_FEEDBACK_DURATION = 2000;
+
+// Font size pixel constants
+const FONT_SIZE_PX_MIN = 10;
+const FONT_SIZE_PX_MAX = 32;
+const FONT_SIZE_PX_DEFAULT = 0; // 0 means "auto" (calculated based on text length)
 
 // Share format configurations
 const SHARE_FORMATS: ShareFormatConfig[] = [
@@ -194,6 +200,7 @@ function PreviewCard({
   customBackground,
   verticalOffset = 0,
   format = DEFAULT_FORMAT,
+  fontSizePx = 0,
 }: PreviewCardProps) {
   const textLength = quote.text.length;
   const hasBackgroundImage = !!(backgroundImage?.url || customBackground);
@@ -221,14 +228,18 @@ function PreviewCard({
     }
   };
 
-  // Memoized typography calculations - matches QuoteCard exactly
+  // Memoized typography calculations - uses direct px value or auto-calculated
   const typography = useMemo(() => {
     const { min, max } = getBaseFontSize(format.id);
+    const autoFontSize = calculateFontSize(textLength, min, max);
+    // Use user-specified px value or fall back to auto
+    const finalFontSize = fontSizePx > 0 ? fontSizePx : autoFontSize;
     return {
-      fontSize: calculateFontSize(textLength, min, max),
+      fontSize: finalFontSize,
+      autoFontSize, // expose for control display
       lineHeight: calculateLineHeight(textLength),
     };
-  }, [textLength, format.id]);
+  }, [textLength, format.id, fontSizePx]);
 
   // Memoized styles
   const cardStyle = useMemo(() => ({
@@ -515,6 +526,141 @@ function PositionControl({ value, onChange, onAdjust }: PositionControlProps) {
 }
 
 // ============================================================================
+// Font Size Control Component
+// ============================================================================
+
+interface FontSizeControlProps {
+  value: number; // 0 = auto, otherwise px value
+  onChange: (value: number) => void;
+  autoSize: number; // calculated auto size for display
+}
+
+function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
+  const isAuto = value === 0;
+  const displayValue = isAuto ? Math.round(autoSize) : value;
+  
+  const handleDecrease = () => {
+    const currentVal = isAuto ? Math.round(autoSize) : value;
+    onChange(Math.max(FONT_SIZE_PX_MIN, currentVal - 1));
+  };
+  
+  const handleIncrease = () => {
+    const currentVal = isAuto ? Math.round(autoSize) : value;
+    onChange(Math.min(FONT_SIZE_PX_MAX, currentVal + 1));
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value) || 0;
+    if (val === 0) {
+      onChange(0); // Reset to auto
+    } else {
+      onChange(Math.max(FONT_SIZE_PX_MIN, Math.min(FONT_SIZE_PX_MAX, val)));
+    }
+  };
+
+  // Pixel presets
+  const presets = [
+    { label: 'Auto', value: 0 },
+    { label: '12', value: 12 },
+    { label: '14', value: 14 },
+    { label: '16', value: 16 },
+    { label: '18', value: 18 },
+    { label: '20', value: 20 },
+    { label: '24', value: 24 },
+  ];
+
+  return (
+    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+      <div className="flex items-center gap-3">
+        {/* Decrease Button */}
+        <button
+          onClick={handleDecrease}
+          disabled={!isAuto && value <= FONT_SIZE_PX_MIN}
+          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Smaller"
+        >
+          <Minus size={16} className="text-gray-600 dark:text-gray-300" />
+        </button>
+        
+        {/* Size Display & Input */}
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+              <Type size={10} />
+              Font Size
+            </span>
+            {isAuto && (
+              <span className="text-[9px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded">
+                Auto
+              </span>
+            )}
+          </div>
+          
+          {/* Pixel Input */}
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={FONT_SIZE_PX_MIN}
+              max={FONT_SIZE_PX_MAX}
+              value={isAuto ? '' : value}
+              placeholder={`${Math.round(autoSize)}`}
+              onChange={handleInputChange}
+              className="w-20 px-2.5 py-1.5 text-sm font-mono text-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+            />
+            <span className="text-xs text-gray-500 dark:text-gray-400">px</span>
+            
+            {/* Slider */}
+            <input
+              type="range"
+              min={FONT_SIZE_PX_MIN}
+              max={FONT_SIZE_PX_MAX}
+              value={displayValue}
+              onChange={(e) => onChange(Number(e.target.value))}
+              className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+            />
+          </div>
+          
+          <div className="flex justify-between mt-1.5 px-1">
+            <span className="text-[9px] text-gray-400">{FONT_SIZE_PX_MIN}px</span>
+            <span className="text-[9px] text-gray-400 font-medium">
+              Current: {displayValue}px
+            </span>
+            <span className="text-[9px] text-gray-400">{FONT_SIZE_PX_MAX}px</span>
+          </div>
+        </div>
+        
+        {/* Increase Button */}
+        <button
+          onClick={handleIncrease}
+          disabled={!isAuto && value >= FONT_SIZE_PX_MAX}
+          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Larger"
+        >
+          <Plus size={16} className="text-gray-600 dark:text-gray-300" />
+        </button>
+      </div>
+      
+      {/* Quick Pixel Presets */}
+      <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
+        {presets.map((preset) => (
+          <button
+            key={preset.label}
+            onClick={() => onChange(preset.value)}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${
+              value === preset.value
+                ? 'bg-purple-500 text-white'
+                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+            }`}
+          >
+            {preset.value === 0 ? preset.label : `${preset.label}px`}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Copy Link Section Component
 // ============================================================================
 
@@ -662,13 +808,29 @@ export default function ShareModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [verticalOffset, setVerticalOffset] = useState(0);
-  const [showPositionControl, setShowPositionControl] = useState(true);
+  const [fontSizePx, setFontSizePx] = useState(0); // 0 = auto
+  const [showPositionControl, setShowPositionControl] = useState(false);
+  const [showFontSizeControl, setShowFontSizeControl] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<ShareFormatConfig>(DEFAULT_FORMAT);
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Derived state
   const isUserQuote = quote.isUserQuote || String(quote.id).startsWith('user_');
   const isPublicQuote = !isUserQuote || isQuotePublic(quote.is_public);
+  
+  // Calculate auto font size based on text length and format (for display in control)
+  const autoFontSize = useMemo(() => {
+    const textLength = quote.text.length;
+    const getBaseFontSize = (formatId: ShareFormat): { min: number; max: number } => {
+      switch (formatId) {
+        case 'story': return { min: 15, max: 22 };
+        case 'square': return { min: 13, max: 19 };
+        default: return { min: 13, max: 19 };
+      }
+    };
+    const { min, max } = getBaseFontSize(selectedFormat.id);
+    return calculateFontSize(textLength, min, max);
+  }, [quote.text.length, selectedFormat.id]);
   
   // Generate quote URL
   const getQuoteUrl = useCallback(() => {
@@ -693,7 +855,9 @@ export default function ShareModal({
     if (!isOpen) return;
     setLinkCopied(false);
     setVerticalOffset(0);
-    setShowPositionControl(true);
+    setFontSizePx(0); // Reset to auto
+    setShowPositionControl(false);
+    setShowFontSizeControl(false);
     setSelectedFormat(DEFAULT_FORMAT);
   }, [isOpen, quote.id]);
 
@@ -929,24 +1093,47 @@ export default function ShareModal({
                     customBackground={quote.custom_background}
                     verticalOffset={verticalOffset}
                     format={selectedFormat}
+                    fontSizePx={fontSizePx}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Position Slider Toggle & Control */}
-            <div className="mt-3 flex items-center justify-between">
-              <button
-                onClick={() => setShowPositionControl(!showPositionControl)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  showPositionControl 
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                <MoveVertical size={12} />
-                Adjust Position
-              </button>
+            {/* Adjustment Controls Row */}
+            <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                {/* Position Toggle */}
+                <button
+                  onClick={() => {
+                    setShowPositionControl(!showPositionControl);
+                    if (!showPositionControl) setShowFontSizeControl(false);
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    showPositionControl 
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <MoveVertical size={12} />
+                  Position
+                </button>
+
+                {/* Font Size Toggle */}
+                <button
+                  onClick={() => {
+                    setShowFontSizeControl(!showFontSizeControl);
+                    if (!showFontSizeControl) setShowPositionControl(false);
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    showFontSizeControl 
+                      ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' 
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Type size={12} />
+                  Font Size
+                </button>
+              </div>
               
               {/* Output size indicator */}
               <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
@@ -956,11 +1143,21 @@ export default function ShareModal({
               </span>
             </div>
             
+            {/* Position Control Panel */}
             {showPositionControl && (
               <PositionControl
                 value={verticalOffset}
                 onChange={setVerticalOffset}
                 onAdjust={adjustPosition}
+              />
+            )}
+
+            {/* Font Size Control Panel */}
+            {showFontSizeControl && (
+              <FontSizeControl
+                value={fontSizePx}
+                onChange={setFontSizePx}
+                autoSize={autoFontSize}
               />
             )}
           </div>
