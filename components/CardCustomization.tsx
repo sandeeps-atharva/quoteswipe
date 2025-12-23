@@ -83,6 +83,8 @@ function CardCustomization({
   
   // For authenticated users - ImageUploader state
   const [selectedCustomBgUrl, setSelectedCustomBgUrl] = useState<string | null>(null);
+  const [selectedCustomBgId, setSelectedCustomBgId] = useState<string | null>(null);
+  const [userBackgroundsList, setUserBackgroundsList] = useState<UserBackground[]>([]);
   const [userBackgroundsCount, setUserBackgroundsCount] = useState(0);
 
   // Load custom images - from localStorage for guests only (authenticated users use ImageUploader)
@@ -133,6 +135,15 @@ function CardCustomization({
       setSelectedFont(currentFont);
       setSelectedBackground(currentBackground);
       setShowLightThemes(!currentTheme.isDark);
+      
+      // Restore custom background selection if current background is a custom one
+      if (currentBackground.id && (currentBackground.id.startsWith('custom_') || currentBackground.id.startsWith('bg_'))) {
+        setSelectedCustomBgUrl(currentBackground.url);
+        setSelectedCustomBgId(currentBackground.id);
+      } else {
+        setSelectedCustomBgUrl(null);
+        setSelectedCustomBgId(null);
+      }
     }
   }, [isOpen, currentTheme, currentFont, currentBackground]);
 
@@ -343,20 +354,27 @@ function CardCustomization({
   const handleSelectCustomBackground = useCallback((url: string | null) => {
     setSelectedCustomBgUrl(url);
     if (url) {
+      // Find the actual background from the list to get the real server ID
+      const serverBg = userBackgroundsList.find(bg => bg.url === url);
+      const bgId = serverBg?.id || `custom_${Date.now()}`;
+      setSelectedCustomBgId(bgId);
+      
       const customBg = createCustomBackground({
-        id: `custom_${Date.now()}`,
+        id: bgId, // Use the actual server ID for proper persistence
         url,
-        name: 'Custom Photo',
+        name: serverBg?.name || 'Custom Photo',
         createdAt: Date.now(),
       });
       setSelectedBackground(customBg);
     } else {
+      setSelectedCustomBgId(null);
       setSelectedBackground(BACKGROUND_IMAGES[0]);
     }
-  }, []);
+  }, [userBackgroundsList]);
 
-  // Track user backgrounds count from ImageUploader
+  // Track user backgrounds from ImageUploader
   const handleBackgroundsChange = useCallback((backgrounds: UserBackground[]) => {
+    setUserBackgroundsList(backgrounds);
     setUserBackgroundsCount(backgrounds.length);
   }, []);
 

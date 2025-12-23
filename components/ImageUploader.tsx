@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Upload, Camera, X, Check, Loader2, ImageIcon } from 'lucide-react';
+import { Upload, Camera, X, Check, Loader2, ImageIcon, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useBackgroundsSafe, UserBackground } from '@/contexts/BackgroundsContext';
 
@@ -50,6 +50,7 @@ export default function ImageUploader({
   const [localBackgrounds, setLocalBackgrounds] = useState<UserBackground[]>([]);
   const [localLoading, setLocalLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
 
   // Use context data if available, otherwise use local state
   const userBackgrounds = backgroundsContext?.userBackgrounds ?? localBackgrounds;
@@ -152,6 +153,7 @@ export default function ImageUploader({
 
   // Delete user background
   const handleDeleteBackground = useCallback(async (backgroundId: string, bgUrl: string) => {
+    setDeletingImageId(backgroundId);
     try {
       const response = await fetch('/api/user/upload-background', {
         method: 'DELETE',
@@ -177,6 +179,8 @@ export default function ImageUploader({
     } catch (error) {
       console.error('Delete error:', error);
       toast.error('Failed to delete image');
+    } finally {
+      setDeletingImageId(null);
     }
   }, [backgroundsContext, selectedCustomBackground, onSelectCustomBackground]);
 
@@ -260,38 +264,55 @@ export default function ImageUploader({
         <div className="mb-3">
           <p className="text-xs text-gray-500 mb-2">Your Images ({validBackgrounds.length})</p>
           <div className={`grid ${gridColsClass} gap-2 max-h-48 overflow-y-auto`}>
-            {validBackgrounds.slice(0, maxDisplay).map((bg) => (
-              <div key={bg.id} className="relative group aspect-square">
-                <button
-                  onClick={() => onSelectCustomBackground(bg.url)}
-                  className={`w-full h-full rounded-lg overflow-hidden border-2 transition-all ${
-                    selectedCustomBackground === bg.url
-                      ? 'border-purple-500 ring-2 ring-purple-500/30'
-                      : 'border-transparent hover:border-gray-300'
-                  }`}
-                >
-                  <img
-                    src={bg.url}
-                    alt={bg.name || 'Background'}
-                    className="w-full h-full object-cover"
-                  />
-                  {selectedCustomBackground === bg.url && (
-                    <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
-                      <Check size={16} className="text-white drop-shadow" />
-                    </div>
+            {validBackgrounds.slice(0, maxDisplay).map((bg) => {
+              const isDeleting = deletingImageId === bg.id;
+              return (
+                <div key={bg.id} className="relative group aspect-square">
+                  <button
+                    onClick={() => !isDeleting && onSelectCustomBackground(bg.url)}
+                    disabled={isDeleting}
+                    className={`w-full h-full rounded-lg overflow-hidden border-2 transition-all ${
+                      isDeleting ? 'opacity-60 cursor-not-allowed' : ''
+                    } ${
+                      selectedCustomBackground === bg.url
+                        ? 'border-purple-500 ring-2 ring-purple-500/30'
+                        : 'border-transparent hover:border-gray-300'
+                    }`}
+                  >
+                    <img
+                      src={bg.url}
+                      alt={bg.name || 'Background'}
+                      className={`w-full h-full object-cover ${isDeleting ? 'blur-sm' : ''}`}
+                    />
+                    {/* Selection indicator */}
+                    {selectedCustomBackground === bg.url && !isDeleting && (
+                      <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                        <Check size={16} className="text-white drop-shadow" />
+                      </div>
+                    )}
+                    {/* Loading overlay when deleting */}
+                    {isDeleting && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <Loader2 size={20} className="text-white animate-spin" />
+                      </div>
+                    )}
+                  </button>
+                  {/* Delete button - Always visible on mobile, hover on desktop */}
+                  {!isDeleting && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteBackground(bg.id, bg.url);
+                      }}
+                      className="absolute top-0.5 right-0.5 z-10 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 active:scale-90 transition-all shadow-lg"
+                      title="Delete image"
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   )}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteBackground(bg.id, bg.url);
-                  }}
-                  className="absolute -top-1 -right-1 z-10 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
-                >
-                  <X size={10} />
-                </button>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
           {validBackgrounds.length > maxDisplay && (
             <p className="text-xs text-gray-400 mt-2 text-center">
