@@ -363,11 +363,11 @@ export default function CreateQuoteModal({
                   Background
                 </label>
                 
-                {/* Image Uploader Component */}
+                {/* Image Uploader Component - Show ALL uploaded images */}
                 <ImageUploader
                   selectedCustomBackground={customBackground}
                   onSelectCustomBackground={handleSelectCustomBackground}
-                  maxDisplay={8}
+                  maxDisplay={100}
                   showUploadButtons={true}
                   showClearOption={true}
                   clearOptionLabel="No Background (Default)"
@@ -377,9 +377,9 @@ export default function CreateQuoteModal({
 
                 {/* Preset backgrounds */}
                 <div>
-                  <p className="text-xs text-gray-500 mb-2">Presets</p>
-                  <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto">
-                    {BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).slice(0, 16).map((bg) => (
+                  <p className="text-xs text-gray-500 mb-2">Presets ({BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).length})</p>
+                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                    {BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).map((bg) => (
                       <button
                         key={bg.id}
                         onClick={() => {

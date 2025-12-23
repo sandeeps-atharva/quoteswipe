@@ -167,11 +167,29 @@ export async function GET(request: NextRequest) {
         : preferences.custom_backgrounds;
     }
 
-    return NextResponse.json({ backgrounds });
+    return NextResponse.json(
+      { backgrounds },
+      {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
 
   } catch (error) {
     console.error('Get backgrounds error:', error);
-    return NextResponse.json({ backgrounds: [] });
+    return NextResponse.json(
+      { backgrounds: [] },
+      {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   }
 }
 

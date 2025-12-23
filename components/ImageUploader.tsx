@@ -3,12 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Upload, Camera, X, Check, Loader2, ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useBackgroundsSafe, UserBackground } from '@/contexts/BackgroundsContext';
 
-export interface UserBackground {
-  id: string;
-  url: string;
-  name: string;
-}
+// Re-export the type for consumers
+export type { UserBackground };
 
 interface ImageUploaderProps {
   // Selected custom background URL
@@ -25,7 +23,7 @@ interface ImageUploaderProps {
   clearOptionLabel?: string;
   // Grid columns (default 4)
   gridCols?: 3 | 4 | 5 | 6;
-  // Whether the component should fetch images on mount
+  // Whether the component should fetch images on mount (deprecated - now uses context)
   autoFetch?: boolean;
   // Callback when backgrounds change
   onBackgroundsChange?: (backgrounds: UserBackground[]) => void;
@@ -45,33 +43,58 @@ export default function ImageUploader({
   onBackgroundsChange,
   className = '',
 }: ImageUploaderProps) {
-  const [userBackgrounds, setUserBackgrounds] = useState<UserBackground[]>([]);
+  // Use context for preloaded backgrounds
+  const backgroundsContext = useBackgroundsSafe();
+  
+  // Fallback local state if context is not available
+  const [localBackgrounds, setLocalBackgrounds] = useState<UserBackground[]>([]);
+  const [localLoading, setLocalLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch user's custom backgrounds
+  // Use context data if available, otherwise use local state
+  const userBackgrounds = backgroundsContext?.userBackgrounds ?? localBackgrounds;
+  const isLoading = backgroundsContext?.isLoading ?? localLoading;
+  const isInitialized = backgroundsContext?.isInitialized ?? false;
+
+  // Fallback fetch for when context is not available
   const fetchUserBackgrounds = useCallback(async () => {
-    setIsLoading(true);
+    if (backgroundsContext) return; // Skip if context is available
+    
+    setLocalLoading(true);
     try {
-      const response = await fetch('/api/user/upload-background');
+      const response = await fetch('/api/user/upload-background', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         const backgrounds = data.backgrounds || [];
-        setUserBackgrounds(backgrounds);
+        setLocalBackgrounds(backgrounds);
         onBackgroundsChange?.(backgrounds);
       }
     } catch (error) {
       console.error('Failed to fetch user backgrounds:', error);
     } finally {
-      setIsLoading(false);
+      setLocalLoading(false);
     }
-  }, [onBackgroundsChange]);
+  }, [backgroundsContext, onBackgroundsChange]);
 
+  // Fetch if context not available and autoFetch is true
   useEffect(() => {
-    if (autoFetch) {
+    if (!backgroundsContext && autoFetch) {
       fetchUserBackgrounds();
     }
-  }, [autoFetch, fetchUserBackgrounds]);
+  }, [backgroundsContext, autoFetch, fetchUserBackgrounds]);
+
+  // Notify parent when backgrounds change
+  useEffect(() => {
+    if (userBackgrounds.length > 0) {
+      onBackgroundsChange?.(userBackgrounds);
+    }
+  }, [userBackgrounds, onBackgroundsChange]);
 
   // Handle image upload
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,10 +127,15 @@ export default function ImageUploader({
       if (response.ok) {
         const data = await response.json();
         const newBackground = data.background as UserBackground;
-        const newBackgrounds = [newBackground, ...userBackgrounds];
-        setUserBackgrounds(newBackgrounds);
+        
+        // Update context or local state
+        if (backgroundsContext) {
+          backgroundsContext.addBackground(newBackground);
+        } else {
+          setLocalBackgrounds(prev => [newBackground, ...prev]);
+        }
+        
         onSelectCustomBackground(newBackground.url);
-        onBackgroundsChange?.(newBackgrounds);
         toast.success('Image uploaded!');
       } else {
         const error = await response.json();
@@ -120,7 +148,7 @@ export default function ImageUploader({
       setIsUploadingImage(false);
       e.target.value = '';
     }
-  }, [userBackgrounds, onSelectCustomBackground, onBackgroundsChange]);
+  }, [backgroundsContext, onSelectCustomBackground]);
 
   // Delete user background
   const handleDeleteBackground = useCallback(async (backgroundId: string, bgUrl: string) => {
@@ -132,12 +160,16 @@ export default function ImageUploader({
       });
 
       if (response.ok) {
-        const newBackgrounds = userBackgrounds.filter(bg => bg.id !== backgroundId);
-        setUserBackgrounds(newBackgrounds);
+        // Update context or local state
+        if (backgroundsContext) {
+          backgroundsContext.removeBackground(backgroundId);
+        } else {
+          setLocalBackgrounds(prev => prev.filter(bg => bg.id !== backgroundId));
+        }
+        
         if (selectedCustomBackground === bgUrl) {
           onSelectCustomBackground(null);
         }
-        onBackgroundsChange?.(newBackgrounds);
         toast.success('Image deleted');
       } else {
         toast.error('Failed to delete image');
@@ -146,12 +178,16 @@ export default function ImageUploader({
       console.error('Delete error:', error);
       toast.error('Failed to delete image');
     }
-  }, [userBackgrounds, selectedCustomBackground, onSelectCustomBackground, onBackgroundsChange]);
+  }, [backgroundsContext, selectedCustomBackground, onSelectCustomBackground]);
 
-  // Refresh backgrounds (can be called from parent)
+  // Refresh backgrounds
   const refresh = useCallback(() => {
-    fetchUserBackgrounds();
-  }, [fetchUserBackgrounds]);
+    if (backgroundsContext) {
+      backgroundsContext.refreshBackgrounds();
+    } else {
+      fetchUserBackgrounds();
+    }
+  }, [backgroundsContext, fetchUserBackgrounds]);
 
   // Grid columns class
   const gridColsClass = {
@@ -223,7 +259,7 @@ export default function ImageUploader({
       {!isLoading && validBackgrounds.length > 0 && (
         <div className="mb-3">
           <p className="text-xs text-gray-500 mb-2">Your Images ({validBackgrounds.length})</p>
-          <div className={`grid ${gridColsClass} gap-2`}>
+          <div className={`grid ${gridColsClass} gap-2 max-h-48 overflow-y-auto`}>
             {validBackgrounds.slice(0, maxDisplay).map((bg) => (
               <div key={bg.id} className="relative group aspect-square">
                 <button
@@ -279,26 +315,10 @@ export default function ImageUploader({
   );
 }
 
-// Export a hook version for more flexibility
+// Export a hook version that uses the context
 export function useImageUploader() {
-  const [userBackgrounds, setUserBackgrounds] = useState<UserBackground[]>([]);
+  const backgroundsContext = useBackgroundsSafe();
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const fetchUserBackgrounds = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/user/upload-background');
-      if (response.ok) {
-        const data = await response.json();
-        setUserBackgrounds(data.backgrounds || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user backgrounds:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   const uploadImage = useCallback(async (file: File): Promise<UserBackground | null> => {
     if (!file.type.startsWith('image/')) {
@@ -324,7 +344,7 @@ export function useImageUploader() {
       if (response.ok) {
         const data = await response.json();
         const newBackground = data.background as UserBackground;
-        setUserBackgrounds(prev => [newBackground, ...prev]);
+        backgroundsContext?.addBackground(newBackground);
         toast.success('Image uploaded!');
         return newBackground;
       } else {
@@ -339,7 +359,7 @@ export function useImageUploader() {
     } finally {
       setIsUploadingImage(false);
     }
-  }, []);
+  }, [backgroundsContext]);
 
   const deleteImage = useCallback(async (backgroundId: string): Promise<boolean> => {
     try {
@@ -350,7 +370,7 @@ export function useImageUploader() {
       });
 
       if (response.ok) {
-        setUserBackgrounds(prev => prev.filter(bg => bg.id !== backgroundId));
+        backgroundsContext?.removeBackground(backgroundId);
         toast.success('Image deleted');
         return true;
       } else {
@@ -362,13 +382,13 @@ export function useImageUploader() {
       toast.error('Failed to delete image');
       return false;
     }
-  }, []);
+  }, [backgroundsContext]);
 
   return {
-    userBackgrounds,
+    userBackgrounds: backgroundsContext?.userBackgrounds ?? [],
     isUploadingImage,
-    isLoading,
-    fetchUserBackgrounds,
+    isLoading: backgroundsContext?.isLoading ?? false,
+    fetchUserBackgrounds: backgroundsContext?.refreshBackgrounds ?? (() => Promise.resolve()),
     uploadImage,
     deleteImage,
   };

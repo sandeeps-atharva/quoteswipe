@@ -301,7 +301,7 @@ export default function SaveQuoteModal({
                       <ImageUploader
                         selectedCustomBackground={selectedCustomBgUrl}
                         onSelectCustomBackground={handleSelectCustomBackground}
-                        maxDisplay={12}
+                        maxDisplay={100}
                         showUploadButtons={true}
                         showClearOption={false}
                         gridCols={5}
