@@ -1,8 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Sparkles, PenLine, User, Tag, Loader2, Check, Globe, Lock } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, Sparkles, PenLine, User, Tag, Loader2, Check, Globe, Lock, Image as ImageIcon, Type, ChevronDown, ChevronUp } from 'lucide-react';
+import Image from 'next/image';
+import toast from 'react-hot-toast';
 import { isQuotePublic } from '@/lib/helpers';
+import { FONT_STYLES, BACKGROUND_IMAGES, FontStyle, BackgroundImage } from '@/lib/constants';
+import ImageUploader from './ImageUploader';
 
 interface Category {
   id: string | number;
@@ -17,6 +21,7 @@ interface UserQuote {
   theme_id?: string;
   font_id?: string;
   background_id?: string;
+  custom_background?: string;
   category_id?: string | number;
   category?: string;
   category_icon?: string;
@@ -45,6 +50,12 @@ export default function CreateQuoteModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [charCount, setCharCount] = useState(0);
+  
+  // Customization states
+  const [showCustomization, setShowCustomization] = useState(false);
+  const [selectedFontId, setSelectedFontId] = useState<string>('elegant');
+  const [selectedBackgroundId, setSelectedBackgroundId] = useState<string | null>(null);
+  const [customBackground, setCustomBackground] = useState<string | null>(null);
 
   const isEditing = !!editQuote;
   const maxChars = 500;
@@ -57,11 +68,21 @@ export default function CreateQuoteModal({
         setAuthor(editQuote.author || '');
         setCategoryId(editQuote.category_id || null);
         setIsPublic(isQuotePublic(editQuote.is_public));
+        setSelectedFontId(editQuote.font_id || 'elegant');
+        setSelectedBackgroundId(editQuote.background_id || null);
+        setCustomBackground(editQuote.custom_background || null);
+        if (editQuote.background_id || editQuote.custom_background || editQuote.font_id) {
+          setShowCustomization(true);
+        }
       } else {
         setText('');
         setAuthor('');
         setCategoryId(null);
         setIsPublic(false);
+        setSelectedFontId('elegant');
+        setSelectedBackgroundId(null);
+        setCustomBackground(null);
+        setShowCustomization(false);
       }
       setError('');
       setCharCount(editQuote?.text.length || 0);
@@ -76,8 +97,15 @@ export default function CreateQuoteModal({
     }
   };
 
+  // Handle selecting a custom background from ImageUploader
+  const handleSelectCustomBackground = useCallback((url: string | null) => {
+    setCustomBackground(url);
+    if (url) {
+      setSelectedBackgroundId(null);
+    }
+  }, []);
+
   const handleSubmit = async () => {
-    // Validation
     if (text.trim().length < minChars) {
       setError(`Quote must be at least ${minChars} characters`);
       return;
@@ -101,6 +129,9 @@ export default function CreateQuoteModal({
           author: author.trim(),
           categoryId,
           isPublic,
+          fontId: selectedFontId,
+          backgroundId: selectedBackgroundId,
+          customBackground: customBackground,
         }),
       });
 
@@ -110,7 +141,6 @@ export default function CreateQuoteModal({
         throw new Error(data.error || 'Failed to save quote');
       }
 
-      // Pass cacheInvalidated flag to handle public quote visibility in feed
       onSuccess(data.quote, data.cacheInvalidated);
       onClose();
     } catch (err: any) {
@@ -119,6 +149,14 @@ export default function CreateQuoteModal({
       setIsLoading(false);
     }
   };
+
+  // Get selected font
+  const selectedFont = FONT_STYLES.find(f => f.id === selectedFontId) || FONT_STYLES[0];
+  
+  // Get background for preview
+  const previewBackground = (customBackground && customBackground.length > 0 ? customBackground : null) 
+    || (selectedBackgroundId ? BACKGROUND_IMAGES.find(b => b.id === selectedBackgroundId)?.url : null) 
+    || null;
 
   if (!isOpen) return null;
 
@@ -131,7 +169,7 @@ export default function CreateQuoteModal({
       />
       
       {/* Modal */}
-      <div className="relative w-full sm:max-w-lg mx-0 sm:mx-4 bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden">
+      <div className="relative w-full sm:max-w-lg mx-0 sm:mx-4 bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Gradient top bar */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500" />
         
@@ -141,7 +179,7 @@ export default function CreateQuoteModal({
         </div>
 
         {/* Header */}
-        <div className="px-5 pt-2 pb-3 sm:px-6 sm:pt-5 sm:pb-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="px-5 pt-2 pb-3 sm:px-6 sm:pt-5 sm:pb-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
@@ -166,7 +204,7 @@ export default function CreateQuoteModal({
         </div>
 
         {/* Content */}
-        <div className="px-5 py-4 sm:px-6 sm:py-5 overflow-y-auto max-h-[calc(90vh-180px)] space-y-4">
+        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5 space-y-4">
           {/* Quote Text */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -178,7 +216,11 @@ export default function CreateQuoteModal({
                 value={text}
                 onChange={(e) => handleTextChange(e.target.value)}
                 placeholder="Write something inspiring..."
-                className="w-full h-32 sm:h-40 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all text-sm sm:text-base"
+                className="w-full h-28 sm:h-32 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all text-sm sm:text-base"
+                style={{
+                  fontFamily: selectedFont.fontFamily,
+                  fontWeight: selectedFont.fontWeight,
+                }}
                 autoFocus
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-2">
@@ -216,6 +258,160 @@ export default function CreateQuoteModal({
             />
           </div>
 
+          {/* Customization Toggle */}
+          <button
+            onClick={() => setShowCustomization(!showCustomization)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-xl text-purple-700 dark:text-purple-300 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <ImageIcon size={16} className="text-white" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-semibold">Customize Background & Font</p>
+                <p className="text-[10px] opacity-70">Add your own style</p>
+              </div>
+            </div>
+            {showCustomization ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </button>
+
+          {/* Customization Section */}
+          {showCustomization && (
+            <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+              {/* Preview */}
+              {(previewBackground || text) && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium text-gray-500 mb-2">Preview</p>
+                  <div 
+                    className="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-lg"
+                    style={{
+                      background: previewBackground ? undefined : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    }}
+                  >
+                    {previewBackground && previewBackground.length > 0 && (
+                      <>
+                        {/* Use native img for base64 data URLs */}
+                        {previewBackground.startsWith('data:') ? (
+                          <img
+                            src={previewBackground}
+                            alt="Preview"
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Image
+                            src={previewBackground}
+                            alt="Preview"
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-black/40" />
+                      </>
+                    )}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                      <p 
+                        className="text-white text-center text-sm leading-relaxed drop-shadow-lg"
+                        style={{
+                          fontFamily: selectedFont.fontFamily,
+                          fontWeight: selectedFont.fontWeight,
+                        }}
+                      >
+                        "{text || 'Your quote preview...'}"
+                      </p>
+                      {author && (
+                        <p className="text-white/80 text-xs mt-2 drop-shadow">— {author}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Font Selection */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <Type size={14} className="text-blue-500" />
+                  Font Style
+                </label>
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                  {FONT_STYLES.slice(0, 12).map((font) => (
+                    <button
+                      key={font.id}
+                      onClick={() => setSelectedFontId(font.id)}
+                      className={`shrink-0 px-3 py-2 rounded-lg border-2 transition-all ${
+                        selectedFontId === font.id
+                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <span 
+                        className="text-lg text-gray-800 dark:text-gray-200"
+                        style={{ fontFamily: font.fontFamily, fontWeight: font.fontWeight }}
+                      >
+                        {font.sample}
+                      </span>
+                      <p className="text-[9px] text-gray-500 mt-0.5 whitespace-nowrap">{font.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Background Selection */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <ImageIcon size={14} className="text-green-500" />
+                  Background
+                </label>
+                
+                {/* Image Uploader Component */}
+                <ImageUploader
+                  selectedCustomBackground={customBackground}
+                  onSelectCustomBackground={handleSelectCustomBackground}
+                  maxDisplay={8}
+                  showUploadButtons={true}
+                  showClearOption={true}
+                  clearOptionLabel="No Background (Default)"
+                  gridCols={4}
+                  autoFetch={isOpen}
+                />
+
+                {/* Preset backgrounds */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Presets</p>
+                  <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto">
+                    {BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).slice(0, 16).map((bg) => (
+                      <button
+                        key={bg.id}
+                        onClick={() => {
+                          setSelectedBackgroundId(bg.id);
+                          setCustomBackground(null);
+                        }}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                          selectedBackgroundId === bg.id
+                            ? 'border-purple-500 ring-2 ring-purple-500/30'
+                            : 'border-transparent hover:border-gray-300'
+                        }`}
+                      >
+                        <Image
+                          src={bg.url}
+                          alt={bg.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                        {selectedBackgroundId === bg.id && (
+                          <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                            <Check size={16} className="text-white drop-shadow" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Category */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -233,7 +429,7 @@ export default function CreateQuoteModal({
               >
                 None
               </button>
-              {categories.map((cat) => (
+              {categories.slice(0, 10).map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setCategoryId(cat.id)}
@@ -263,39 +459,27 @@ export default function CreateQuoteModal({
             <div className="flex gap-2">
               <button
                 onClick={() => setIsPublic(false)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${
                   !isPublic
                     ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
-                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
-                <Lock size={16} />
-                <div className="text-left">
-                  <p className="text-sm font-semibold">Private</p>
-                  <p className="text-[10px] opacity-70">Only you can see</p>
-                </div>
+                <Lock size={14} />
+                <span className="text-sm font-medium">Private</span>
               </button>
               <button
                 onClick={() => setIsPublic(true)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${
                   isPublic
                     ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
-                <Globe size={16} />
-                <div className="text-left">
-                  <p className="text-sm font-semibold">Public</p>
-                  <p className="text-[10px] opacity-70">Everyone can see</p>
-                </div>
+                <Globe size={14} />
+                <span className="text-sm font-medium">Public</span>
               </button>
             </div>
-            {isPublic && (
-              <p className="mt-2 text-[11px] text-green-600 dark:text-green-400 flex items-center gap-1">
-                <Sparkles size={10} />
-                Your quote will appear in the main feed for all users!
-              </p>
-            )}
           </div>
 
           {/* Error Message */}
@@ -307,7 +491,7 @@ export default function CreateQuoteModal({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 sm:px-6 sm:py-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+        <div className="px-5 py-4 sm:px-6 sm:py-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
           <div className="flex gap-3">
             <button
               onClick={onClose}

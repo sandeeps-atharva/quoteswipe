@@ -440,6 +440,8 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   colorScheme: "light dark",
+  // Enable safe area support for iOS notch/home indicator
+  viewportFit: "cover",
 };
 
 // JSON-LD Structured Data

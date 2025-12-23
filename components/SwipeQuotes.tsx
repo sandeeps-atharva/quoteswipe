@@ -22,6 +22,14 @@ const SearchModal = lazy(() => import('./SearchModal'));
 const CardCustomization = lazy(() => import('./CardCustomization'));
 const CreateQuoteModal = lazy(() => import('./CreateQuoteModal'));
 const CategoryOnboarding = lazy(() => import('./CategoryOnboarding'));
+const SaveQuoteModal = lazy(() => import('./SaveQuoteModal'));
+
+// Lazy load views for bottom navigation
+const SavedQuotesView = lazy(() => import('./SavedQuotesView'));
+const MyQuotesView = lazy(() => import('./MyQuotesView'));
+
+// Bottom Navigation Bar
+import BottomNavBar, { NavTab } from './BottomNavBar';
 
 // Modal loading fallback
 const ModalLoader = () => (
@@ -77,6 +85,10 @@ const CACHE_PREFIX = 'qs_cache_';
 const QUOTES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const CATEGORIES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
+// Instagram modal cooldown (show once every 2 days)
+const INSTAGRAM_MODAL_KEY = 'qs_instagram_modal_last_shown';
+const INSTAGRAM_MODAL_COOLDOWN = 2 * 24 * 60 * 60 * 1000; // 2 days in milliseconds
+
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -123,6 +135,27 @@ function clearUserCache(): void {
   }
 }
 
+// Instagram modal cooldown helpers
+function canShowInstagramModal(): boolean {
+  try {
+    const lastShown = localStorage.getItem(INSTAGRAM_MODAL_KEY);
+    if (!lastShown) return true;
+    
+    const lastShownTime = parseInt(lastShown, 10);
+    return Date.now() - lastShownTime >= INSTAGRAM_MODAL_COOLDOWN;
+  } catch {
+    return true; // Show modal if localStorage fails
+  }
+}
+
+function markInstagramModalShown(): void {
+  try {
+    localStorage.setItem(INSTAGRAM_MODAL_KEY, Date.now().toString());
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export default function SwipeQuotes() {
   // Track visitor on page load
   useVisitorTracking();
@@ -139,6 +172,9 @@ export default function SwipeQuotes() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showInstagramModal, setShowInstagramModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showSaveQuoteModal, setShowSaveQuoteModal] = useState(false);
+  const [quoteToSave, setQuoteToSave] = useState<Quote | null>(null);
+  const [activeNavTab, setActiveNavTab] = useState<NavTab>('feed'); // Bottom nav active tab
   const [swipeCount, setSwipeCount] = useState(0); // For unauthenticated users
   const [authenticatedSwipeCount, setAuthenticatedSwipeCount] = useState(0); // For authenticated users
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -699,7 +735,7 @@ export default function SwipeQuotes() {
   const fetchCardStyle = async () => fetchAllPreferences();
 
   // Fetch user's created quotes
-  const fetchUserQuotes = async () => {
+  const fetchUserQuotes = useCallback(async () => {
     try {
       const response = await fetch('/api/user/quotes', { credentials: 'include' });
       if (response.ok) {
@@ -709,7 +745,7 @@ export default function SwipeQuotes() {
     } catch (error) {
       console.error('Fetch user quotes error:', error);
     }
-  };
+  }, []);
 
   // Save user's card style preferences (uses combined API)
   const saveCardStyle = async (themeToSave?: CardTheme, fontToSave?: FontStyle, bgToSave?: BackgroundImage) => {
@@ -1238,16 +1274,20 @@ export default function SwipeQuotes() {
       const newAuthCount = authenticatedSwipeCount + 1;
       setAuthenticatedSwipeCount(newAuthCount);
 
-      // Show Instagram follow modal after 10 swipes
-      if (newAuthCount >= 10) {
+      // Show Instagram follow modal after 10 swipes (only if 2 days have passed)
+      if (newAuthCount >= 10 && canShowInstagramModal()) {
         // Reset drag state before opening modal
         setIsDragging(false);
         setDragOffset({ x: 0, y: 0 });
         setSwipeDirection(null);
         setShowInstagramModal(true);
+        markInstagramModalShown(); // Mark as shown for 2-day cooldown
         // Reset count after showing modal
         setAuthenticatedSwipeCount(0);
         return;
+      } else if (newAuthCount >= 10) {
+        // Reset count even if modal not shown (cooldown active)
+        setAuthenticatedSwipeCount(0);
       }
     }
 
@@ -1363,33 +1403,55 @@ export default function SwipeQuotes() {
     const currentQuote = filteredQuotes[currentIndex];
 
     if (currentQuote) {
-      // Start the visual animation immediately
-      setIsAnimating(true);
-      setSwipeDirection('right');
-      setDragOffset({ x: 300, y: 0 });
-      
-      // OPTIMISTIC UPDATE: Update UI immediately
-      setSavedQuotes(prev => [...prev, currentQuote]);
-      
-      // API call in background (fire and forget)
-      if (isAuthenticated) {
-        fetch('/api/user/saved', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quoteId: currentQuote.id }),
-        }).catch(error => {
-          console.error('Save quote error:', error);
-          // Silently fail - UI already updated
-        });
-      }
-      
-      // After animation completes, move to next quote
-      setTimeout(() => {
-        handleSwipe('right');
-        setIsAnimating(false);
-      }, 300);
+      // Open save modal to ask about customization
+      setQuoteToSave(currentQuote);
+      setShowSaveQuoteModal(true);
     }
   };
+
+  // Called from SaveQuoteModal after user confirms save
+  const handleConfirmSave = useCallback((customBackground: string | null, fontId?: string) => {
+    if (!quoteToSave) return;
+    
+    // Start the visual animation
+    setIsAnimating(true);
+    setSwipeDirection('right');
+    setDragOffset({ x: 300, y: 0 });
+    
+    // OPTIMISTIC UPDATE: Update UI immediately
+    setSavedQuotes(prev => [...prev, quoteToSave]);
+    
+    // API call in background (fire and forget)
+    if (isAuthenticated) {
+      fetch('/api/user/saved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          quoteId: quoteToSave.id,
+          customBackground: customBackground 
+        }),
+      }).catch(error => {
+        console.error('Save quote error:', error);
+        // Silently fail - UI already updated
+      });
+    }
+    
+    // After animation completes, move to next quote
+    setTimeout(() => {
+      handleSwipe('right');
+      setIsAnimating(false);
+    }, 300);
+    
+    // Clear the quote to save
+    setQuoteToSave(null);
+    
+    // Show success toast - clarify that background is saved only for this quote
+    if (customBackground) {
+      toast.success('Quote saved with custom background! 🖼️');
+    } else {
+      toast.success('Quote saved! 🔖');
+    }
+  }, [quoteToSave, isAuthenticated, handleSwipe]);
 
   const handleShare = () => {
     const filteredQuotes = getFilteredQuotes();
@@ -1420,7 +1482,7 @@ export default function SwipeQuotes() {
       category_icon: quote.category_icon || '✨',
       isUserQuote: true,
       is_public: quote.is_public,
-      custom_background: quote.custom_background,
+      custom_background: quote.custom_background || undefined,
     });
     setShowShareModal(true);
   };
@@ -1448,8 +1510,24 @@ export default function SwipeQuotes() {
   }, [getQuotePath]);
 
   // Handle navigation to a specific quote from sidebar (liked/saved/created quotes)
-  const handleQuoteNavigation = useCallback(async (quoteId: string | number, category?: string) => {
+  const handleQuoteNavigation = useCallback(async (quoteId: string | number, category?: string, customBackground?: string | null) => {
     const quoteIdStr = String(quoteId);
+    
+    // If quote has a saved custom background, apply it temporarily
+    if (customBackground) {
+      const tempBackground: BackgroundImage = {
+        id: 'saved_custom',
+        name: 'Saved Background',
+        url: customBackground,
+        thumbnail: customBackground,
+        overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+        textColor: '#ffffff',
+        authorColor: '#e5e5e5',
+        categoryBg: 'rgba(255,255,255,0.15)',
+        categoryText: '#ffffff',
+      };
+      setBackgroundImage(tempBackground);
+    }
     
     // 1. Check if quote exists in current feed
     const existingIndex = quotes.findIndex(q => String(q.id) === quoteIdStr);
@@ -1758,6 +1836,23 @@ export default function SwipeQuotes() {
         </Suspense>
       )}
 
+      {showSaveQuoteModal && quoteToSave && (
+        <Suspense fallback={<ModalLoader />}>
+          <SaveQuoteModal
+            isOpen={showSaveQuoteModal}
+            onClose={() => {
+              setShowSaveQuoteModal(false);
+              setQuoteToSave(null);
+            }}
+            quote={quoteToSave}
+            currentBackground={backgroundImage}
+            currentFont={fontStyle}
+            onSave={handleConfirmSave}
+            isAuthenticated={isAuthenticated}
+          />
+        </Suspense>
+      )}
+
       {showInstagramModal && (
         <Suspense fallback={<ModalLoader />}>
       <InstagramFollowModal
@@ -1972,7 +2067,17 @@ export default function SwipeQuotes() {
                 onDragMove={() => {}}
                 cardTheme={cardTheme}
                 fontStyle={fontStyle}
-                backgroundImage={backgroundImage}
+                backgroundImage={viewingUserQuote.custom_background ? {
+                  id: 'user_custom',
+                  name: 'Custom',
+                  url: viewingUserQuote.custom_background,
+                  thumbnail: viewingUserQuote.custom_background,
+                  overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                  textColor: '#ffffff',
+                  authorColor: '#e5e5e5',
+                  categoryBg: 'rgba(255,255,255,0.15)',
+                  categoryText: '#ffffff',
+                } : backgroundImage}
               />
             </div>
             
@@ -2001,7 +2106,7 @@ export default function SwipeQuotes() {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 pb-24 sm:pb-4 relative">
         {/* Top Header - Full Width Rounded Bar */}
         <div className="fixed top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-30 flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
           {/* Left Group - All icons on desktop, Menu & Search on mobile */}
@@ -2198,59 +2303,6 @@ export default function SwipeQuotes() {
           swipeDirection={isAnimating && !isDragging ? swipeDirection : null}
           isAnimating={isAnimating && !isDragging}
         />
-
-        {/* Quick Action Buttons */}
-        <div className="flex items-center gap-2 mt-3">
-          {/* Create Quote Button */}
-          <button
-            onClick={() => {
-              if (isAuthenticated) {
-                setEditingQuote(null);
-                setShowCreateQuoteModal(true);
-              } else {
-                toast('Login to create your own quotes with photo backgrounds!', {
-                  icon: '📷',
-                  duration: 3000,
-                });
-                setShowAuthModal(true);
-              }
-            }}
-            className="group relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all hover:scale-105 active:scale-95"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 20h9"/>
-              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-            </svg>
-            Create Quote
-            {/* Camera badge */}
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-                <circle cx="12" cy="13" r="3"/>
-              </svg>
-            </span>
-          </button>
-          
-          {/* Customize Card Button */}
-          <button
-            onClick={() => {
-              if (isAuthenticated) {
-                setShowCustomizationModal(true);
-              } else {
-                toast('Login to customize your card style', {
-                  icon: '🎨',
-                  duration: 3000,
-                });
-                setShowAuthModal(true);
-              }
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-xs font-medium hover:bg-white dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all hover:scale-105 active:scale-95 shadow-sm"
-          >
-            <Palette size={14} />
-            Customize
-          </button>
-        </div>
-
         {/* Quick Links Footer */}
         <nav className="flex items-center justify-center gap-1 mt-3 sm:mt-4">
             <Link 
@@ -2282,6 +2334,103 @@ export default function SwipeQuotes() {
             </Link>
           </nav>
       </div>
+
+      {/* Bottom Navigation Bar - Mobile Only */}
+      <BottomNavBar
+        activeTab={activeNavTab}
+        onTabChange={(tab) => {
+          if (tab === 'create') {
+            setEditingQuote(null);
+            setShowCreateQuoteModal(true);
+          } else {
+            setActiveNavTab(tab);
+          }
+        }}
+        savedCount={savedQuotes.length}
+        myQuotesCount={userQuotes.length}
+        isAuthenticated={isAuthenticated}
+        onLoginRequired={() => setShowAuthModal(true)}
+        onMenuClick={() => setIsSidebarOpen(true)}
+        hidden={
+          isSidebarOpen ||
+          showAuthModal ||
+          showShareModal ||
+          showInstagramModal ||
+          showSearchModal ||
+          showSaveQuoteModal ||
+          showCustomizationModal ||
+          showCreateQuoteModal ||
+          showOnboarding ||
+          viewingUserQuote !== null ||
+          activeNavTab !== 'feed'
+        }
+      />
+
+      {/* Saved Quotes View - Full Screen */}
+      {activeNavTab === 'saved' && isAuthenticated && (
+        <Suspense fallback={<ModalLoader />}>
+          <SavedQuotesView
+            onBack={() => setActiveNavTab('feed')}
+            onQuoteClick={(quoteId, category, customBackground) => {
+              setActiveNavTab('feed');
+              handleQuoteNavigation(quoteId, category, customBackground);
+            }}
+            onShareQuote={(quote) => {
+              setShareQuote({
+                id: quote.id,
+                text: quote.text,
+                author: quote.author,
+                category: quote.category,
+                category_icon: quote.category_icon,
+                isUserQuote: false,
+                custom_background: quote.custom_background || undefined,
+              });
+              setShowShareModal(true);
+            }}
+            onDeleteQuote={(quoteId) => {
+              setSavedQuotes(savedQuotes.filter(q => String(q.id) !== String(quoteId)));
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* My Quotes View - Full Screen */}
+      {activeNavTab === 'profile' && isAuthenticated && (
+        <Suspense fallback={<ModalLoader />}>
+          <MyQuotesView
+            onBack={() => setActiveNavTab('feed')}
+            onCreateQuote={() => {
+              setEditingQuote(null);
+              setShowCreateQuoteModal(true);
+            }}
+            onEditQuote={(quote) => {
+              setEditingQuote(quote);
+              setShowCreateQuoteModal(true);
+            }}
+            onShareQuote={(quote) => {
+              setShareQuote({
+                id: `user_${quote.id}`,
+                text: quote.text,
+                author: quote.author,
+                category: quote.category || 'Personal',
+                category_icon: quote.category_icon || '✨',
+                isUserQuote: true,
+                is_public: quote.is_public,
+                custom_background: quote.custom_background || undefined,
+              });
+              setShowShareModal(true);
+            }}
+            onViewQuote={(quote) => {
+              setViewingUserQuote(quote);
+            }}
+            quotes={userQuotes}
+            onRefresh={fetchUserQuotes}
+            onDeleteQuote={(quoteId) => {
+              setUserQuotes(userQuotes.filter(q => String(q.id) !== String(quoteId)));
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

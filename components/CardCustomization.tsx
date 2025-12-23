@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
-import { X, Palette, Type, Check, Sparkles, Moon, Sun, Loader2, ImageIcon, Upload, Trash2, Plus, Camera } from 'lucide-react';
+import { X, Palette, Type, Check, Sparkles, Moon, Sun, Loader2, ImageIcon, Upload, Trash2, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
+import ImageUploader, { UserBackground } from './ImageUploader';
 
 // Re-export for backward compatibility
 export { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES };
@@ -75,29 +76,19 @@ function CardCustomization({
   const [selectedFont, setSelectedFont] = useState<FontStyle>(currentFont);
   const [selectedBackground, setSelectedBackground] = useState<BackgroundImage>(currentBackground);
   
-  // Multiple custom images state
+  // Multiple custom images state (for guests only)
   const [customImages, setCustomImages] = useState<CustomImageData[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
+  
+  // For authenticated users - ImageUploader state
+  const [selectedCustomBgUrl, setSelectedCustomBgUrl] = useState<string | null>(null);
+  const [userBackgroundsCount, setUserBackgroundsCount] = useState(0);
 
-  // Load custom images - from server if authenticated, localStorage otherwise
+  // Load custom images - from localStorage for guests only (authenticated users use ImageUploader)
   useEffect(() => {
     const loadCustomImages = async () => {
-      if (isAuthenticated) {
-        // Load from server for authenticated users
-        setIsLoadingImages(true);
-        try {
-          const response = await fetch('/api/user/upload-background');
-          if (response.ok) {
-            const data = await response.json();
-            setCustomImages(data.backgrounds || []);
-          }
-        } catch (e) {
-          console.error('Failed to load custom images from server:', e);
-        } finally {
-          setIsLoadingImages(false);
-        }
-      } else {
+      if (!isAuthenticated) {
         // Load from localStorage for guests
         try {
           const savedImages = localStorage.getItem(CUSTOM_IMAGES_KEY);
@@ -236,69 +227,39 @@ function CardCustomization({
     setIsUploading(true);
 
     try {
-      if (isAuthenticated) {
-        // Compress image before upload for faster uploads
-        const compressedBlob = await compressImage(file);
-        const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+      // Guest flow: Compress and store in localStorage
+      // (Authenticated users use ImageUploader component instead)
+      const compressedBlob = await compressImage(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const resizedBase64 = event.target?.result as string;
         
-        const formData = new FormData();
-        formData.append('image', compressedFile);
+        const newImageData: CustomImageData = {
+          id: generateImageId(),
+          url: resizedBase64,
+          name: `Photo ${customImages.length + 1}`,
+          createdAt: Date.now(),
+        };
         
-        const response = await fetch('/api/user/upload-background', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          const newImageData = data.background;
-          
-          setCustomImages(prev => [...prev, newImageData]);
+        try {
+          const updatedImages = [...customImages, newImageData];
+          saveCustomImages(updatedImages);
           
           const newBackground = createCustomBackground(newImageData);
           setSelectedBackground(newBackground);
           
-          toast.success('Image uploaded! 📸');
-        } else {
-          const error = await response.json();
-          toast.error(error.error || 'Failed to upload image');
+          toast.success('Image uploaded! 📸 Login to sync.');
+        } catch (storageError) {
+          toast.error('Storage full. Remove some images first.');
         }
         
         setIsUploading(false);
-      } else {
-        // Compress and store in localStorage for guests
-        const compressedBlob = await compressImage(file);
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const resizedBase64 = event.target?.result as string;
-          
-          const newImageData: CustomImageData = {
-            id: generateImageId(),
-            url: resizedBase64,
-            name: `Photo ${customImages.length + 1}`,
-            createdAt: Date.now(),
-          };
-          
-          try {
-            const updatedImages = [...customImages, newImageData];
-            saveCustomImages(updatedImages);
-            
-            const newBackground = createCustomBackground(newImageData);
-            setSelectedBackground(newBackground);
-            
-            toast.success('Image uploaded! 📸 Login to sync.');
-          } catch (storageError) {
-            toast.error('Storage full. Remove some images first.');
-          }
-          
-          setIsUploading(false);
-        };
-        reader.onerror = () => {
-          toast.error('Failed to read image');
-          setIsUploading(false);
-        };
-        reader.readAsDataURL(compressedBlob);
-      }
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read image');
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(compressedBlob);
     } catch (error) {
       toast.error('Failed to upload image');
       setIsUploading(false);
@@ -311,44 +272,26 @@ function CardCustomization({
   }, [customImages, saveCustomImages, isAuthenticated, compressImage]);
 
   // Handle remove specific custom image - from server if authenticated
+  // Handle remove custom image - for guests only (authenticated users use ImageUploader)
   const handleRemoveCustomImage = useCallback(async (imageId: string) => {
     setDeletingImageId(imageId);
     
     try {
-      if (isAuthenticated) {
-        // Delete from server
-        const response = await fetch('/api/user/upload-background', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ backgroundId: imageId }),
-        });
-        
-        if (response.ok) {
-          setCustomImages(prev => prev.filter(img => img.id !== imageId));
-          if (selectedBackground.id === imageId) {
-            setSelectedBackground(BACKGROUND_IMAGES[0]);
-          }
-          toast.success('Image removed');
-        } else {
-          toast.error('Failed to remove image');
-        }
-      } else {
-        // Remove from localStorage
-        const updatedImages = customImages.filter(img => img.id !== imageId);
-        saveCustomImages(updatedImages);
-        
-        if (selectedBackground.id === imageId) {
-          setSelectedBackground(BACKGROUND_IMAGES[0]);
-        }
-        
-        toast.success('Image removed');
+      // Remove from localStorage (guests only)
+      const updatedImages = customImages.filter(img => img.id !== imageId);
+      saveCustomImages(updatedImages);
+      
+      if (selectedBackground.id === imageId) {
+        setSelectedBackground(BACKGROUND_IMAGES[0]);
       }
+      
+      toast.success('Image removed');
     } catch (error) {
       toast.error('Failed to remove image');
     } finally {
       setDeletingImageId(null);
     }
-  }, [customImages, selectedBackground.id, saveCustomImages, isAuthenticated]);
+  }, [customImages, selectedBackground.id, saveCustomImages]);
 
   // Memoized handlers
   const handleCancel = useCallback(() => {
@@ -396,6 +339,27 @@ function CardCustomization({
     // Background image overrides theme visually, no need to reset theme
   }, []);
 
+  // Handle custom background selection from ImageUploader (for authenticated users)
+  const handleSelectCustomBackground = useCallback((url: string | null) => {
+    setSelectedCustomBgUrl(url);
+    if (url) {
+      const customBg = createCustomBackground({
+        id: `custom_${Date.now()}`,
+        url,
+        name: 'Custom Photo',
+        createdAt: Date.now(),
+      });
+      setSelectedBackground(customBg);
+    } else {
+      setSelectedBackground(BACKGROUND_IMAGES[0]);
+    }
+  }, []);
+
+  // Track user backgrounds count from ImageUploader
+  const handleBackgroundsChange = useCallback((backgrounds: UserBackground[]) => {
+    setUserBackgroundsCount(backgrounds.length);
+  }, []);
+
   const handleTabChange = useCallback((tab: 'themes' | 'fonts' | 'images') => {
     setActiveTab(tab);
   }, []);
@@ -426,72 +390,44 @@ function CardCustomization({
     setIsCapturing(true);
 
     try {
-      // Compress image for faster upload
+      // Guest flow: Compress and store in localStorage
+      // (Authenticated users use ImageUploader component instead)
       const compressedBlob = await compressImage(file);
-      
-      if (isAuthenticated) {
-        const compressedFile = new File([compressedBlob], 'camera.jpg', { type: 'image/jpeg' });
-        const formData = new FormData();
-        formData.append('image', compressedFile);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const resizedBase64 = event.target?.result as string;
         
-        const response = await fetch('/api/user/upload-background', {
-          method: 'POST',
-          body: formData,
-        });
+        const newImageData: CustomImageData = {
+          id: generateImageId(),
+          url: resizedBase64,
+          name: `Camera ${customImages.length + 1}`,
+          createdAt: Date.now(),
+        };
         
-        if (response.ok) {
-          const data = await response.json();
-          const newImageData = data.background;
-          
-          setCustomImages(prev => [...prev, newImageData]);
+        try {
+          const updatedImages = [...customImages, newImageData];
+          saveCustomImages(updatedImages);
           
           const newBackground = createCustomBackground(newImageData);
           setSelectedBackground(newBackground);
           
-          toast.success('Photo captured! 📷');
-        } else {
-          const error = await response.json();
-          toast.error(error.error || 'Failed to save photo');
+          toast.success('Photo captured! 📷 Login to sync.');
+        } catch (storageError) {
+          toast.error('Storage full. Remove some photos first.');
         }
-      } else {
-        // Store in localStorage for guests
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const resizedBase64 = event.target?.result as string;
-          
-          const newImageData: CustomImageData = {
-            id: generateImageId(),
-            url: resizedBase64,
-            name: `Camera ${customImages.length + 1}`,
-            createdAt: Date.now(),
-          };
-          
-          try {
-            const updatedImages = [...customImages, newImageData];
-            saveCustomImages(updatedImages);
-            
-            const newBackground = createCustomBackground(newImageData);
-            setSelectedBackground(newBackground);
-            
-            toast.success('Photo captured! 📷 Login to sync.');
-          } catch (storageError) {
-            toast.error('Storage full. Remove some photos first.');
-          }
-          
-          setIsCapturing(false);
-        };
-        reader.onerror = () => {
-          toast.error('Failed to read photo');
-          setIsCapturing(false);
-        };
-        reader.readAsDataURL(compressedBlob);
-        return; // Exit early, setIsCapturing handled in callbacks
-      }
+        
+        setIsCapturing(false);
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read photo');
+        setIsCapturing(false);
+      };
+      reader.readAsDataURL(compressedBlob);
+      return;
     } catch (error) {
       toast.error('Failed to capture photo');
+      setIsCapturing(false);
     }
-    
-    setIsCapturing(false);
 
     // Reset camera input
     if (cameraInputRef.current) {
@@ -642,70 +578,81 @@ function CardCustomization({
 
           {activeTab === 'images' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 shrink-0">
-                  {customImages.length}/{MAX_CUSTOM_IMAGES}
-                </p>
-                <div className="flex items-center gap-1">
-                  {/* Camera capture button */}
-                  <button
-                    onClick={triggerCameraInput}
-                    disabled={isCapturing || isUploading || customImages.length >= MAX_CUSTOM_IMAGES}
-                    className="flex items-center justify-center gap-1 h-7 px-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Take a photo"
-                  >
-                    {isCapturing ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Camera size={12} />
-                    )}
-                    <span>Camera</span>
-                  </button>
-                  
-                  {/* File upload button */}
-                  <button
-                    onClick={triggerFileInput}
-                    disabled={isUploading || isCapturing || customImages.length >= MAX_CUSTOM_IMAGES}
-                    className="flex items-center justify-center gap-1 h-7 px-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Upload from gallery"
-                  >
-                    {isUploading ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Upload size={12} />
-                    )}
-                    <span>Upload</span>
-                  </button>
-                </div>
-              </div>
-              
-              {/* Custom Images Section - show loader or images */}
+              {/* Custom Images Section */}
               <div className="space-y-2">
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
-                  Your Photos
+                  Your Photos {isAuthenticated ? `(${userBackgroundsCount}/100)` : `(${customImages.length}/${MAX_CUSTOM_IMAGES})`}
                 </p>
-                {isLoadingImages ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 size={20} className="animate-spin text-purple-500" />
-                    <span className="ml-2 text-xs text-gray-500">Loading...</span>
-                  </div>
-                ) : customImages.length > 0 ? (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                    {customBackgrounds.map((bg) => (
-                      <CustomImageButton
-                        key={bg.id}
-                        background={bg}
-                        isSelected={selectedBackground.id === bg.id}
-                        isDeleting={deletingImageId === bg.id}
-                        onClick={handleBackgroundSelect}
-                        onDelete={() => handleRemoveCustomImage(bg.id)}
-                      />
-                    ))}
-                  </div>
+                
+                {/* For authenticated users: Use ImageUploader */}
+                {isAuthenticated ? (
+                  <ImageUploader
+                    selectedCustomBackground={selectedCustomBgUrl}
+                    onSelectCustomBackground={handleSelectCustomBackground}
+                    maxDisplay={8}
+                    showUploadButtons={true}
+                    showClearOption={false}
+                    gridCols={4}
+                    autoFetch={isOpen}
+                    onBackgroundsChange={handleBackgroundsChange}
+                  />
                 ) : (
-                  <p className="text-[10px] text-gray-400 text-center py-3">
-                    No photos yet. Tap Capture or Upload to add.
-                  </p>
+                  /* For guests: Use localStorage-based flow */
+                  <>
+                    <div className="flex items-center justify-end gap-1 mb-2">
+                      <button
+                        onClick={triggerCameraInput}
+                        disabled={isCapturing || isUploading || customImages.length >= MAX_CUSTOM_IMAGES}
+                        className="flex items-center justify-center gap-1 h-7 px-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Take a photo"
+                      >
+                        {isCapturing ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Camera size={12} />
+                        )}
+                        <span>Camera</span>
+                      </button>
+                      
+                      <button
+                        onClick={triggerFileInput}
+                        disabled={isUploading || isCapturing || customImages.length >= MAX_CUSTOM_IMAGES}
+                        className="flex items-center justify-center gap-1 h-7 px-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Upload from gallery"
+                      >
+                        {isUploading ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Upload size={12} />
+                        )}
+                        <span>Upload</span>
+                      </button>
+                    </div>
+                    
+                    {isLoadingImages ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 size={20} className="animate-spin text-purple-500" />
+                        <span className="ml-2 text-xs text-gray-500">Loading...</span>
+                      </div>
+                    ) : customImages.length > 0 ? (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+                        {customBackgrounds.map((bg) => (
+                          <CustomImageButton
+                            key={bg.id}
+                            background={bg}
+                            isSelected={selectedBackground.id === bg.id}
+                            isDeleting={deletingImageId === bg.id}
+                            onClick={handleBackgroundSelect}
+                            onDelete={() => handleRemoveCustomImage(bg.id)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 text-center py-3">
+                        No photos yet. Tap Capture or Upload to add.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
               

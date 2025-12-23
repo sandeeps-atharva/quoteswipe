@@ -22,6 +22,7 @@ interface SavedQuote {
   author: string;
   category: string;
   category_icon?: string;
+  custom_background?: string | null;
 }
 
 interface UserQuote {
@@ -55,7 +56,7 @@ interface SidebarProps {
   onLogout: () => void;
   isLoggingOut?: boolean;
   onSavedQuoteDelete?: (quoteId: string | number) => void;
-  onQuoteClick?: (quoteId: string | number, category?: string) => void;
+  onQuoteClick?: (quoteId: string | number, category?: string, customBackground?: string | null) => void;
   onCustomizeClick?: () => void;
   onCreateQuoteClick?: () => void;
   onEditQuoteClick?: (quote: UserQuote) => void;
@@ -65,7 +66,7 @@ interface SidebarProps {
   onRefreshUserQuotes?: () => void;
 }
 
-type ViewType = 'main' | 'profile' | 'collections' | 'liked' | 'disliked' | 'myquotes';
+type ViewType = 'main' | 'profile' | 'liked' | 'disliked';
 
 export default function Sidebar({
   isOpen,
@@ -95,13 +96,10 @@ export default function Sidebar({
 }: SidebarProps) {
   const { theme } = useTheme();
   const [currentView, setCurrentView] = useState<ViewType>('main');
-  const [savedQuotes, setSavedQuotes] = useState<SavedQuote[]>([]);
   const [likedQuotes, setLikedQuotes] = useState<SavedQuote[]>([]);
   const [dislikedQuotes, setDislikedQuotes] = useState<SavedQuote[]>([]);
-  const [isLoadingSaved, setIsLoadingSaved] = useState(false);
   const [isLoadingLiked, setIsLoadingLiked] = useState(false);
   const [isLoadingDisliked, setIsLoadingDisliked] = useState(false);
-  const [hasFetchedSaved, setHasFetchedSaved] = useState(false);
   const [hasFetchedLiked, setHasFetchedLiked] = useState(false);
   const [hasFetchedDisliked, setHasFetchedDisliked] = useState(false);
   const [navigatingQuoteId, setNavigatingQuoteId] = useState<string | number | null>(null);
@@ -180,11 +178,9 @@ export default function Sidebar({
   useEffect(() => {
     if (!isAuthenticated) {
       setProfileData(null);
-      setSavedQuotes([]);
       setLikedQuotes([]);
       setDislikedQuotes([]);
       setHasFetchedProfile(false);
-      setHasFetchedSaved(false);
       setHasFetchedLiked(false);
       setHasFetchedDisliked(false);
     }
@@ -195,9 +191,6 @@ export default function Sidebar({
     if (!isAuthenticated) return;
     
     switch (currentView) {
-      case 'collections':
-        if (!hasFetchedSaved) fetchSavedQuotes();
-        break;
       case 'liked':
         if (!hasFetchedLiked) fetchLikedQuotes();
         break;
@@ -208,7 +201,7 @@ export default function Sidebar({
         if (!hasFetchedProfile) fetchProfile();
         break;
     }
-  }, [currentView, isAuthenticated, hasFetchedSaved, hasFetchedLiked, hasFetchedDisliked, hasFetchedProfile]);
+  }, [currentView, isAuthenticated, hasFetchedLiked, hasFetchedDisliked, hasFetchedProfile]);
 
   useEffect(() => {
     setCurrentUser(user);
@@ -357,16 +350,6 @@ export default function Sidebar({
     );
   }, [likedQuotes, collectionSearch]);
 
-  const filteredSavedQuotes = useMemo(() => {
-    if (!collectionSearch.trim()) return savedQuotes;
-    const q = collectionSearch.toLowerCase();
-    return savedQuotes.filter(quote =>
-      quote.text.toLowerCase().includes(q) ||
-      quote.author.toLowerCase().includes(q) ||
-      quote.category?.toLowerCase().includes(q)
-    );
-  }, [savedQuotes, collectionSearch]);
-
   const filteredDislikedQuotes = useMemo(() => {
     if (!collectionSearch.trim()) return dislikedQuotes;
     const q = collectionSearch.toLowerCase();
@@ -376,22 +359,6 @@ export default function Sidebar({
       quote.category?.toLowerCase().includes(q)
     );
   }, [dislikedQuotes, collectionSearch]);
-
-  const fetchSavedQuotes = async () => {
-    setIsLoadingSaved(true);
-    try {
-      const response = await fetch('/api/user/saved');
-      if (response.ok) {
-        const data = await response.json();
-        setSavedQuotes(data.quotes || []);
-        setHasFetchedSaved(true);
-      }
-    } catch (error) {
-      console.error('Fetch saved quotes error:', error);
-    } finally {
-      setIsLoadingSaved(false);
-    }
-  };
 
   const fetchLikedQuotes = async () => {
     setIsLoadingLiked(true);
@@ -422,24 +389,6 @@ export default function Sidebar({
       console.error('Fetch disliked quotes error:', error);
     } finally {
       setIsLoadingDisliked(false);
-    }
-  };
-
-  const handleDeleteQuote = async (quoteId: string | number) => {
-    if (!isAuthenticated) return;
-    try {
-      const response = await fetch('/api/user/saved', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quoteId }),
-      });
-      if (response.ok) {
-        setSavedQuotes(savedQuotes.filter(q => String(q.id) !== String(quoteId)));
-        onSavedQuoteDelete?.(quoteId);
-        toast.success('Quote removed');
-      }
-    } catch (error) {
-      console.error('Delete saved quote error:', error);
     }
   };
 
@@ -526,21 +475,11 @@ export default function Sidebar({
             </div>
 
             {/* Stats Grid - Compact */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button onClick={() => setCurrentView('liked')} className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-xl p-2 sm:p-3 text-center hover:scale-105 active:scale-95 transition-all">
                 <Heart size={16} className="mx-auto text-pink-500 mb-0.5" fill="currentColor" />
                 <div className="text-lg sm:text-xl font-bold text-pink-600 dark:text-pink-400">{likedCount}</div>
                 <div className="text-[10px] text-pink-600/70 dark:text-pink-400/70">Liked</div>
-              </button>
-              <button onClick={() => setCurrentView('collections')} className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 rounded-xl p-2 sm:p-3 text-center hover:scale-105 active:scale-95 transition-all">
-                <Bookmark size={16} className="mx-auto text-yellow-500 mb-0.5" fill="currentColor" />
-                <div className="text-lg sm:text-xl font-bold text-yellow-600 dark:text-yellow-400">{savedCount}</div>
-                <div className="text-[10px] text-yellow-600/70 dark:text-yellow-400/70">Saved</div>
-              </button>
-              <button onClick={() => setCurrentView('myquotes')} className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-2 sm:p-3 text-center hover:scale-105 active:scale-95 transition-all">
-                <PenLine size={16} className="mx-auto text-purple-500 mb-0.5" />
-                <div className="text-lg sm:text-xl font-bold text-purple-600 dark:text-purple-400">{userQuotes.length}</div>
-                <div className="text-[10px] text-purple-600/70 dark:text-purple-400/70">Created</div>
               </button>
               <button onClick={() => setCurrentView('disliked')} className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/40 dark:to-gray-700/40 rounded-xl p-2 sm:p-3 text-center hover:scale-105 active:scale-95 transition-all">
                 <ThumbsDown size={16} className="mx-auto text-gray-400 mb-0.5" />
@@ -598,7 +537,7 @@ export default function Sidebar({
   );
 
   // Handle quote click - navigate to the quote with loading state
-  const handleQuoteClick = useCallback(async (quoteId: string | number, category?: string) => {
+  const handleQuoteClick = useCallback(async (quoteId: string | number, category?: string, customBackground?: string | null) => {
     // Prevent double clicks
     if (navigatingQuoteId) return;
     
@@ -609,7 +548,7 @@ export default function Sidebar({
     
     try {
       if (onQuoteClick) {
-        await onQuoteClick(quoteId, category);
+        await onQuoteClick(quoteId, category, customBackground);
       } else {
         // Fallback: navigate directly using window.location
         const idStr = String(quoteId);
@@ -661,97 +600,6 @@ export default function Sidebar({
       toast.error('Failed to copy link');
     });
   };
-
-  // Render Collections View - Saved Quotes with Search
-  const renderCollectionsView = () => (
-    <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-200">
-      {/* Header with Search */}
-      <div className="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setCurrentView('main')} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors shrink-0">
-            <ArrowLeft size={16} className="text-gray-500" />
-          </button>
-          <div className="flex-1 relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search saved quotes..."
-              value={collectionSearch}
-              onChange={(e) => setCollectionSearch(e.target.value)}
-              className="w-full pl-8 pr-8 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            />
-            {collectionSearch && (
-              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X size={12} />
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg shrink-0">
-            <Bookmark size={14} className="text-yellow-500" fill="currentColor" />
-            <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
-              {isLoadingSaved ? <Loader2 size={12} className="animate-spin" /> : savedQuotes.length}
-            </span>
-          </div>
-        </div>
-        {collectionSearch && (
-          <p className="text-[10px] text-gray-500 pl-9">Found {filteredSavedQuotes.length} of {savedQuotes.length}</p>
-        )}
-      </div>
-
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3">
-        {isLoadingSaved ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={24} className="animate-spin text-yellow-500" />
-          </div>
-        ) : savedQuotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mb-3">
-              <Bookmark size={22} className="text-yellow-500" />
-            </div>
-            <p className="font-medium text-gray-900 dark:text-white text-sm mb-1">No saved quotes</p>
-            <p className="text-xs text-gray-500">Tap save on quotes you love</p>
-          </div>
-        ) : filteredSavedQuotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <Search size={28} className="text-gray-300 mb-2" />
-            <p className="text-xs text-gray-500">No quotes match "{collectionSearch}"</p>
-            <button onClick={() => setCollectionSearch('')} className="text-xs text-yellow-500 hover:text-yellow-600 mt-2">Clear search</button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredSavedQuotes.map((quote) => (
-              <div 
-                key={quote.id} 
-                onClick={() => handleQuoteClick(quote.id, quote.category)}
-                className={`group relative bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-yellow-200 dark:hover:border-yellow-800 transition-all cursor-pointer ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                {navigatingQuoteId === quote.id && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <Loader2 size={18} className="animate-spin text-yellow-500" />
-                  </div>
-                )}
-                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
-                  <button onClick={(e) => handleShareQuote(e, quote)} className="p-1.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 active:scale-95 rounded transition-all" title="Share">
-                    <Share2 size={14} className="text-blue-500" />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDeleteQuote(quote.id); }} className="p-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 active:scale-95 rounded transition-all" title="Delete">
-                    <Trash2 size={14} className="text-red-500" />
-                  </button>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-lg shrink-0">{quote.category_icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white leading-snug line-clamp-2">"{quote.text}"</p>
-                    {quote.author && <p className="text-[10px] sm:text-xs text-gray-500 mt-1">— {quote.author}</p>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   // Render Liked Quotes View with Search
   const renderLikedView = () => (
@@ -943,146 +791,6 @@ export default function Sidebar({
     </div>
   );
 
-  // Handle delete user quote
-  const handleDeleteUserQuote = async (quoteId: string | number) => {
-    if (!isAuthenticated) return;
-    try {
-      const response = await fetch(`/api/user/quotes/${quoteId}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        onUserQuoteDelete?.(quoteId);
-        toast.success('Quote deleted');
-      }
-    } catch (error) {
-      console.error('Delete user quote error:', error);
-      toast.error('Failed to delete quote');
-    }
-  };
-
-  // Render My Quotes View
-  const renderMyQuotesView = () => (
-    <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-200">
-      {/* Header */}
-      <div className="p-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-        <button onClick={() => setCurrentView('main')} className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors text-sm">
-          <ArrowLeft size={16} />
-          <span>Back</span>
-        </button>
-        <div className="flex items-center gap-2">
-          <PenLine size={16} className="text-purple-500" />
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">{userQuotes.length}</span>
-        </div>
-      </div>
-
-      {/* Create New Quote Button */}
-      <div className="p-3 border-b border-gray-100 dark:border-gray-800">
-        <button
-          onClick={() => { onCreateQuoteClick?.(); onClose(); }}
-          className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl transition-all active:scale-[0.98]"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <Plus size={18} />
-            <span>Create New Quote</span>
-          </div>
-          <div className="flex items-center justify-center gap-2 mt-1 text-[10px] text-white/80">
-            <Camera size={10} /> <ImageIcon size={10} /> <Palette size={10} /> Customize with photo
-          </div>
-        </button>
-      </div>
-
-      {/* Quotes List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3">
-        {userQuotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 flex items-center justify-center mb-3">
-              <PenLine size={24} className="text-purple-500" />
-            </div>
-            <p className="font-medium text-gray-900 dark:text-white text-sm mb-1">No quotes yet</p>
-            <p className="text-xs text-gray-500 mb-4">Create your first quote!</p>
-            <button
-              onClick={() => { onCreateQuoteClick?.(); onClose(); }}
-              className="flex items-center gap-1.5 px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors"
-            >
-              <Plus size={14} />
-              Create Quote
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {userQuotes.map((quote) => (
-              <div 
-                key={quote.id}
-                onClick={() => { onViewQuoteClick?.(quote); onClose(); }}
-                className={`group relative rounded-xl p-3 border hover:shadow-md transition-all cursor-pointer ${
-                  isQuotePublic(quote.is_public)
-                    ? 'bg-gradient-to-r from-green-50/50 to-emerald-50/50 dark:from-green-900/10 dark:to-emerald-900/10 border-green-100 dark:border-green-900/30 hover:border-green-200 dark:hover:border-green-800' 
-                    : 'bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-900/10 dark:to-pink-900/10 border-purple-100 dark:border-purple-900/30 hover:border-purple-200 dark:hover:border-purple-800'
-                }`}
-              >
-                {/* Public/Private Badge */}
-                <div className="absolute top-2 left-2">
-                  {isQuotePublic(quote.is_public) ? (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded text-[9px] font-medium">
-                      <Globe size={8} />
-                      Public
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded text-[9px] font-medium">
-                      <Lock size={8} />
-                      Private
-                    </span>
-                  )}
-                </div>
-                
-                {/* Actions - visible on mobile, hover on desktop */}
-                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onViewQuoteClick?.(quote); onClose(); }}
-                    className="p-1.5 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 active:scale-95 rounded-lg transition-all"
-                    title="View as Card"
-                  >
-                    <Eye size={14} className="text-purple-500" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onEditQuoteClick?.(quote); onClose(); }}
-                    className="p-1.5 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 active:scale-95 rounded-lg transition-all"
-                    title="Edit"
-                  >
-                    <Edit2 size={14} className="text-blue-500" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteUserQuote(quote.id); }}
-                    className="p-1.5 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 active:scale-95 rounded-lg transition-all"
-                    title="Delete"
-                  >
-                    <Trash2 size={14} className="text-red-500" />
-                  </button>
-                </div>
-                
-                <div className="flex items-start gap-2 pr-20 pt-5">
-                  <div className="shrink-0 mt-0.5">
-                    <PenLine size={14} className={isQuotePublic(quote.is_public) ? 'text-green-400' : 'text-purple-400'} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white leading-snug line-clamp-3">"{quote.text}"</p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      {quote.category_icon && <span className="text-sm">{quote.category_icon}</span>}
-                      {quote.author && <p className="text-[10px] sm:text-xs text-gray-500">— {quote.author}</p>}
-                    </div>
-                    {quote.created_at && (
-                      <p className="text-[9px] text-gray-400 mt-1">{formatDate(quote.created_at)}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
   // Render Main View
   const renderMainView = () => (
     <div className="flex-1 flex flex-col min-h-0">
@@ -1109,34 +817,6 @@ export default function Sidebar({
             
             {/* Quick Actions Row */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Collections */}
-              <button
-                onClick={() => setCurrentView('collections')}
-                className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg transition-all"
-                title="My Collections"
-              >
-                <Bookmark size={16} className="text-yellow-500" fill="currentColor" />
-                {savedCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-yellow-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {savedCount > 99 ? '99+' : savedCount}
-                  </span>
-                )}
-              </button>
-              
-              {/* My Quotes */}
-              <button
-                onClick={() => setCurrentView('myquotes')}
-                className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-all"
-                title="My Quotes"
-              >
-                <PenLine size={16} className="text-purple-500" />
-                {userQuotes.length > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-purple-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {userQuotes.length > 99 ? '99+' : userQuotes.length}
-                  </span>
-                )}
-              </button>
-              
               {/* Customize */}
               {onCustomizeClick && (
                 <button
@@ -1405,10 +1085,8 @@ export default function Sidebar({
 
           {/* Content based on view */}
           {currentView === 'profile' && renderProfileView()}
-          {currentView === 'collections' && renderCollectionsView()}
           {currentView === 'liked' && renderLikedView()}
           {currentView === 'disliked' && renderDislikedView()}
-          {currentView === 'myquotes' && renderMyQuotesView()}
           {currentView === 'main' && renderMainView()}
 
           {/* Footer - Compact */}
