@@ -83,6 +83,99 @@ const POSITION_MIN = -50;
 const POSITION_MAX = 50;
 const COPY_FEEDBACK_DURATION = 2000;
 
+// ============================================================================
+// Hashtag & Caption Generator
+// ============================================================================
+
+// Default hashtags (always included)
+const DEFAULT_HASHTAGS = ['#reelsindia', '#quoteswipe', '#quote_swipe'];
+
+// Category-based hashtags
+const CATEGORY_HASHTAGS: Record<string, string[]> = {
+  'motivation': ['#motivation', '#motivationalquotes', '#successmindset'],
+  'love': ['#lovequotes', '#love', '#relationshipgoals'],
+  'success': ['#success', '#entrepreneur', '#mindset'],
+  'life': ['#lifequotes', '#lifelessons', '#wisdom'],
+  'inspirational': ['#inspiration', '#inspired', '#positivevibes'],
+  'friendship': ['#friendship', '#bestfriends', '#friendshipgoals'],
+  'happiness': ['#happiness', '#behappy', '#positivity'],
+  'wisdom': ['#wisdom', '#wise', '#knowledge'],
+  'attitude': ['#attitude', '#savage', '#bossmindset'],
+  'spiritual': ['#spiritual', '#spirituality', '#innerpeace'],
+  'sad': ['#sadquotes', '#feelings', '#emotions'],
+  'funny': ['#funny', '#humor', '#laughing'],
+  'default': ['#quotes', '#dailyquotes', '#quoteoftheday'],
+};
+
+// Famous author hashtags
+const AUTHOR_HASHTAGS: Record<string, string> = {
+  'steve jobs': '#stevejobs',
+  'elon musk': '#elonmusk',
+  'albert einstein': '#einstein',
+  'mahatma gandhi': '#gandhi',
+  'buddha': '#buddha',
+  'rumi': '#rumi',
+  'confucius': '#confucius',
+  'aristotle': '#aristotle',
+  'plato': '#plato',
+  'shakespeare': '#shakespeare',
+  'mark twain': '#marktwain',
+  'oscar wilde': '#oscarwilde',
+  'nelson mandela': '#nelsonmandela',
+  'martin luther king': '#mlk',
+  'oprah winfrey': '#oprah',
+  'warren buffett': '#warrenbuffett',
+  'bill gates': '#billgates',
+  'apj abdul kalam': '#abdulkalam',
+  'swami vivekananda': '#vivekananda',
+};
+
+/** Generate hashtags based on quote category and author */
+function generateHashtags(category: string, author: string): string[] {
+  const hashtags: string[] = [];
+  
+  // 1. Add category-based hashtags (pick 2-3)
+  const categoryKey = category.toLowerCase().replace(/\s+/g, '');
+  const categoryTags = CATEGORY_HASHTAGS[categoryKey] || CATEGORY_HASHTAGS['default'];
+  hashtags.push(...categoryTags.slice(0, 3));
+  
+  // 2. Add author hashtag if famous
+  const authorLower = author.toLowerCase();
+  for (const [name, tag] of Object.entries(AUTHOR_HASHTAGS)) {
+    if (authorLower.includes(name)) {
+      hashtags.push(tag);
+      break;
+    }
+  }
+  
+  // 3. Add default hashtags
+  hashtags.push(...DEFAULT_HASHTAGS);
+  
+  // Remove duplicates and limit to 7
+  return [...new Set(hashtags)].slice(0, 7);
+}
+
+/** Generate shareable caption with quote, author, and hashtags */
+function generateCaption(quote: QuoteData): string {
+  const hashtags = generateHashtags(quote.category || '', quote.author || '');
+  
+  // Truncate quote for caption if too long
+  const maxQuoteLength = 150;
+  const truncatedQuote = quote.text.length > maxQuoteLength 
+    ? quote.text.substring(0, maxQuoteLength) + '...'
+    : quote.text;
+  
+  const caption = `✨ "${truncatedQuote}" ✨
+
+${quote.author ? `— ${quote.author}` : ''}
+
+💭 Follow @quote_swipe for daily inspiration!
+
+${hashtags.join(' ')}`;
+
+  return caption.trim();
+}
+
 // Font size pixel constants
 const FONT_SIZE_PX_MIN = 10;
 const FONT_SIZE_PX_MAX = 32;
@@ -721,6 +814,64 @@ function PrivateQuoteNotice() {
 }
 
 // ============================================================================
+// Caption Section Component (Hashtags & Description)
+// ============================================================================
+
+interface CaptionSectionProps {
+  quote: QuoteData;
+  copied: boolean;
+  onCopy: () => void;
+}
+
+function CaptionSection({ quote, copied, onCopy }: CaptionSectionProps) {
+  const caption = useMemo(() => generateCaption(quote), [quote]);
+  
+  return (
+    <div className="mb-4 sm:mb-5">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📝</span>
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Caption & Hashtags</span>
+        </div>
+        <span className="text-[10px] text-gray-400">Tap to copy</span>
+      </div>
+      
+      <div 
+        onClick={onCopy}
+        className="relative p-3 sm:p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl border border-purple-100 dark:border-purple-800/50 cursor-pointer hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-950/50 dark:hover:to-pink-950/50 transition-all group"
+      >
+        <pre className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">
+          {caption}
+        </pre>
+        
+        {/* Copy indicator */}
+        <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+          copied 
+            ? 'bg-green-500 text-white' 
+            : 'bg-white/80 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 group-hover:bg-purple-500 group-hover:text-white'
+        }`}>
+          {copied ? (
+            <>
+              <Check size={10} />
+              Copied!
+            </>
+          ) : (
+            <>
+              <Copy size={10} />
+              Copy
+            </>
+          )}
+        </div>
+      </div>
+      
+      <p className="mt-2 text-[10px] text-gray-400 dark:text-gray-500 text-center">
+        Paste this caption when you post on Instagram/Reels 🚀
+      </p>
+    </div>
+  );
+}
+
+// ============================================================================
 // Pinterest Icon Component
 // ============================================================================
 
@@ -807,6 +958,7 @@ export default function ShareModal({
 }: ShareModalProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [captionCopied, setCaptionCopied] = useState(false);
   const [verticalOffset, setVerticalOffset] = useState(0);
   const [fontSizePx, setFontSizePx] = useState(0); // 0 = auto
   const [showPositionControl, setShowPositionControl] = useState(false);
@@ -854,6 +1006,7 @@ export default function ShareModal({
   useEffect(() => {
     if (!isOpen) return;
     setLinkCopied(false);
+    setCaptionCopied(false);
     setVerticalOffset(0);
     setFontSizePx(0); // Reset to auto
     setShowPositionControl(false);
@@ -884,6 +1037,14 @@ export default function ShareModal({
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), COPY_FEEDBACK_DURATION);
   }, [copyToClipboard, getQuoteUrl]);
+
+  // Handle copy caption (hashtags & description)
+  const handleCopyCaption = useCallback(async () => {
+    const caption = generateCaption(quote);
+    await copyToClipboard(caption);
+    setCaptionCopied(true);
+    setTimeout(() => setCaptionCopied(false), COPY_FEEDBACK_DURATION);
+  }, [copyToClipboard, quote]);
 
   // Generate image from preview card
   const generateImage = useCallback(async (): Promise<string | null> => {
@@ -1161,6 +1322,13 @@ export default function ShareModal({
               />
             )}
           </div>
+
+          {/* Caption & Hashtags Section */}
+          <CaptionSection 
+            quote={quote} 
+            copied={captionCopied} 
+            onCopy={handleCopyCaption} 
+          />
 
           {/* Copy Link / Private Notice */}
           {isPublicQuote ? (
