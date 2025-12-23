@@ -215,6 +215,10 @@ export default function SwipeQuotes() {
   const [fontStyle, setFontStyle] = useState<FontStyle>(FONT_STYLES[0]);
   const [backgroundImage, setBackgroundImage] = useState<BackgroundImage>(BACKGROUND_IMAGES[0]);
   
+  // Per-quote custom backgrounds (for saved quotes with custom backgrounds)
+  // This allows individual quotes to have their own background without affecting others
+  const [savedQuoteBackgrounds, setSavedQuoteBackgrounds] = useState<Record<string, BackgroundImage>>({});
+  
   // User Quotes
   const [showCreateQuoteModal, setShowCreateQuoteModal] = useState(false);
   const [userQuotes, setUserQuotes] = useState<UserQuote[]>([]);
@@ -1513,10 +1517,10 @@ export default function SwipeQuotes() {
   const handleQuoteNavigation = useCallback(async (quoteId: string | number, category?: string, customBackground?: string | null) => {
     const quoteIdStr = String(quoteId);
     
-    // If quote has a saved custom background, apply it temporarily
+    // If quote has a saved custom background, store it for THIS quote only (not globally)
     if (customBackground) {
-      const tempBackground: BackgroundImage = {
-        id: 'saved_custom',
+      const quoteBackground: BackgroundImage = {
+        id: `saved_custom_${quoteIdStr}`,
         name: 'Saved Background',
         url: customBackground,
         thumbnail: customBackground,
@@ -1526,7 +1530,11 @@ export default function SwipeQuotes() {
         categoryBg: 'rgba(255,255,255,0.15)',
         categoryText: '#ffffff',
       };
-      setBackgroundImage(tempBackground);
+      // Store per-quote background - doesn't affect other quotes
+      setSavedQuoteBackgrounds(prev => ({
+        ...prev,
+        [quoteIdStr]: quoteBackground
+      }));
     }
     
     // 1. Check if quote exists in current feed
@@ -1831,7 +1839,22 @@ export default function SwipeQuotes() {
             preGeneratedImage={preGeneratedShareImage}
             cardTheme={cardTheme}
             fontStyle={fontStyle}
-            backgroundImage={backgroundImage}
+            backgroundImage={
+              // Use quote's custom background if available, or per-quote saved background, or global
+              shareQuote.custom_background
+                ? {
+                    id: `share_custom_${shareQuote.id}`,
+                    name: 'Custom Background',
+                    url: shareQuote.custom_background,
+                    thumbnail: shareQuote.custom_background,
+                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                    textColor: '#ffffff',
+                    authorColor: '#e5e5e5',
+                    categoryBg: 'rgba(255,255,255,0.15)',
+                    categoryText: '#ffffff',
+                  }
+                : savedQuoteBackgrounds[String(shareQuote.id)] || backgroundImage
+            }
           />
         </Suspense>
       )}
@@ -2264,24 +2287,30 @@ export default function SwipeQuotes() {
               const offset = index - currentIndex;
               return offset >= 0 && offset <= 2;
             })
-            .map(({ quote, index }) => (
-              <QuoteCard
-                key={quote.id}
-                quote={quote}
-                index={index}
-                currentIndex={currentIndex}
-                dragOffset={dragOffset}
-                swipeDirection={swipeDirection}
-                isDragging={isDragging}
-                isAnimating={isAnimating}
-                totalQuotes={filteredQuotes.length}
-                onDragStart={handleDragStart}
-                onDragMove={handleDragMove}
-                cardTheme={cardTheme}
-                fontStyle={fontStyle}
-                backgroundImage={backgroundImage}
-              />
-            ))}
+            .map(({ quote, index }) => {
+              // Use per-quote custom background if available, otherwise use global background
+              const quoteIdStr = String(quote.id);
+              const quoteBackground = savedQuoteBackgrounds[quoteIdStr] || backgroundImage;
+              
+              return (
+                <QuoteCard
+                  key={quote.id}
+                  quote={quote}
+                  index={index}
+                  currentIndex={currentIndex}
+                  dragOffset={dragOffset}
+                  swipeDirection={swipeDirection}
+                  isDragging={isDragging}
+                  isAnimating={isAnimating}
+                  totalQuotes={filteredQuotes.length}
+                  onDragStart={handleDragStart}
+                  onDragMove={handleDragMove}
+                  cardTheme={cardTheme}
+                  fontStyle={fontStyle}
+                  backgroundImage={quoteBackground}
+                />
+              );
+            })}
         </div>
 
         {/* Control Buttons */}
