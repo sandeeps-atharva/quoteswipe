@@ -11,6 +11,7 @@ import ControlButtons, { ActionButtons } from './ControlButtons';
 import LanguageSelector from './LanguageSelector';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useQuotes } from '@/contexts/QuotesContext';
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
 import { isQuotePublic } from '@/lib/helpers';
 
@@ -163,6 +164,9 @@ export default function SwipeQuotes() {
   // Theme toggle with user sync
   const { theme, toggleTheme, setIsAuthenticated: setThemeAuth } = useTheme();
   
+  // Global quotes context for state persistence across navigation
+  const quotesContext = useQuotes();
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -260,6 +264,24 @@ export default function SwipeQuotes() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // URL restoration on navigation back - runs when context becomes available
+  // This effect ensures the URL is restored when user navigates back to the page
+  useEffect(() => {
+    // Only restore if we're on root URL and context has a saved path
+    if (
+      quotesContext.isInitialized && 
+      quotesContext.currentQuotePath && 
+      window.location.pathname === '/'
+    ) {
+      // Restore the URL immediately
+      window.history.replaceState(
+        { index: quotesContext.currentIndex }, 
+        '', 
+        quotesContext.currentQuotePath
+      );
+    }
+  }, [quotesContext.isInitialized, quotesContext.currentQuotePath, quotesContext.currentIndex]);
+
   // Single initialization on mount - prevents multiple fetches and flickering
   useEffect(() => {
     if (initStarted.current) return;
@@ -267,13 +289,13 @@ export default function SwipeQuotes() {
     
     const initializeApp = async () => {
       try {
-        // Check URL for quote ID (regular quotes)
-        const pathMatch = window.location.pathname.match(/^\/quote\/(\d+)$/);
+        // Check URL for quote ID (regular quotes) - supports alphanumeric IDs
+        const pathMatch = window.location.pathname.match(/^\/quote\/([a-zA-Z0-9_-]+)$/);
         const urlParams = new URLSearchParams(window.location.search);
         const quoteIdParam = urlParams.get('quote');
         
-        // Check URL for user quote ID
-        const userQuotePathMatch = window.location.pathname.match(/^\/user-quote\/(\d+)$/);
+        // Check URL for user quote ID - supports alphanumeric IDs
+        const userQuotePathMatch = window.location.pathname.match(/^\/user-quote\/([a-zA-Z0-9_-]+)$/);
         const userQuoteIdParam = urlParams.get('user_quote');
         
         // Convert query param to path format for regular quotes
@@ -289,6 +311,40 @@ export default function SwipeQuotes() {
         if (pathMatch || quoteIdParam || userQuotePathMatch || userQuoteIdParam) {
           isInitialLoad.current = true;
           isRestoringFromUrl.current = true;
+          
+          // Save current URL path to context immediately so it can be restored on navigation back
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/' && currentPath !== quotesContext.currentQuotePath) {
+            quotesContext.setCurrentQuotePath(currentPath);
+          }
+        }
+        
+        // FAST PATH: If context already has data, use it immediately (no API calls!)
+        if (quotesContext.isInitialized && quotesContext.quotes.length > 0) {
+          // IMPORTANT: Restore URL IMMEDIATELY before any state updates
+          // This prevents the brief flash of root URL
+          if (quotesContext.currentQuotePath && window.location.pathname === '/') {
+            window.history.replaceState(
+              { index: quotesContext.currentIndex }, 
+              '', 
+              quotesContext.currentQuotePath
+            );
+          }
+          
+          setQuotes(quotesContext.quotes);
+          setCategories(quotesContext.categories);
+          setTotalCategories(quotesContext.totalCategories);
+          setSelectedCategories(quotesContext.selectedCategories);
+          setCurrentIndex(quotesContext.currentIndex);
+          setIsAuthenticated(quotesContext.isAuthenticated);
+          setUser(quotesContext.user);
+          setLikedQuotes(quotesContext.likedQuotes);
+          setDislikedQuotes(quotesContext.dislikedQuotes);
+          setSavedQuotes(quotesContext.savedQuotes);
+          setUserQuotes(quotesContext.userQuotes);
+          setPreferencesLoaded(true);
+          setIsAppReady(true);
+          return; // Skip all API calls!
         }
         
         // Check auth first to know if we need to fetch preferences
@@ -306,6 +362,10 @@ export default function SwipeQuotes() {
         setIsAuthenticated(isUserAuthenticated);
         setUser(userData);
         
+        // Also update context
+        quotesContext.setIsAuthenticated(isUserAuthenticated);
+        quotesContext.setUser(userData);
+        
         // Fetch categories (response differs based on auth cookie)
         const categoriesResponse = await fetch('/api/categories', { credentials: 'include' });
         let categoriesData: Category[] = [];
@@ -321,6 +381,9 @@ export default function SwipeQuotes() {
             categories: categoriesData,
             totalCategories: totalCats,
           });
+          // Update context
+          quotesContext.setCategories(categoriesData);
+          quotesContext.setTotalCategories(totalCats);
         }
         
         // For authenticated users, fetch all preferences + user data in parallel (optimized)
@@ -343,6 +406,7 @@ export default function SwipeQuotes() {
             // Apply categories
             if (Array.isArray(data.selectedCategories)) {
               setSelectedCategories(data.selectedCategories);
+              quotesContext.setSelectedCategories(data.selectedCategories);
             }
             
             // Apply card style
@@ -395,18 +459,22 @@ export default function SwipeQuotes() {
           if (likesRes.ok) {
             const likesData = await likesRes.json();
             setLikedQuotes(likesData.quotes || []);
+            quotesContext.setLikedQuotes(likesData.quotes || []);
           }
           if (dislikesRes.ok) {
             const dislikesData = await dislikesRes.json();
             setDislikedQuotes(dislikesData.quotes || []);
+            quotesContext.setDislikedQuotes(dislikesData.quotes || []);
           }
           if (savedRes.ok) {
             const savedData = await savedRes.json();
             setSavedQuotes(savedData.quotes || []);
+            quotesContext.setSavedQuotes(savedData.quotes || []);
           }
           if (userQuotesRes.ok) {
             const userQuotesData = await userQuotesRes.json();
             setUserQuotes(userQuotesData.quotes || []);
+            quotesContext.setUserQuotes(userQuotesData.quotes || []);
           }
           
           setPreferencesLoaded(true);
@@ -428,7 +496,7 @@ export default function SwipeQuotes() {
     };
     
     initializeApp();
-  }, []);
+  }, [quotesContext]);
 
   // Refetch categories only when auth changes AFTER initial load
   useEffect(() => {
@@ -508,12 +576,15 @@ export default function SwipeQuotes() {
         setCurrentIndex(quoteIndex);
         // Update URL to match the quote type
         if (isUserQuote && userQuoteId) {
-          window.history.replaceState({ userQuoteId, index: quoteIndex }, '', `/user-quote/${userQuoteId}`);
+          const path = `/user-quote/${userQuoteId}`;
+          window.history.replaceState({ userQuoteId, index: quoteIndex }, '', path);
+          quotesContext.setCurrentQuotePath(path);
         } else if (quoteId) {
-        const newPath = `/quote/${quoteId}`;
+          const newPath = `/quote/${quoteId}`;
           if (!pathMatch || pathMatch[1] !== String(quoteId) || quoteIdParam) {
-          window.history.replaceState({ quoteId, index: quoteIndex }, '', newPath);
+            window.history.replaceState({ quoteId, index: quoteIndex }, '', newPath);
           }
+          quotesContext.setCurrentQuotePath(newPath);
         }
       } else if (quoteIndex === -1) {
         // Quote not found, redirect to first quote
@@ -542,16 +613,21 @@ export default function SwipeQuotes() {
         const currentQuote = filteredQuotes[currentIndex];
         const currentQuoteId = currentQuote.id;
         const isCurrentUserQuote = String(currentQuoteId).startsWith('user_');
+        let newPath = '';
         if (isCurrentUserQuote) {
           const cleanId = String(currentQuoteId).replace('user_', '');
-          window.history.replaceState({ userQuoteId: cleanId, index: currentIndex }, '', `/user-quote/${cleanId}`);
+          newPath = `/user-quote/${cleanId}`;
+          window.history.replaceState({ userQuoteId: cleanId, index: currentIndex }, '', newPath);
         } else {
-          window.history.replaceState({ quoteId: currentQuoteId, index: currentIndex }, '', `/quote/${currentQuoteId}`);
+          newPath = `/quote/${currentQuoteId}`;
+          window.history.replaceState({ quoteId: currentQuoteId, index: currentIndex }, '', newPath);
         }
+        // Sync to context
+        quotesContext.setCurrentQuotePath(newPath);
       }
       isInitialLoad.current = false;
     }
-  }, [quotes, isAppReady, currentIndex]);
+  }, [quotes, isAppReady, currentIndex, quotesContext]);
 
   // Update URL when quote changes (but not on initial load or when restoring from URL)
   useEffect(() => {
@@ -581,8 +657,20 @@ export default function SwipeQuotes() {
           window.history.pushState({ quoteId, index: currentIndex }, '', newPath);
         }
       }
+      
+      // Sync path to context for restoration when navigating back
+      if (newPath && quotesContext.currentQuotePath !== newPath) {
+        quotesContext.setCurrentQuotePath(newPath);
+      }
     }
-  }, [currentIndex, isAppReady]);
+  }, [currentIndex, isAppReady, quotesContext]);
+
+  // Sync currentIndex to context for persistence across navigation
+  useEffect(() => {
+    if (isAppReady && currentIndex !== quotesContext.currentIndex) {
+      quotesContext.setCurrentIndex(currentIndex);
+    }
+  }, [currentIndex, isAppReady, quotesContext]);
 
   // Handle browser back/forward buttons
   useEffect(() => {
@@ -828,18 +916,22 @@ export default function SwipeQuotes() {
       // Helper to set quotes and optionally preserve current position
       const applyQuotes = (quotesData: Quote[]) => {
         setQuotes(quotesData);
+        // Sync to context for persistence
+        quotesContext.setQuotes(quotesData);
         
         if (shouldPreserveQuote && currentQuoteId) {
           // Try to find the same quote in the new array
           const preservedIndex = quotesData.findIndex(q => String(q.id) === String(currentQuoteId));
           if (preservedIndex !== -1) {
             setCurrentIndex(preservedIndex);
+            quotesContext.setCurrentIndex(preservedIndex);
             return; // Keep current position
           }
         }
         
         // Reset to first quote
         setCurrentIndex(0);
+        quotesContext.setCurrentIndex(0);
         setSwipeHistory([]);
       };
       
