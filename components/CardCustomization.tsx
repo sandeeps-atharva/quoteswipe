@@ -589,12 +589,13 @@ function CardCustomization({
                   <ImageUploader
                     selectedCustomBackground={selectedCustomBgUrl}
                     onSelectCustomBackground={handleSelectCustomBackground}
-                    maxDisplay={8}
+                    maxDisplay={100}
                     showUploadButtons={true}
                     showClearOption={false}
                     gridCols={4}
                     autoFetch={isOpen}
                     onBackgroundsChange={handleBackgroundsChange}
+                    className="max-h-48 overflow-y-auto"
                   />
                 ) : (
                   /* For guests: Use localStorage-based flow */
@@ -659,17 +660,19 @@ function CardCustomization({
               {/* Preset Images Section - always visible */}
               <div className="space-y-2">
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
-                  Preset Backgrounds
+                  Preset Backgrounds ({BACKGROUND_IMAGES.length})
                 </p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                  {BACKGROUND_IMAGES.map((bg) => (
-                    <ImageButton
-                      key={bg.id}
-                      background={bg}
-                      isSelected={selectedBackground.id === bg.id}
-                      onClick={handleBackgroundSelect}
-                    />
-                  ))}
+                <div className="max-h-48 overflow-y-auto">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+                    {BACKGROUND_IMAGES.map((bg) => (
+                      <ImageButton
+                        key={bg.id}
+                        background={bg}
+                        isSelected={selectedBackground.id === bg.id}
+                        onClick={handleBackgroundSelect}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

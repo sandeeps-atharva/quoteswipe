@@ -177,10 +177,20 @@ export default function SwipeQuotes() {
   const [activeNavTab, setActiveNavTab] = useState<NavTab>('feed'); // Bottom nav active tab
   const [swipeCount, setSwipeCount] = useState(0); // For unauthenticated users
   const [authenticatedSwipeCount, setAuthenticatedSwipeCount] = useState(0); // For authenticated users
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  // Restore quotes, categories, and index from cache for instant display
+  const [quotes, setQuotes] = useState<Quote[]>(() => {
+    const cached = getFromCache<Quote[]>('swipeQuotes', 60 * 60 * 1000);
+    return cached || [];
+  });
+  const [categories, setCategories] = useState<Category[]>(() => {
+    const cached = getFromCache<Category[]>('swipeCategories', 60 * 60 * 1000);
+    return cached || [];
+  });
   const [totalCategories, setTotalCategories] = useState(0);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const cached = getFromCache<number>('currentQuoteIndex', 60 * 60 * 1000);
+    return cached || 0;
+  });
   const [swipeHistory, setSwipeHistory] = useState<Array<{ index: number; direction: 'left' | 'right' }>>([]); // Track previous indices and directions
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -209,11 +219,20 @@ export default function SwipeQuotes() {
   // (preserves the quote they were viewing)
   const isLoggingIn = useRef(false);
   
-  // Card Customization
+  // Card Customization - restore from cache immediately for instant display
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
-  const [cardTheme, setCardTheme] = useState<CardTheme>(CARD_THEMES[0]);
-  const [fontStyle, setFontStyle] = useState<FontStyle>(FONT_STYLES[0]);
-  const [backgroundImage, setBackgroundImage] = useState<BackgroundImage>(BACKGROUND_IMAGES[0]);
+  const [cardTheme, setCardTheme] = useState<CardTheme>(() => {
+    const cached = getFromCache<CardTheme>('cardTheme', 60 * 60 * 1000); // 1 hour
+    return cached || CARD_THEMES[0];
+  });
+  const [fontStyle, setFontStyle] = useState<FontStyle>(() => {
+    const cached = getFromCache<FontStyle>('fontStyle', 60 * 60 * 1000);
+    return cached || FONT_STYLES[0];
+  });
+  const [backgroundImage, setBackgroundImage] = useState<BackgroundImage>(() => {
+    const cached = getFromCache<BackgroundImage>('backgroundImage', 60 * 60 * 1000);
+    return cached || BACKGROUND_IMAGES[0];
+  });
   
   // Per-quote custom backgrounds (for saved quotes with custom backgrounds)
   // This allows individual quotes to have their own background without affecting others
@@ -260,6 +279,17 @@ export default function SwipeQuotes() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // URL restoration on navigation back - restore URL from cache immediately
+  useEffect(() => {
+    // Only restore if we're on root URL and have cached data
+    if (window.location.pathname === '/' && quotes.length > 0) {
+      const cachedPath = getFromCache<string>('currentQuotePath', 60 * 60 * 1000);
+      if (cachedPath && cachedPath.includes('/quote/')) {
+        window.history.replaceState({ index: currentIndex }, '', cachedPath);
+      }
+    }
+  }, []); // Run only once on mount
+
   // Single initialization on mount - prevents multiple fetches and flickering
   useEffect(() => {
     if (initStarted.current) return;
@@ -267,13 +297,13 @@ export default function SwipeQuotes() {
     
     const initializeApp = async () => {
       try {
-        // Check URL for quote ID (regular quotes)
-        const pathMatch = window.location.pathname.match(/^\/quote\/(\d+)$/);
+        // Check URL for quote ID (regular quotes) - supports alphanumeric IDs
+        const pathMatch = window.location.pathname.match(/^\/quote\/([a-zA-Z0-9_-]+)$/);
         const urlParams = new URLSearchParams(window.location.search);
         const quoteIdParam = urlParams.get('quote');
         
-        // Check URL for user quote ID
-        const userQuotePathMatch = window.location.pathname.match(/^\/user-quote\/(\d+)$/);
+        // Check URL for user quote ID - supports alphanumeric IDs
+        const userQuotePathMatch = window.location.pathname.match(/^\/user-quote\/([a-zA-Z0-9_-]+)$/);
         const userQuoteIdParam = urlParams.get('user_quote');
         
         // Convert query param to path format for regular quotes
@@ -289,6 +319,22 @@ export default function SwipeQuotes() {
         if (pathMatch || quoteIdParam || userQuotePathMatch || userQuoteIdParam) {
           isInitialLoad.current = true;
           isRestoringFromUrl.current = true;
+        }
+        
+        // FAST PATH: If quotes are already loaded from cache, skip heavy initialization
+        // This provides instant display when navigating back
+        const hasCachedBackground = getFromCache<BackgroundImage>('backgroundImage', 60 * 60 * 1000);
+        if (quotes.length > 0 && hasCachedBackground) {
+          // Just verify auth status quickly
+          const authResponse = await fetch('/api/auth/me');
+          if (authResponse.ok) {
+            const data = await authResponse.json();
+            setIsAuthenticated(true);
+            setUser(data.user);
+          }
+          setPreferencesLoaded(true);
+          setIsAppReady(true);
+          return; // Skip full initialization
         }
         
         // Check auth first to know if we need to fetch preferences
@@ -435,6 +481,39 @@ export default function SwipeQuotes() {
     if (!isAppReady) return; // Skip during initial load
     fetchCategories();
   }, [isAuthenticated]);
+
+  // Cache card style for instant restoration on navigation back
+  useEffect(() => {
+    if (!isAppReady) return; // Only cache after initial load
+    setToCache('cardTheme', cardTheme);
+  }, [cardTheme, isAppReady]);
+
+  useEffect(() => {
+    if (!isAppReady) return;
+    setToCache('fontStyle', fontStyle);
+  }, [fontStyle, isAppReady]);
+
+  useEffect(() => {
+    if (!isAppReady) return;
+    setToCache('backgroundImage', backgroundImage);
+  }, [backgroundImage, isAppReady]);
+
+  // Cache quotes and index for instant restoration
+  useEffect(() => {
+    if (!isAppReady || quotes.length === 0) return;
+    setToCache('swipeQuotes', quotes);
+    setToCache('swipeCategories', categories);
+  }, [quotes, categories, isAppReady]);
+
+  useEffect(() => {
+    if (!isAppReady) return;
+    setToCache('currentQuoteIndex', currentIndex);
+    // Also cache the current URL path for navigation restoration
+    const path = window.location.pathname;
+    if (path !== '/' && path.includes('/quote/')) {
+      setToCache('currentQuotePath', path);
+    }
+  }, [currentIndex, isAppReady]);
 
   // Save user preferences when selectedCategories changes (debounced)
   useEffect(() => {
