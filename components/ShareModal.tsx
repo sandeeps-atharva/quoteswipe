@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical, Type, Minus, Plus } from 'lucide-react';
+import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical, Type, Minus, Plus, ZoomIn, ZoomOut, Move, RotateCcw, WrapText, Undo2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { isQuotePublic } from '@/lib/helpers';
 import Image from 'next/image';
@@ -56,6 +56,9 @@ interface PreviewCardProps {
   verticalOffset?: number;
   format?: ShareFormatConfig;
   fontSizePx?: number; // 0 = auto, otherwise direct px value
+  bgZoom?: number; // Background zoom level (1 = 100%)
+  bgPanX?: number; // Background horizontal pan (-50 to 50)
+  bgPanY?: number; // Background vertical pan (-50 to 50)
 }
 
 interface ShareButtonProps {
@@ -294,6 +297,9 @@ function PreviewCard({
   verticalOffset = 0,
   format = DEFAULT_FORMAT,
   fontSizePx = 0,
+  bgZoom = 1,
+  bgPanX = 0,
+  bgPanY = 0,
 }: PreviewCardProps) {
   const textLength = quote.text.length;
   const hasBackgroundImage = !!(backgroundImage?.url || customBackground);
@@ -383,10 +389,18 @@ function PreviewCard({
         height: `${format.height}px`,
       }}
     >
-      {/* Background Image Layer */}
+      {/* Background Image Layer with Zoom/Pan */}
       {hasBackgroundImage && actualBackgroundUrl && (
         <>
-          <div className="absolute inset-0">
+          <div 
+            className="absolute inset-0 overflow-hidden"
+            style={{
+              // Expand container to allow for panning when zoomed
+              margin: bgZoom > 1 ? `-${(bgZoom - 1) * 50}%` : 0,
+              width: bgZoom > 1 ? `${bgZoom * 100}%` : '100%',
+              height: bgZoom > 1 ? `${bgZoom * 100}%` : '100%',
+            }}
+          >
             <Image
               src={actualBackgroundUrl}
               alt="Card background"
@@ -395,6 +409,10 @@ function PreviewCard({
               sizes="320px"
               priority
               unoptimized
+              style={{
+                transform: `scale(${bgZoom}) translate(${bgPanX}%, ${bgPanY}%)`,
+                transformOrigin: 'center center',
+              }}
             />
           </div>
           <div className="absolute inset-0" style={{ background: backgroundOverlay }} />
@@ -754,6 +772,329 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
 }
 
 // ============================================================================
+// Background Zoom Control Component
+// ============================================================================
+
+const BG_ZOOM_MIN = 1;
+const BG_ZOOM_MAX = 3;
+const BG_ZOOM_STEP = 0.1;
+const BG_PAN_MIN = -30;
+const BG_PAN_MAX = 30;
+const BG_PAN_STEP = 5;
+
+interface BackgroundZoomControlProps {
+  zoom: number;
+  panX: number;
+  panY: number;
+  onZoomChange: (zoom: number) => void;
+  onPanXChange: (panX: number) => void;
+  onPanYChange: (panY: number) => void;
+  onReset: () => void;
+}
+
+function BackgroundZoomControl({ 
+  zoom, 
+  panX, 
+  panY, 
+  onZoomChange, 
+  onPanXChange, 
+  onPanYChange,
+  onReset,
+}: BackgroundZoomControlProps) {
+  const handleZoomIn = () => onZoomChange(Math.min(BG_ZOOM_MAX, zoom + BG_ZOOM_STEP));
+  const handleZoomOut = () => onZoomChange(Math.max(BG_ZOOM_MIN, zoom - BG_ZOOM_STEP));
+  
+  const zoomPresets = [
+    { label: '1x', value: 1 },
+    { label: '1.5x', value: 1.5 },
+    { label: '2x', value: 2 },
+    { label: '2.5x', value: 2.5 },
+    { label: '3x', value: 3 },
+  ];
+
+  return (
+    <div className="mt-3 p-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/50">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+          <ZoomIn size={12} />
+          Background Zoom & Position
+        </span>
+        <button
+          onClick={onReset}
+          className="text-[9px] px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+        >
+          <RotateCcw size={10} />
+          Reset
+        </button>
+      </div>
+      
+      {/* Zoom Control */}
+      <div className="flex items-center gap-2 mb-3">
+        <button
+          onClick={handleZoomOut}
+          disabled={zoom <= BG_ZOOM_MIN}
+          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Zoom Out"
+        >
+          <ZoomOut size={14} className="text-emerald-600 dark:text-emerald-400" />
+        </button>
+        
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] text-gray-500 dark:text-gray-400">Zoom</span>
+            <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400">{zoom.toFixed(1)}x</span>
+          </div>
+          <input
+            type="range"
+            min={BG_ZOOM_MIN}
+            max={BG_ZOOM_MAX}
+            step={BG_ZOOM_STEP}
+            value={zoom}
+            onChange={(e) => onZoomChange(Number(e.target.value))}
+            className="w-full h-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+          />
+        </div>
+        
+        <button
+          onClick={handleZoomIn}
+          disabled={zoom >= BG_ZOOM_MAX}
+          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Zoom In"
+        >
+          <ZoomIn size={14} className="text-emerald-600 dark:text-emerald-400" />
+        </button>
+      </div>
+      
+      {/* Zoom Presets */}
+      <div className="flex items-center justify-center gap-1.5 mb-3">
+        {zoomPresets.map((preset) => (
+          <button
+            key={preset.label}
+            onClick={() => onZoomChange(preset.value)}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${
+              Math.abs(zoom - preset.value) < 0.05
+                ? 'bg-emerald-500 text-white'
+                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+      
+      {/* Pan Controls - Only show when zoomed */}
+      {zoom > 1 && (
+        <div className="pt-3 border-t border-emerald-200/50 dark:border-emerald-700/50">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5">
+              <Move size={10} className="text-gray-500" />
+              <span className="text-[9px] text-gray-500 dark:text-gray-400">Move Background</span>
+            </div>
+            <button
+              onClick={() => { onPanXChange(0); onPanYChange(0); }}
+              className="text-[8px] px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-500 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+              Center
+            </button>
+          </div>
+          
+          {/* Arrow Controls - D-Pad Style */}
+          <div className="flex items-center justify-center mb-3">
+            <div className="grid grid-cols-3 gap-1">
+              {/* Empty */}
+              <div />
+              {/* Up */}
+              <button
+                onClick={() => onPanYChange(Math.min(BG_PAN_MAX, panY + BG_PAN_STEP))}
+                disabled={panY >= BG_PAN_MAX}
+                className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+              >
+                <ChevronUp size={16} className="text-gray-600 dark:text-gray-300" />
+              </button>
+              {/* Empty */}
+              <div />
+              
+              {/* Left */}
+              <button
+                onClick={() => onPanXChange(Math.max(BG_PAN_MIN, panX - BG_PAN_STEP))}
+                disabled={panX <= BG_PAN_MIN}
+                className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+              >
+                <ChevronUp size={16} className="text-gray-600 dark:text-gray-300 -rotate-90" />
+              </button>
+              {/* Center indicator */}
+              <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <span className="text-[8px] font-mono text-emerald-600 dark:text-emerald-400">
+                  {panX},{panY}
+                </span>
+              </div>
+              {/* Right */}
+              <button
+                onClick={() => onPanXChange(Math.min(BG_PAN_MAX, panX + BG_PAN_STEP))}
+                disabled={panX >= BG_PAN_MAX}
+                className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+              >
+                <ChevronUp size={16} className="text-gray-600 dark:text-gray-300 rotate-90" />
+              </button>
+              
+              {/* Empty */}
+              <div />
+              {/* Down */}
+              <button
+                onClick={() => onPanYChange(Math.max(BG_PAN_MIN, panY - BG_PAN_STEP))}
+                disabled={panY <= BG_PAN_MIN}
+                className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+              >
+                <ChevronDown size={16} className="text-gray-600 dark:text-gray-300" />
+              </button>
+              {/* Empty */}
+              <div />
+            </div>
+          </div>
+          
+          {/* Fine Adjustment Sliders */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Horizontal Pan */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] text-gray-400">← → Horizontal</span>
+                <span className="text-[9px] font-mono text-emerald-600">{panX > 0 ? '+' : ''}{panX}</span>
+              </div>
+              <input
+                type="range"
+                min={BG_PAN_MIN}
+                max={BG_PAN_MAX}
+                step={1}
+                value={panX}
+                onChange={(e) => onPanXChange(Number(e.target.value))}
+                className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              />
+            </div>
+            
+            {/* Vertical Pan */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] text-gray-400">↑ ↓ Vertical</span>
+                <span className="text-[9px] font-mono text-emerald-600">{panY > 0 ? '+' : ''}{panY}</span>
+              </div>
+              <input
+                type="range"
+                min={BG_PAN_MIN}
+                max={BG_PAN_MAX}
+                step={1}
+                value={panY}
+                onChange={(e) => onPanYChange(Number(e.target.value))}
+                className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Text Editor Control Component (Add Line Breaks)
+// ============================================================================
+
+interface TextEditorControlProps {
+  originalText: string;
+  editedText: string;
+  onChange: (text: string) => void;
+  onReset: () => void;
+  isEdited: boolean;
+}
+
+function TextEditorControl({ originalText, editedText, onChange, onReset, isEdited }: TextEditorControlProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [editedText]);
+  
+  const handleInsertLineBreak = () => {
+    if (textareaRef.current) {
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      const newText = editedText.substring(0, start) + '\n' + editedText.substring(end);
+      onChange(newText);
+      // Set cursor position after the inserted line break
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 1;
+          textareaRef.current.focus();
+        }
+      }, 0);
+    }
+  };
+
+  return (
+    <div className="mt-3 p-3 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl border border-orange-200/50 dark:border-orange-800/50">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
+          <WrapText size={12} />
+          Edit Quote Text (Add Line Breaks)
+        </span>
+        {isEdited && (
+          <button
+            onClick={onReset}
+            className="text-[9px] px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+          >
+            <Undo2 size={10} />
+            Reset
+          </button>
+        )}
+      </div>
+      
+      {/* Instructions */}
+      <p className="text-[9px] text-gray-500 dark:text-gray-400 mb-2">
+        Click where you want to add a line break, then press Enter or use the button below.
+      </p>
+      
+      {/* Textarea */}
+      <textarea
+        ref={textareaRef}
+        value={editedText}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-3 text-sm bg-white dark:bg-gray-800 border border-orange-200 dark:border-orange-700 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all min-h-[80px] max-h-[200px]"
+        placeholder="Edit your quote text..."
+        style={{ fontFamily: 'inherit' }}
+      />
+      
+      {/* Action Buttons */}
+      <div className="flex items-center gap-2 mt-2">
+        <button
+          onClick={handleInsertLineBreak}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[10px] font-medium transition-colors"
+        >
+          <WrapText size={12} />
+          Insert Line Break
+        </button>
+        
+        {isEdited && (
+          <span className="text-[9px] text-orange-600 dark:text-orange-400 flex items-center gap-1">
+            <Check size={10} />
+            Modified
+          </span>
+        )}
+      </div>
+      
+      {/* Preview hint */}
+      <p className="text-[8px] text-gray-400 mt-2">
+        Tip: Press Enter key to add line breaks. The preview above will update in real-time.
+      </p>
+    </div>
+  );
+}
+
+// ============================================================================
 // Copy Link Section Component
 // ============================================================================
 
@@ -963,8 +1304,58 @@ export default function ShareModal({
   const [fontSizePx, setFontSizePx] = useState(0); // 0 = auto
   const [showPositionControl, setShowPositionControl] = useState(false);
   const [showFontSizeControl, setShowFontSizeControl] = useState(false);
+  const [showZoomControl, setShowZoomControl] = useState(false);
+  const [showTextEditor, setShowTextEditor] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<ShareFormatConfig>(DEFAULT_FORMAT);
+  
+  // Background zoom and pan state
+  const [bgZoom, setBgZoom] = useState(1);
+  const [bgPanX, setBgPanX] = useState(0);
+  const [bgPanY, setBgPanY] = useState(0);
+  
+  // Edited quote text (with line breaks)
+  const [editedQuoteText, setEditedQuoteText] = useState(quote.text);
+  const [isTextEdited, setIsTextEdited] = useState(false);
+  
   const previewRef = useRef<HTMLDivElement>(null);
+  
+  // Check if background image exists
+  const hasBackgroundImage = !!(backgroundImage?.url || quote.custom_background);
+  
+  // Reset all states when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      // Reset to original quote text when modal opens
+      setEditedQuoteText(quote.text);
+      setIsTextEdited(false);
+    } else {
+      setBgZoom(1);
+      setBgPanX(0);
+      setBgPanY(0);
+    }
+  }, [isOpen, quote.text]);
+  
+  const handleResetZoom = useCallback(() => {
+    setBgZoom(1);
+    setBgPanX(0);
+    setBgPanY(0);
+  }, []);
+  
+  const handleResetText = useCallback(() => {
+    setEditedQuoteText(quote.text);
+    setIsTextEdited(false);
+  }, [quote.text]);
+  
+  const handleTextChange = useCallback((newText: string) => {
+    setEditedQuoteText(newText);
+    setIsTextEdited(newText !== quote.text);
+  }, [quote.text]);
+  
+  // Create modified quote object with edited text
+  const displayQuote = useMemo(() => ({
+    ...quote,
+    text: editedQuoteText,
+  }), [quote, editedQuoteText]);
 
   // Derived state
   const isUserQuote = quote.isUserQuote || String(quote.id).startsWith('user_');
@@ -1247,7 +1638,7 @@ export default function ShareModal({
                   }}
                 >
                   <PreviewCard
-                    quote={quote}
+                    quote={displayQuote}
                     cardTheme={cardTheme}
                     fontStyle={fontStyle}
                     backgroundImage={backgroundImage}
@@ -1255,6 +1646,9 @@ export default function ShareModal({
                     verticalOffset={verticalOffset}
                     format={selectedFormat}
                     fontSizePx={fontSizePx}
+                    bgZoom={bgZoom}
+                    bgPanX={bgPanX}
+                    bgPanY={bgPanY}
                   />
                 </div>
               </div>
@@ -1262,37 +1656,93 @@ export default function ShareModal({
 
             {/* Adjustment Controls Row */}
             <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 {/* Position Toggle */}
                 <button
                   onClick={() => {
                     setShowPositionControl(!showPositionControl);
-                    if (!showPositionControl) setShowFontSizeControl(false);
+                    if (!showPositionControl) {
+                      setShowFontSizeControl(false);
+                      setShowZoomControl(false);
+                      setShowTextEditor(false);
+                    }
                   }}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showPositionControl 
                       ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
                   <MoveVertical size={12} />
-                  Position
+                  <span className="hidden sm:inline">Position</span>
                 </button>
 
                 {/* Font Size Toggle */}
                 <button
                   onClick={() => {
                     setShowFontSizeControl(!showFontSizeControl);
-                    if (!showFontSizeControl) setShowPositionControl(false);
+                    if (!showFontSizeControl) {
+                      setShowPositionControl(false);
+                      setShowZoomControl(false);
+                      setShowTextEditor(false);
+                    }
                   }}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showFontSizeControl 
                       ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' 
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
                   <Type size={12} />
-                  Font Size
+                  <span className="hidden sm:inline">Font</span>
+                </button>
+                
+                {/* Background Zoom Toggle - Only show when there's a background image */}
+                {hasBackgroundImage && (
+                  <button
+                    onClick={() => {
+                      setShowZoomControl(!showZoomControl);
+                      if (!showZoomControl) {
+                        setShowPositionControl(false);
+                        setShowFontSizeControl(false);
+                        setShowTextEditor(false);
+                      }
+                    }}
+                    className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
+                      showZoomControl 
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' 
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <ZoomIn size={12} />
+                    <span className="hidden sm:inline">Zoom</span>
+                    {bgZoom > 1 && (
+                      <span className="text-[9px] bg-emerald-500 text-white px-1 rounded">{bgZoom.toFixed(1)}x</span>
+                    )}
+                  </button>
+                )}
+                
+                {/* Text Editor Toggle - Add Line Breaks */}
+                <button
+                  onClick={() => {
+                    setShowTextEditor(!showTextEditor);
+                    if (!showTextEditor) {
+                      setShowPositionControl(false);
+                      setShowFontSizeControl(false);
+                      setShowZoomControl(false);
+                    }
+                  }}
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
+                    showTextEditor 
+                      ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' 
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <WrapText size={12} />
+                  <span className="hidden sm:inline">Edit</span>
+                  {isTextEdited && (
+                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                  )}
                 </button>
               </div>
               
@@ -1319,6 +1769,30 @@ export default function ShareModal({
                 value={fontSizePx}
                 onChange={setFontSizePx}
                 autoSize={autoFontSize}
+              />
+            )}
+            
+            {/* Background Zoom Control Panel */}
+            {showZoomControl && hasBackgroundImage && (
+              <BackgroundZoomControl
+                zoom={bgZoom}
+                panX={bgPanX}
+                panY={bgPanY}
+                onZoomChange={setBgZoom}
+                onPanXChange={setBgPanX}
+                onPanYChange={setBgPanY}
+                onReset={handleResetZoom}
+              />
+            )}
+            
+            {/* Text Editor Control Panel */}
+            {showTextEditor && (
+              <TextEditorControl
+                originalText={quote.text}
+                editedText={editedQuoteText}
+                onChange={handleTextChange}
+                onReset={handleResetText}
+                isEdited={isTextEdited}
               />
             )}
           </div>
