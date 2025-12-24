@@ -29,6 +29,7 @@ const SavedQuotesView = lazy(() => import('./SavedQuotesView'));
 const MyQuotesView = lazy(() => import('./MyQuotesView'));
 const LikedQuotesView = lazy(() => import('./LikedQuotesView'));
 const SkippedQuotesView = lazy(() => import('./SkippedQuotesView'));
+const ProfileView = lazy(() => import('./ProfileView'));
 
 // Bottom Navigation Bar
 import BottomNavBar, { NavTab } from './BottomNavBar';
@@ -2579,7 +2580,7 @@ export default function SwipeQuotes() {
       )}
 
       {/* My Quotes View - Full Screen */}
-      {activeNavTab === 'profile' && isAuthenticated && (
+      {activeNavTab === 'myquotes' && isAuthenticated && (
         <Suspense fallback={<ModalLoader />}>
           <MyQuotesView
             onBack={() => setActiveNavTab('feed')}
@@ -2612,6 +2613,25 @@ export default function SwipeQuotes() {
             onDeleteQuote={(quoteId) => {
               setUserQuotes(userQuotes.filter(q => String(q.id) !== String(quoteId)));
             }}
+          />
+        </Suspense>
+      )}
+
+      {/* Profile View - Full Screen */}
+      {activeNavTab === 'profile' && isAuthenticated && (
+        <Suspense fallback={<ModalLoader />}>
+          <ProfileView
+            onBack={() => setActiveNavTab('feed')}
+            onCreateQuote={() => {
+              setEditingQuote(null);
+              setShowCreateQuoteModal(true);
+            }}
+            onLogout={handleLogout}
+            likedCount={likedQuotes.length}
+            savedCount={savedQuotes.length}
+            skippedCount={dislikedQuotes.length}
+            myQuotesCount={userQuotes.length}
+            isLoggingOut={isLoggingOut}
           />
         </Suspense>
       )}

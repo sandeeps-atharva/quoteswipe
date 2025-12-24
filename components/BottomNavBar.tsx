@@ -3,7 +3,7 @@
 import { Home, Bookmark, PlusCircle, Sparkles, Menu } from 'lucide-react';
 import { memo } from 'react';
 
-export type NavTab = 'feed' | 'saved' | 'create' | 'profile' | 'liked' | 'skipped';
+export type NavTab = 'feed' | 'saved' | 'create' | 'myquotes' | 'profile' | 'liked' | 'skipped';
 
 interface BottomNavBarProps {
   activeTab: NavTab;
@@ -109,18 +109,18 @@ function BottomNavBar({
 
           {/* My Quotes Tab */}
           <button
-            onClick={() => handleTabClick('profile')}
+            onClick={() => handleTabClick('myquotes')}
             className="flex flex-col items-center justify-center flex-1 h-full gap-0.5"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <div className="relative">
               <Sparkles 
                 size={22} 
-                className={`sm:w-6 sm:h-6 ${activeTab === 'profile' 
+                className={`sm:w-6 sm:h-6 ${activeTab === 'myquotes' 
                   ? 'text-purple-500' 
                   : 'text-gray-400 dark:text-gray-500'
                 }`} 
-                fill={activeTab === 'profile' ? 'currentColor' : 'none'}
+                fill={activeTab === 'myquotes' ? 'currentColor' : 'none'}
               />
               {myQuotesCount > 0 && (
                 <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-purple-500 text-white text-[9px] font-bold rounded-full">
@@ -129,7 +129,7 @@ function BottomNavBar({
               )}
             </div>
             <span className={`text-[10px] sm:text-xs font-medium ${
-              activeTab === 'profile' 
+              activeTab === 'myquotes' 
                 ? 'text-purple-500' 
                 : 'text-gray-400 dark:text-gray-500'
             }`}>My Quotes</span>
