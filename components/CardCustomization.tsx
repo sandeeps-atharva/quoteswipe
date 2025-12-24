@@ -610,10 +610,10 @@ function CardCustomization({
                     maxDisplay={100}
                     showUploadButtons={true}
                     showClearOption={false}
-                    gridCols={4}
+                    gridCols={3}
                     autoFetch={isOpen}
                     onBackgroundsChange={handleBackgroundsChange}
-                    className="max-h-48 overflow-y-auto"
+                    className="max-h-64 sm:max-h-72 overflow-y-auto"
                   />
                 ) : (
                   /* For guests: Use localStorage-based flow */
@@ -654,7 +654,7 @@ function CardCustomization({
                         <span className="ml-2 text-xs text-gray-500">Loading...</span>
                       </div>
                     ) : customImages.length > 0 ? (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+                      <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
                         {customBackgrounds.map((bg) => (
                           <CustomImageButton
                             key={bg.id}
@@ -680,8 +680,8 @@ function CardCustomization({
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
                   Preset Backgrounds ({BACKGROUND_IMAGES.length})
                 </p>
-                <div className="max-h-48 overflow-y-auto">
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
+                <div className="max-h-64 sm:max-h-72 overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
                     {BACKGROUND_IMAGES.map((bg) => (
                       <ImageButton
                         key={bg.id}

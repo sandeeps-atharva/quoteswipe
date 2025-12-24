@@ -304,7 +304,7 @@ export default function SaveQuoteModal({
                         maxDisplay={100}
                         showUploadButtons={true}
                         showClearOption={false}
-                        gridCols={5}
+                        gridCols={3}
                         autoFetch={step === 'customize'}
                         onBackgroundsChange={handleBackgroundsChange}
                       />
@@ -314,7 +314,7 @@ export default function SaveQuoteModal({
                   {/* Preset Backgrounds */}
                   <div>
                     <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider font-medium mb-1.5 sm:mb-2">Presets</p>
-                    <div className="grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-5 md:grid-cols-6 gap-1.5 sm:gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-2.5">
                       {BACKGROUND_IMAGES.map((bg) => (
                         <button
                           key={bg.id}

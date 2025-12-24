@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Upload, Camera, X, Check, Loader2, ImageIcon, Trash2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Upload, Camera, X, Check, Loader2, ImageIcon, Trash2, Images } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useBackgroundsSafe, UserBackground } from '@/contexts/BackgroundsContext';
 
@@ -31,6 +31,13 @@ interface ImageUploaderProps {
   className?: string;
 }
 
+// Upload progress state
+interface UploadProgress {
+  total: number;
+  completed: number;
+  failed: number;
+}
+
 export default function ImageUploader({
   selectedCustomBackground,
   onSelectCustomBackground,
@@ -51,6 +58,10 @@ export default function ImageUploader({
   const [localLoading, setLocalLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
+  
+  // Bulk upload state
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const bulkInputRef = useRef<HTMLInputElement>(null);
 
   // Use context data if available, otherwise use local state
   const userBackgrounds = backgroundsContext?.userBackgrounds ?? localBackgrounds;
@@ -104,7 +115,39 @@ export default function ImageUploader({
     }
   }, [userBackgrounds, onBackgroundsChange]);
 
-  // Handle image upload
+  // Upload a single file (helper function)
+  const uploadSingleFile = useCallback(async (file: File): Promise<UserBackground | null> => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      return null;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return null;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await fetch('/api/user/upload-background', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.background as UserBackground;
+      }
+      return null;
+    } catch (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+  }, []);
+
+  // Handle single image upload
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -123,19 +166,9 @@ export default function ImageUploader({
 
     setIsUploadingImage(true);
     try {
-      // Use FormData for the API
-      const formData = new FormData();
-      formData.append('image', file);
+      const newBackground = await uploadSingleFile(file);
       
-      const response = await fetch('/api/user/upload-background', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const newBackground = data.background as UserBackground;
-        
+      if (newBackground) {
         // Update context or local state
         if (backgroundsContext) {
           backgroundsContext.addBackground(newBackground);
@@ -146,8 +179,7 @@ export default function ImageUploader({
         onSelectCustomBackground(newBackground.url);
         toast.success('Image uploaded!');
       } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to upload image');
+        toast.error('Failed to upload image');
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -156,7 +188,97 @@ export default function ImageUploader({
       setIsUploadingImage(false);
       e.target.value = '';
     }
-  }, [backgroundsContext, onSelectCustomBackground]);
+  }, [backgroundsContext, onSelectCustomBackground, uploadSingleFile]);
+
+  // Handle bulk image upload
+  const handleBulkUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // Convert FileList to array and filter valid images
+    const validFiles = Array.from(files).filter(file => {
+      if (!file.type.startsWith('image/')) {
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) {
+      toast.error('No valid images selected (max 5MB each)');
+      e.target.value = '';
+      return;
+    }
+
+    // Limit to 10 images at once
+    const filesToUpload = validFiles.slice(0, 10);
+    if (validFiles.length > 10) {
+      toast.error(`Only uploading first 10 images (${validFiles.length} selected)`);
+    }
+
+    // Initialize progress
+    setUploadProgress({ total: filesToUpload.length, completed: 0, failed: 0 });
+    setIsUploadingImage(true);
+
+    // Track upload results
+    const uploadResults: { lastBg: UserBackground | null; completed: number; failed: number } = {
+      lastBg: null,
+      completed: 0,
+      failed: 0,
+    };
+
+    // Upload files with concurrency limit (3 at a time)
+    const concurrencyLimit = 3;
+    const uploadQueue = [...filesToUpload];
+
+    const processFile = async (file: File) => {
+      const result = await uploadSingleFile(file);
+      
+      if (result) {
+        // Update context or local state
+        if (backgroundsContext) {
+          backgroundsContext.addBackground(result);
+        } else {
+          setLocalBackgrounds(prev => [result, ...prev]);
+        }
+        uploadResults.lastBg = result;
+        uploadResults.completed++;
+      } else {
+        uploadResults.failed++;
+      }
+      
+      // Update progress
+      setUploadProgress(prev => prev ? {
+        ...prev,
+        completed: uploadResults.completed,
+        failed: uploadResults.failed,
+      } : null);
+    };
+
+    // Process files with concurrency limit
+    while (uploadQueue.length > 0) {
+      const batch = uploadQueue.splice(0, concurrencyLimit);
+      await Promise.all(batch.map(processFile));
+    }
+
+    // Show result toast
+    if (uploadResults.completed > 0) {
+      toast.success(`${uploadResults.completed} image${uploadResults.completed > 1 ? 's' : ''} uploaded!`);
+      if (uploadResults.lastBg) {
+        onSelectCustomBackground(uploadResults.lastBg.url);
+      }
+    }
+    if (uploadResults.failed > 0) {
+      toast.error(`${uploadResults.failed} image${uploadResults.failed > 1 ? 's' : ''} failed to upload`);
+    }
+
+    // Reset state
+    setIsUploadingImage(false);
+    setUploadProgress(null);
+    e.target.value = '';
+  }, [backgroundsContext, onSelectCustomBackground, uploadSingleFile]);
 
   // Delete user background
   const handleDeleteBackground = useCallback(async (backgroundId: string, bgUrl: string) => {
@@ -212,10 +334,32 @@ export default function ImageUploader({
 
   return (
     <div className={className}>
+      {/* Upload Progress Bar */}
+      {uploadProgress && (
+        <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+              Uploading {uploadProgress.completed}/{uploadProgress.total} images...
+            </span>
+            <Loader2 size={16} className="animate-spin text-blue-500" />
+          </div>
+          <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+            <div 
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(uploadProgress.completed / uploadProgress.total) * 100}%` }}
+            />
+          </div>
+          {uploadProgress.failed > 0 && (
+            <p className="text-xs text-red-500 mt-1">{uploadProgress.failed} failed</p>
+          )}
+        </div>
+      )}
+
       {/* Upload Buttons */}
-      {showUploadButtons && (
+      {showUploadButtons && !uploadProgress && (
         <div className="flex gap-2 mb-3">
-          <label className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl cursor-pointer hover:shadow-lg transition-all active:scale-[0.98]">
+          {/* Single Upload */}
+          <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl cursor-pointer hover:shadow-lg transition-all active:scale-[0.98]">
             <input
               type="file"
               accept="image/*"
@@ -223,14 +367,31 @@ export default function ImageUploader({
               className="hidden"
               disabled={isUploadingImage}
             />
-            {isUploadingImage ? (
+            {isUploadingImage && !uploadProgress ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
               <Upload size={16} />
             )}
-            <span className="text-sm font-medium">Upload Image</span>
+            <span className="text-sm font-medium hidden sm:inline">Upload</span>
           </label>
-          <label className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-all active:scale-[0.98]">
+          
+          {/* Bulk Upload */}
+          <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl cursor-pointer hover:shadow-lg transition-all active:scale-[0.98]">
+            <input
+              ref={bulkInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleBulkUpload}
+              className="hidden"
+              disabled={isUploadingImage}
+            />
+            <Images size={16} />
+            <span className="text-sm font-medium hidden sm:inline">Bulk</span>
+          </label>
+          
+          {/* Camera */}
+          <label className="flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-all active:scale-[0.98]">
             <input
               type="file"
               accept="image/*"
@@ -270,7 +431,7 @@ export default function ImageUploader({
       {!isLoading && validBackgrounds.length > 0 && (
         <div className="mb-3">
           <p className="text-xs text-gray-500 mb-2">Your Images ({validBackgrounds.length})</p>
-          <div className={`grid ${gridColsClass} gap-2 max-h-48 overflow-y-auto`}>
+          <div className={`grid ${gridColsClass} gap-2.5 sm:gap-3 max-h-64 sm:max-h-72 overflow-y-auto`}>
             {validBackgrounds.slice(0, maxDisplay).map((bg) => {
               const isDeleting = deletingImageId === bg.id;
               return (

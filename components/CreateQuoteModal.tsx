@@ -371,14 +371,14 @@ export default function CreateQuoteModal({
                   showUploadButtons={true}
                   showClearOption={true}
                   clearOptionLabel="No Background (Default)"
-                  gridCols={4}
+                  gridCols={3}
                   autoFetch={isOpen}
                 />
 
                 {/* Preset backgrounds */}
                 <div>
                   <p className="text-xs text-gray-500 mb-2">Presets ({BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).length})</p>
-                  <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-2.5 sm:gap-3 max-h-64 sm:max-h-72 overflow-y-auto">
                     {BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).map((bg) => (
                       <button
                         key={bg.id}

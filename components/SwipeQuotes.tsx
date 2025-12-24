@@ -1085,6 +1085,9 @@ export default function SwipeQuotes() {
       throw new Error(data.error || 'Login failed');
     }
 
+    // ✅ Show toast IMMEDIATELY after successful login
+    toast.success(`Welcome back, ${data.user.name}! 👋`);
+
     // Set flag to preserve current quote during login transition
     isLoggingIn.current = true;
     
@@ -1092,22 +1095,22 @@ export default function SwipeQuotes() {
     setUser(data.user);
     setShowAuthModal(false);
     setSwipeCount(0);
-    setAuthenticatedSwipeCount(0); // Reset authenticated swipe count on login
+    setAuthenticatedSwipeCount(0);
     
-    // Clear guest category cache to force fresh fetch with all categories
+    // Clear guest category cache
     try {
       sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
     } catch {}
     
-    await fetchUserData();
-    // Refetch categories to show all categories for authenticated users
-    await fetchCategories();
-    // Load user's saved category preferences (this will trigger fetchQuotes with isLoggingIn=true)
-    await fetchUserPreferences();
+    // ✅ Run all data fetching in PARALLEL (not sequential)
+    await Promise.all([
+      fetchUserData(),
+      fetchCategories(),
+      fetchUserPreferences(),
+    ]);
     
-    // Check if user needs onboarding (not completed yet)
+    // Check if user needs onboarding (runs after parallel fetch)
     if (data.onboarding_complete === false) {
-      // Fetch all categories for onboarding
       try {
         const onboardingCatsRes = await fetch('/api/categories?onboarding=true');
         if (onboardingCatsRes.ok) {
@@ -1117,9 +1120,6 @@ export default function SwipeQuotes() {
       } catch {}
       setShowOnboarding(true);
     }
-    
-    // Show success toast
-    toast.success(`Welcome back, ${data.user.name}! 👋`);
   };
 
   const handleRegister = async (name: string, email: string, password: string) => {
@@ -1135,6 +1135,9 @@ export default function SwipeQuotes() {
       throw new Error(data.error || 'Registration failed');
     }
 
+    // ✅ Show toast IMMEDIATELY after successful registration
+    toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
+
     // Set flag to preserve current quote during registration transition
     isLoggingIn.current = true;
     
@@ -1142,23 +1145,25 @@ export default function SwipeQuotes() {
     setUser(data.user);
     setShowAuthModal(false);
     setSwipeCount(0);
-    setAuthenticatedSwipeCount(0); // Reset authenticated swipe count on login
+    setAuthenticatedSwipeCount(0);
     
-    // Clear guest category cache to force fresh fetch with all categories
+    // Clear guest category cache
     try {
       sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
     } catch {}
     
-    await fetchUserData();
-    // Refetch categories to show all categories for authenticated users
-    await fetchCategories();
-    // New users won't have preferences yet, but set the flag to allow saving
+    // ✅ Run data fetching in PARALLEL
+    await Promise.all([
+      fetchUserData(),
+      fetchCategories(),
+    ]);
+    
+    // New users won't have preferences yet
     isLoadingPreferences.current = false;
-    isLoggingIn.current = false; // Reset since no preferences fetch for new users
+    isLoggingIn.current = false;
     
     // Show onboarding for new users
     if (data.onboarding_complete === false) {
-      // Fetch all categories for onboarding
       try {
         const onboardingCatsRes = await fetch('/api/categories?onboarding=true');
         if (onboardingCatsRes.ok) {
@@ -1167,10 +1172,6 @@ export default function SwipeQuotes() {
         }
       } catch {}
       setShowOnboarding(true);
-      toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
-    } else {
-      // Show success toast
-      toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
     }
   };
 
@@ -1180,9 +1181,13 @@ export default function SwipeQuotes() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       
+      // ✅ Show toast IMMEDIATELY after successful logout
+      toast.success('You have been logged out. See you soon! 👋');
+      
       // Clear user-specific cache on logout
       clearUserCache();
       
+      // Reset all user state immediately
       setIsAuthenticated(false);
       setUser(null);
       setIsSidebarOpen(false);
@@ -1192,42 +1197,39 @@ export default function SwipeQuotes() {
       setLikedQuotes([]);
       setDislikedQuotes([]);
       setSavedQuotes([]);
-      // Reset selected categories - they may not be available for non-auth users
       setSelectedCategories([]);
-      // Reset preferences loaded flag
       setPreferencesLoaded(false);
-      // Reset card customization to defaults
       setCardTheme(CARD_THEMES[0]);
       setFontStyle(FONT_STYLES[0]);
       
-      // Refetch categories and then quotes for non-authenticated user
-      const response = await fetch('/api/categories', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        const newCategories = data.categories || [];
-        setCategories(newCategories);
-        setTotalCategories(data.totalCategories || newCategories.length || 0);
-        
-        // Cache the new categories
-        setToCache('categories_guest', {
-          categories: newCategories,
-          totalCategories: data.totalCategories || newCategories.length || 0,
-        });
-        
-        // Fetch quotes for the first available category
-        if (newCategories.length > 0) {
-          const quotesResponse = await fetch(`/api/quotes?categories=${encodeURIComponent(newCategories[0].name)}`);
-          if (quotesResponse.ok) {
-            const quotesData = await quotesResponse.json();
-            setQuotes(quotesData.quotes || []);
-            // Cache the quotes
-            setToCache(`quotes_${newCategories[0].name}_guest`, quotesData.quotes || []);
+      // ✅ Fetch guest data in BACKGROUND (non-blocking)
+      // Using .then() instead of await so it doesn't block
+      fetch('/api/categories', { credentials: 'include' })
+        .then(async (response) => {
+          if (response.ok) {
+            const data = await response.json();
+            const newCategories = data.categories || [];
+            setCategories(newCategories);
+            setTotalCategories(data.totalCategories || newCategories.length || 0);
+            
+            setToCache('categories_guest', {
+              categories: newCategories,
+              totalCategories: data.totalCategories || newCategories.length || 0,
+            });
+            
+            // Fetch quotes for the first available category
+            if (newCategories.length > 0) {
+              const quotesResponse = await fetch(`/api/quotes?categories=${encodeURIComponent(newCategories[0].name)}`);
+              if (quotesResponse.ok) {
+                const quotesData = await quotesResponse.json();
+                setQuotes(quotesData.quotes || []);
+                setToCache(`quotes_${newCategories[0].name}_guest`, quotesData.quotes || []);
+              }
+            }
           }
-        }
-      }
-      
-      // Show success toast
-      toast.success('You have been logged out. See you soon! 👋');
+        })
+        .catch(console.error);
+        
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to logout. Please try again.');
