@@ -27,9 +27,12 @@ const SaveQuoteModal = lazy(() => import('./SaveQuoteModal'));
 // Lazy load views for bottom navigation
 const SavedQuotesView = lazy(() => import('./SavedQuotesView'));
 const MyQuotesView = lazy(() => import('./MyQuotesView'));
+const LikedQuotesView = lazy(() => import('./LikedQuotesView'));
+const SkippedQuotesView = lazy(() => import('./SkippedQuotesView'));
 
 // Bottom Navigation Bar
 import BottomNavBar, { NavTab } from './BottomNavBar';
+import OptionsMenu from './OptionsMenu';
 
 // Modal loading fallback
 const ModalLoader = () => (
@@ -164,6 +167,7 @@ export default function SwipeQuotes() {
   const { theme, toggleTheme, setIsAuthenticated: setThemeAuth } = useTheme();
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -337,8 +341,13 @@ export default function SwipeQuotes() {
           return; // Skip full initialization
         }
         
-        // Check auth first to know if we need to fetch preferences
-        const authResponse = await fetch('/api/auth/me');
+        // OPTIMIZATION: Fetch auth AND categories in PARALLEL (saves ~200-500ms)
+        // The categories API uses auth cookie, which is already set from previous session
+        const [authResponse, categoriesResponse] = await Promise.all([
+          fetch('/api/auth/me'),
+          fetch('/api/categories', { credentials: 'include' }),
+        ]);
+        
         let isUserAuthenticated = false;
         let userData = null;
         
@@ -352,8 +361,7 @@ export default function SwipeQuotes() {
         setIsAuthenticated(isUserAuthenticated);
         setUser(userData);
         
-        // Fetch categories (response differs based on auth cookie)
-        const categoriesResponse = await fetch('/api/categories', { credentials: 'include' });
+        // Process categories response
         let categoriesData: Category[] = [];
         let totalCats = 0;
         
@@ -1819,6 +1827,27 @@ export default function SwipeQuotes() {
           setUserQuotes(userQuotes.filter(q => String(q.id) !== String(quoteId)));
         }}
         onRefreshUserQuotes={fetchUserQuotes}
+        onLikedClick={() => setActiveNavTab('liked')}
+        onSkippedClick={() => setActiveNavTab('skipped')}
+        onProfileClick={() => setActiveNavTab('profile')}
+      />
+
+      {/* Options Menu (Bottom Sheet) */}
+      <OptionsMenu
+        isOpen={showOptionsMenu}
+        onClose={() => setShowOptionsMenu(false)}
+        isAuthenticated={isAuthenticated}
+        userName={user?.name}
+        likedCount={likedQuotes.length}
+        skippedCount={dislikedQuotes.length}
+        isAdmin={user?.role === 'admin'}
+        onProfileClick={() => setActiveNavTab('profile')}
+        onLikedClick={() => setActiveNavTab('liked')}
+        onSkippedClick={() => setActiveNavTab('skipped')}
+        onCustomizeClick={() => setShowCustomizationModal(true)}
+        onCategoriesClick={() => setIsSidebarOpen(true)}
+        onLoginClick={() => setShowAuthModal(true)}
+        onLogoutClick={handleLogout}
       />
 
       {/* Category Onboarding for newly signed-up users */}
@@ -2207,8 +2236,8 @@ export default function SwipeQuotes() {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 pb-24 sm:pb-4 relative">
+      {/* Main Content - Hidden when other views are active */}
+      <div className={`flex-1 flex flex-col items-center justify-center p-4 pb-20 sm:pb-20 relative ${activeNavTab !== 'feed' ? 'hidden' : ''}`}>
         {/* Top Header - Full Width Rounded Bar */}
         <div className="fixed top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-30 flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
           {/* Left Group - All icons on desktop, Menu & Search on mobile */}
@@ -2443,7 +2472,7 @@ export default function SwipeQuotes() {
           </nav>
       </div>
 
-      {/* Bottom Navigation Bar - Mobile Only */}
+      {/* Bottom Navigation Bar - Visible on all screens */}
       <BottomNavBar
         activeTab={activeNavTab}
         onTabChange={(tab) => {
@@ -2458,7 +2487,7 @@ export default function SwipeQuotes() {
         myQuotesCount={userQuotes.length}
         isAuthenticated={isAuthenticated}
         onLoginRequired={() => setShowAuthModal(true)}
-        onMenuClick={() => setIsSidebarOpen(true)}
+        onMenuClick={() => setShowOptionsMenu(true)}
         hidden={
           isSidebarOpen ||
           showAuthModal ||
@@ -2469,10 +2498,33 @@ export default function SwipeQuotes() {
           showCustomizationModal ||
           showCreateQuoteModal ||
           showOnboarding ||
-          viewingUserQuote !== null ||
-          activeNavTab !== 'feed'
+          viewingUserQuote !== null
         }
       />
+
+      {/* Liked Quotes View - Full Screen */}
+      {activeNavTab === 'liked' && isAuthenticated && (
+        <Suspense fallback={<ModalLoader />}>
+          <LikedQuotesView
+            onBack={() => setActiveNavTab('feed')}
+            onQuoteClick={(quoteId, category) => {
+              setActiveNavTab('feed');
+              handleQuoteNavigation(quoteId, category);
+            }}
+            onShareQuote={(quote) => {
+              setShareQuote({
+                id: quote.id,
+                text: quote.text,
+                author: quote.author,
+                category: quote.category,
+                category_icon: quote.category_icon,
+                isUserQuote: false,
+              });
+              setShowShareModal(true);
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* Saved Quotes View - Full Screen */}
       {activeNavTab === 'saved' && isAuthenticated && (
@@ -2497,6 +2549,30 @@ export default function SwipeQuotes() {
             }}
             onDeleteQuote={(quoteId) => {
               setSavedQuotes(savedQuotes.filter(q => String(q.id) !== String(quoteId)));
+            }}
+          />
+        </Suspense>
+      )}
+
+      {/* Skipped Quotes View - Full Screen */}
+      {activeNavTab === 'skipped' && isAuthenticated && (
+        <Suspense fallback={<ModalLoader />}>
+          <SkippedQuotesView
+            onBack={() => setActiveNavTab('feed')}
+            onQuoteClick={(quoteId, category) => {
+              setActiveNavTab('feed');
+              handleQuoteNavigation(quoteId, category);
+            }}
+            onShareQuote={(quote) => {
+              setShareQuote({
+                id: quote.id,
+                text: quote.text,
+                author: quote.author,
+                category: quote.category,
+                category_icon: quote.category_icon,
+                isUserQuote: false,
+              });
+              setShowShareModal(true);
             }}
           />
         </Suspense>

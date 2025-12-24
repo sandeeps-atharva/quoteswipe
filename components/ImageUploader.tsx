@@ -57,6 +57,13 @@ export default function ImageUploader({
   const isLoading = backgroundsContext?.isLoading ?? localLoading;
   const isInitialized = backgroundsContext?.isInitialized ?? false;
 
+  // Lazy load: Trigger background fetch when component mounts (modal opens)
+  useEffect(() => {
+    if (backgroundsContext?.ensureLoaded && autoFetch) {
+      backgroundsContext.ensureLoaded();
+    }
+  }, [backgroundsContext, autoFetch]);
+
   // Fallback fetch for when context is not available
   const fetchUserBackgrounds = useCallback(async () => {
     if (backgroundsContext) return; // Skip if context is available

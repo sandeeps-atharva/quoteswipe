@@ -3,7 +3,7 @@
 import { Home, Bookmark, PlusCircle, Sparkles, Menu } from 'lucide-react';
 import { memo } from 'react';
 
-export type NavTab = 'feed' | 'saved' | 'create' | 'profile';
+export type NavTab = 'feed' | 'saved' | 'create' | 'profile' | 'liked' | 'skipped';
 
 interface BottomNavBarProps {
   activeTab: NavTab;
@@ -28,7 +28,7 @@ function BottomNavBar({
 }: BottomNavBarProps) {
   
   const handleTabClick = (tab: NavTab) => {
-    if (!isAuthenticated && (tab === 'saved' || tab === 'create' || tab === 'profile')) {
+    if (!isAuthenticated && tab !== 'feed') {
       onLoginRequired();
       return;
     }
@@ -39,13 +39,13 @@ function BottomNavBar({
 
   return (
     <div 
-      className="fixed bottom-0 left-0 right-0 z-[100] sm:hidden"
+      className="fixed bottom-0 left-0 right-0 z-[100]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* Solid background */}
-      <div className="bg-white dark:bg-gray-900 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
-        {/* Navigation Items */}
-        <div className="flex items-center justify-around h-14 px-1">
+      <div className="bg-white dark:bg-gray-900 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] border-t border-gray-100 dark:border-gray-800">
+        {/* Navigation Items - 5 tabs */}
+        <div className="flex items-center justify-around h-14 sm:h-16 px-2 max-w-2xl mx-auto">
           {/* Feed Tab */}
           <button
             onClick={() => handleTabClick('feed')}
@@ -54,13 +54,13 @@ function BottomNavBar({
           >
             <Home 
               size={22} 
-              className={activeTab === 'feed' 
+              className={`sm:w-6 sm:h-6 ${activeTab === 'feed' 
                 ? 'text-blue-500' 
                 : 'text-gray-400 dark:text-gray-500'
-              } 
+              }`} 
               fill={activeTab === 'feed' ? 'currentColor' : 'none'}
             />
-            <span className={`text-[10px] font-medium ${
+            <span className={`text-[10px] sm:text-xs font-medium ${
               activeTab === 'feed' 
                 ? 'text-blue-500' 
                 : 'text-gray-400 dark:text-gray-500'
@@ -76,10 +76,10 @@ function BottomNavBar({
             <div className="relative">
               <Bookmark 
                 size={22} 
-                className={activeTab === 'saved' 
+                className={`sm:w-6 sm:h-6 ${activeTab === 'saved' 
                   ? 'text-yellow-500' 
                   : 'text-gray-400 dark:text-gray-500'
-                } 
+                }`} 
                 fill={activeTab === 'saved' ? 'currentColor' : 'none'}
               />
               {savedCount > 0 && (
@@ -88,7 +88,7 @@ function BottomNavBar({
                 </span>
               )}
             </div>
-            <span className={`text-[10px] font-medium ${
+            <span className={`text-[10px] sm:text-xs font-medium ${
               activeTab === 'saved' 
                 ? 'text-yellow-500' 
                 : 'text-gray-400 dark:text-gray-500'
@@ -101,10 +101,10 @@ function BottomNavBar({
             className="flex flex-col items-center justify-center flex-1 h-full"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <div className="w-10 h-10 -mt-3 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform bg-gradient-to-br from-blue-500 to-purple-600">
-              <PlusCircle size={20} className="text-white" strokeWidth={2} />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 -mt-4 sm:-mt-5 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform bg-gradient-to-br from-blue-500 to-purple-600">
+              <PlusCircle size={22} className="sm:w-6 sm:h-6 text-white" strokeWidth={2} />
             </div>
-            <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 mt-0.5">Create</span>
+            <span className="text-[10px] sm:text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5">Create</span>
           </button>
 
           {/* My Quotes Tab */}
@@ -116,10 +116,10 @@ function BottomNavBar({
             <div className="relative">
               <Sparkles 
                 size={22} 
-                className={activeTab === 'profile' 
+                className={`sm:w-6 sm:h-6 ${activeTab === 'profile' 
                   ? 'text-purple-500' 
                   : 'text-gray-400 dark:text-gray-500'
-                } 
+                }`} 
                 fill={activeTab === 'profile' ? 'currentColor' : 'none'}
               />
               {myQuotesCount > 0 && (
@@ -128,21 +128,21 @@ function BottomNavBar({
                 </span>
               )}
             </div>
-            <span className={`text-[10px] font-medium ${
+            <span className={`text-[10px] sm:text-xs font-medium ${
               activeTab === 'profile' 
                 ? 'text-purple-500' 
                 : 'text-gray-400 dark:text-gray-500'
             }`}>My Quotes</span>
           </button>
 
-          {/* More Tab */}
+          {/* Menu Tab */}
           <button
             onClick={onMenuClick}
             className="flex flex-col items-center justify-center flex-1 h-full gap-0.5"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <Menu size={22} className="text-gray-400 dark:text-gray-500" />
-            <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">More</span>
+            <Menu size={22} className="sm:w-6 sm:h-6 text-gray-400 dark:text-gray-500" />
+            <span className="text-[10px] sm:text-xs font-medium text-gray-400 dark:text-gray-500">Menu</span>
           </button>
         </div>
       </div>

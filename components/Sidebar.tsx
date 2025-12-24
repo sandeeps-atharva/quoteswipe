@@ -64,6 +64,10 @@ interface SidebarProps {
   userQuotes?: UserQuote[];
   onUserQuoteDelete?: (quoteId: string | number) => void;
   onRefreshUserQuotes?: () => void;
+  // Navigation to views
+  onLikedClick?: () => void;
+  onSkippedClick?: () => void;
+  onProfileClick?: () => void;
 }
 
 type ViewType = 'main' | 'profile' | 'liked' | 'disliked';
@@ -93,6 +97,9 @@ export default function Sidebar({
   userQuotes = [],
   onUserQuoteDelete,
   onRefreshUserQuotes,
+  onLikedClick,
+  onSkippedClick,
+  onProfileClick,
 }: SidebarProps) {
   const { theme } = useTheme();
   const [currentView, setCurrentView] = useState<ViewType>('main');
@@ -474,18 +481,18 @@ export default function Sidebar({
               </div>
             </div>
 
-            {/* Stats Grid - Compact */}
+            {/* Stats Grid - Compact (Read-only stats, use bottom nav for full views) */}
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => setCurrentView('liked')} className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-xl p-2 sm:p-3 text-center hover:scale-105 active:scale-95 transition-all">
+              <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-xl p-2 sm:p-3 text-center">
                 <Heart size={16} className="mx-auto text-pink-500 mb-0.5" fill="currentColor" />
                 <div className="text-lg sm:text-xl font-bold text-pink-600 dark:text-pink-400">{likedCount}</div>
                 <div className="text-[10px] text-pink-600/70 dark:text-pink-400/70">Liked</div>
-              </button>
-              <button onClick={() => setCurrentView('disliked')} className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/40 dark:to-gray-700/40 rounded-xl p-2 sm:p-3 text-center hover:scale-105 active:scale-95 transition-all">
+              </div>
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/40 dark:to-gray-700/40 rounded-xl p-2 sm:p-3 text-center">
                 <ThumbsDown size={16} className="mx-auto text-gray-400 mb-0.5" />
                 <div className="text-lg sm:text-xl font-bold text-gray-600 dark:text-gray-400">{dislikedCount}</div>
                 <div className="text-[10px] text-gray-500">Skipped</div>
-              </button>
+              </div>
             </div>
 
             {/* Create Your Quote Button */}
@@ -791,74 +798,17 @@ export default function Sidebar({
     </div>
   );
 
-  // Render Main View
+  // Render Main View - Focused on Categories
   const renderMainView = () => (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Compact Header - Profile & Actions */}
-      <div className="p-3 sm:p-4">
-        {isAuthenticated && currentUser && currentUser.name ? (
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Profile Button */}
-            <button
-              onClick={() => setCurrentView('profile')}
-              className="flex items-center gap-2 sm:gap-3 flex-1 p-2 sm:p-2.5 bg-gradient-to-r from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 rounded-xl hover:from-blue-500/20 hover:to-pink-500/20 transition-all group"
-            >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center text-white text-xs sm:text-sm font-bold shrink-0">
-                {currentUser.name.includes(' ') 
-                  ? currentUser.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
-                  : currentUser.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{currentUser.name}</p>
-                <p className="text-[10px] text-gray-500">View profile</p>
-              </div>
-              <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
-            </button>
-            
-            {/* Quick Actions Row */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Customize */}
-              {onCustomizeClick && (
-                <button
-                  onClick={() => { onCustomizeClick(); onClose(); }}
-                  className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-50 to-pink-50 dark:from-blue-900/20 dark:to-pink-900/20 hover:from-blue-100 hover:to-pink-100 dark:hover:from-blue-900/30 dark:hover:to-pink-900/30 rounded-lg transition-all"
-                  title="Customize Card"
-                >
-                  <Palette size={16} className="text-blue-600 dark:text-blue-400" />
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center shrink-0">
-              <User size={18} className="text-gray-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 dark:text-white text-sm">Guest User</p>
-              <p className="text-[10px] text-gray-500">Limited access</p>
-            </div>
-          </div>
-        )}
+      {/* Header Title */}
+      <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <span className="text-xl">📚</span>
+          Categories
+        </h2>
+        <p className="text-xs text-gray-500 mt-0.5">Choose your favorite topics</p>
       </div>
-
-      {/* Admin Button - Only for admins */}
-      {isAuthenticated && user?.role === 'admin' && (
-        <div className="px-3 sm:px-4 pb-3">
-          <a
-            href="/admin"
-            className="flex items-center gap-2 sm:gap-3 p-2.5 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 dark:from-purple-500/20 dark:to-indigo-500/20 rounded-xl hover:from-purple-500/20 hover:to-indigo-500/20 transition-all border border-purple-200/50 dark:border-purple-700/50 group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shrink-0">
-              <Shield size={14} className="text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 dark:text-white text-sm">Admin Panel</p>
-            </div>
-            <ChevronRight size={16} className="text-purple-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
-          </a>
-        </div>
-      )}
 
       {/* Create Your Quote Banner - For Authenticated Users */}
       {isAuthenticated && (

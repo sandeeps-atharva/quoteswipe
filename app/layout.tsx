@@ -30,15 +30,17 @@ import CustomToaster from "@/components/CustomToaster";
 import CookieConsent from "@/components/CookieConsent";
 import InstallAppModal from "@/components/InstallAppModal";
 
-// System fonts
+// System fonts - display: 'swap' shows text immediately with fallback fonts
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: 'swap',
 });
 
 // Serif fonts (Elegant)
@@ -46,30 +48,35 @@ const playfairDisplay = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
   weight: ["400", "700"],
+  display: 'swap',
 });
 
 const merriweather = Merriweather({
   variable: "--font-merriweather",
   subsets: ["latin"],
   weight: ["400", "700"],
+  display: 'swap',
 });
 
 const lora = Lora({
   variable: "--font-lora",
   subsets: ["latin"],
   weight: ["400", "700"],
+  display: 'swap',
 });
 
 const crimsonText = Crimson_Text({
   variable: "--font-crimson",
   subsets: ["latin"],
   weight: ["400", "700"],
+  display: 'swap',
 });
 
 const cormorantGaramond = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
   weight: ["400", "700"],
+  display: 'swap',
 });
 
 // Sans-serif fonts (Modern)
@@ -77,54 +84,63 @@ const roboto = Roboto({
   variable: "--font-roboto",
   subsets: ["latin"],
   weight: ["300", "400", "500", "700"],
+  display: 'swap',
 });
 
 const openSans = Open_Sans({
   variable: "--font-opensans",
   subsets: ["latin"],
   weight: ["300", "400", "600", "700"],
+  display: 'swap',
 });
 
 const lato = Lato({
   variable: "--font-lato",
   subsets: ["latin"],
   weight: ["300", "400", "700"],
+  display: 'swap',
 });
 
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: 'swap',
 });
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
+  display: 'swap',
 });
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
+  display: 'swap',
 });
 
 const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
   weight: ["400", "600", "700"],
+  display: 'swap',
 });
 
 const raleway = Raleway({
   variable: "--font-raleway",
   subsets: ["latin"],
   weight: ["400", "600", "700"],
+  display: 'swap',
 });
 
 const sourceSans = Source_Sans_3({
   variable: "--font-sourcesans",
   subsets: ["latin"],
   weight: ["400", "600", "700"],
+  display: 'swap',
 });
 
 // Script/Handwriting fonts
@@ -132,24 +148,28 @@ const dancingScript = Dancing_Script({
   variable: "--font-dancing",
   subsets: ["latin"],
   weight: ["400", "700"],
+  display: 'swap',
 });
 
 const pacifico = Pacifico({
   variable: "--font-pacifico",
   subsets: ["latin"],
   weight: ["400"],
+  display: 'swap',
 });
 
 const greatVibes = Great_Vibes({
   variable: "--font-greatvibes",
   subsets: ["latin"],
   weight: ["400"],
+  display: 'swap',
 });
 
 const sacramento = Sacramento({
   variable: "--font-sacramento",
   subsets: ["latin"],
   weight: ["400"],
+  display: 'swap',
 });
 
 // Monospace fonts
@@ -157,6 +177,7 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains",
   subsets: ["latin"],
   weight: ["400", "500"],
+  display: 'swap',
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quoteswipe.com';
