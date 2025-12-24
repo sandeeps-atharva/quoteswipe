@@ -14,6 +14,22 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'react-hot-toast'],
   },
+  
+  // Configure external image domains
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+        pathname: '/**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

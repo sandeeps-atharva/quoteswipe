@@ -205,6 +205,41 @@ export default function CreateQuoteModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5 space-y-4">
+           {/* Visibility Toggle */}
+           <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              {isPublic ? (
+                <Globe size={14} className="text-green-500" />
+              ) : (
+                <Lock size={14} className="text-gray-400" />
+              )}
+              Visibility
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsPublic(false)}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${
+                  !isPublic
+                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                <Lock size={14} />
+                <span className="text-sm font-medium">Private</span>
+              </button>
+              <button
+                onClick={() => setIsPublic(true)}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${
+                  isPublic
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                <Globe size={14} />
+                <span className="text-sm font-medium">Public</span>
+              </button>
+            </div>
+          </div>
           {/* Quote Text */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -446,41 +481,7 @@ export default function CreateQuoteModal({
             </div>
           </div>
 
-          {/* Visibility Toggle */}
-          <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              {isPublic ? (
-                <Globe size={14} className="text-green-500" />
-              ) : (
-                <Lock size={14} className="text-gray-400" />
-              )}
-              Visibility
-            </label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsPublic(false)}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${
-                  !isPublic
-                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
-                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                <Lock size={14} />
-                <span className="text-sm font-medium">Private</span>
-              </button>
-              <button
-                onClick={() => setIsPublic(true)}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${
-                  isPublic
-                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                <Globe size={14} />
-                <span className="text-sm font-medium">Public</span>
-              </button>
-            </div>
-          </div>
+         
 
           {/* Error Message */}
           {error && (

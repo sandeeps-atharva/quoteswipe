@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   ArrowLeft, User, Heart, ThumbsDown, Bookmark, Sparkles, 
   Edit2, Check, X, Lock, Loader2, Mail, Calendar, LogOut,
   PenLine, Camera, Palette, ImageIcon, ChevronRight, Settings,
-  Info, MessageSquare, Star, Shield
+  Info, MessageSquare, Star, Shield, Trash2, Upload
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import UpdatePasswordModal from './UpdatePasswordModal';
 
@@ -19,6 +20,7 @@ interface ProfileData {
     auth_provider: 'google' | 'email';
     created_at: string;
     role?: 'user' | 'admin';
+    profile_picture?: string | null;
   };
 }
 
@@ -49,6 +51,9 @@ export default function ProfileView({
   const [editName, setEditName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
   const [showUpdatePasswordModal, setShowUpdatePasswordModal] = useState(false);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const [showPictureOptions, setShowPictureOptions] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch profile data
   useEffect(() => {
@@ -115,6 +120,94 @@ export default function ProfileView({
     }
     return name.slice(0, 2).toUpperCase();
   };
+
+  // Handle profile picture upload
+  const handlePictureUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPEG, PNG, GIF, and WebP images are allowed');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingPicture(true);
+    setShowPictureOptions(false);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        
+        const response = await fetch('/api/user/profile-picture', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile_picture: base64 }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setProfileData(prev => prev ? { 
+            ...prev, 
+            user: { ...prev.user, profile_picture: data.user.profile_picture } 
+          } : null);
+          toast.success('Profile picture updated');
+        } else {
+          const data = await response.json();
+          toast.error(data.error || 'Failed to update picture');
+        }
+        setIsUploadingPicture(false);
+      };
+      reader.onerror = () => {
+        toast.error('Failed to read image file');
+        setIsUploadingPicture(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error('Failed to upload picture');
+      setIsUploadingPicture(false);
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
+  // Handle remove profile picture
+  const handleRemovePicture = useCallback(async () => {
+    setIsUploadingPicture(true);
+    setShowPictureOptions(false);
+
+    try {
+      const response = await fetch('/api/user/profile-picture', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setProfileData(prev => prev ? { 
+          ...prev, 
+          user: { ...prev.user, profile_picture: null } 
+        } : null);
+        toast.success('Profile picture removed');
+      } else {
+        toast.error('Failed to remove picture');
+      }
+    } catch (error) {
+      toast.error('Failed to remove picture');
+    } finally {
+      setIsUploadingPicture(false);
+    }
+  }, []);
 
   // Menu Item Component
   const MenuItem = ({ 
@@ -229,16 +322,46 @@ export default function ProfileView({
                 
                 {/* Profile Content */}
                 <div className="relative pt-20 sm:pt-24 px-4 sm:px-6 pb-5 sm:pb-6">
+                  {/* Hidden File Input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    onChange={handlePictureUpload}
+                    className="hidden"
+                  />
+                  
                   {/* Avatar */}
                   <div className="absolute -top-0 left-1/2 -translate-x-1/2 translate-y-8 sm:translate-y-10">
                     <div className="relative">
-                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 p-1 shadow-2xl">
-                        <div className="w-full h-full rounded-xl sm:rounded-2xl bg-white dark:bg-gray-900 flex items-center justify-center">
-                          <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                            {getInitials(profileData.user.name)}
-                          </span>
+                      <button
+                        onClick={() => setShowPictureOptions(true)}
+                        disabled={isUploadingPicture}
+                        className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 p-1 shadow-2xl group relative overflow-hidden"
+                      >
+                        <div className="w-full h-full rounded-xl sm:rounded-2xl bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden relative">
+                          {isUploadingPicture ? (
+                            <Loader2 size={32} className="animate-spin text-purple-500" />
+                          ) : profileData.user.profile_picture ? (
+                            <Image
+                              src={profileData.user.profile_picture}
+                              alt={profileData.user.name}
+                              fill
+                              className="object-cover"
+                              unoptimized={profileData.user.profile_picture.startsWith('data:')}
+                            />
+                          ) : (
+                            <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                              {getInitials(profileData.user.name)}
+                            </span>
+                          )}
+                          {/* Hover Overlay */}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Camera size={24} className="text-white" />
+                          </div>
                         </div>
-                      </div>
+                      </button>
+                      
                       {/* Auth Provider Badge */}
                       <div className={`absolute -bottom-1 -right-1 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-lg ${
                         profileData.user.auth_provider === 'google' 
@@ -258,6 +381,73 @@ export default function ProfileView({
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Picture Options Modal */}
+                  {showPictureOptions && (
+                    <div 
+                      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                      onClick={() => setShowPictureOptions(false)}
+                    >
+                      <div 
+                        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-[280px] sm:w-[320px] overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                          <h3 className="text-lg font-semibold text-center text-gray-900 dark:text-white">Profile Picture</h3>
+                        </div>
+                        <div className="p-2">
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                              <Upload size={18} className="text-white" />
+                            </div>
+                            <div className="text-left">
+                              <p className="font-medium text-gray-900 dark:text-white">Upload Photo</p>
+                              <p className="text-xs text-gray-500">JPEG, PNG, GIF, WebP (max 5MB)</p>
+                            </div>
+                          </button>
+                          
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                              <Camera size={18} className="text-white" />
+                            </div>
+                            <div className="text-left">
+                              <p className="font-medium text-gray-900 dark:text-white">Take Photo</p>
+                              <p className="text-xs text-gray-500">Use your camera</p>
+                            </div>
+                          </button>
+                          
+                          {profileData.user.profile_picture && (
+                            <button
+                              onClick={handleRemovePicture}
+                              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            >
+                              <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                <Trash2 size={18} className="text-red-500" />
+                              </div>
+                              <div className="text-left">
+                                <p className="font-medium text-red-600 dark:text-red-400">Remove Photo</p>
+                                <p className="text-xs text-gray-500">Delete current picture</p>
+                              </div>
+                            </button>
+                          )}
+                        </div>
+                        <div className="p-2 border-t border-gray-100 dark:border-gray-800">
+                          <button
+                            onClick={() => setShowPictureOptions(false)}
+                            className="w-full p-3 text-center font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Name & Email */}
                   <div className="text-center mt-14 sm:mt-16">
