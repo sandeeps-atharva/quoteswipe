@@ -801,14 +801,24 @@ export default function Sidebar({
   // Render Main View - Focused on Categories
   const renderMainView = () => (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Header Title */}
-      <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <span className="text-xl">📚</span>
-          Categories
-        </h2>
-        <p className="text-xs text-gray-500 mt-0.5">Choose your favorite topics</p>
-      </div>
+      {/* Header Title - Different for authenticated vs guest */}
+      {isAuthenticated ? (
+        <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <span className="text-xl">📚</span>
+            Categories
+          </h2>
+          <p className="text-xs text-gray-500 mt-0.5">Choose your favorite topics</p>
+        </div>
+      ) : (
+        <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <span className="text-xl">👋</span>
+            Welcome
+          </h2>
+          <p className="text-xs text-gray-500 mt-0.5">Sign in to unlock all features</p>
+        </div>
+      )}
 
       {/* Create Your Quote Banner - For Authenticated Users */}
       {isAuthenticated && (
@@ -853,50 +863,80 @@ export default function Sidebar({
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-0 border-t border-gray-100 dark:border-gray-800">
         {!isAuthenticated ? (
-          /* Guest View */
+          /* Guest View - No categories, just unlock banner */
           <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-4">
-            {categories.length > 0 && categories[0] && (
-              <div className="mb-3 sm:mb-4">
-                <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Current Category</p>
-                <div className="flex items-center gap-2 sm:gap-3 p-3 bg-gradient-to-r from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
-                  <span className="text-2xl sm:text-3xl">{categories[0].icon || '📚'}</span>
-                  <div>
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{categories[0].name || 'Loading...'}</p>
-                    <p className="text-xs text-gray-500">{categories[0].count ?? 0} quotes</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="bg-gradient-to-br from-blue-50 to-pink-50 dark:from-gray-800 dark:to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-center border border-gray-200/50 dark:border-gray-700/50">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center mx-auto mb-3 shadow-lg">
-                <span className="text-xl sm:text-2xl">🔓</span>
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span className="text-2xl sm:text-3xl">🔓</span>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1.5">Unlock Everything</h3>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Access <span className="font-bold text-blue-600 dark:text-blue-400">{totalCategories}+</span> categories
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">Unlock Everything</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Access <span className="font-bold text-blue-600 dark:text-blue-400">{totalCategories}+</span> categories & <span className="font-bold text-pink-600 dark:text-pink-400">12K+</span> quotes
               </p>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-4 text-left">
+              
+              {/* Features Grid */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
                 {[
-                  { icon: '✍️', text: 'Create own quotes' },
-                  { icon: '📷', text: 'Take photo BG' },
-                  { icon: '🖼️', text: 'Upload image BG' },
-                  { icon: '🎨', text: '60+ themes' },
-                  { icon: '🔤', text: '75+ fonts' },
-                  { icon: '💾', text: 'Save & Share' },
+                  { icon: '📚', text: 'Browse Categories', desc: '210+ topics' },
+                  { icon: '✍️', text: 'Create Quotes', desc: 'Your own style' },
+                  { icon: '📷', text: 'Photo Backgrounds', desc: 'Camera & upload' },
+                  { icon: '🎨', text: 'Customization', desc: '60+ themes, 75+ fonts' },
+                  { icon: '💾', text: 'Save & Organize', desc: 'Build collections' },
+                  { icon: '📤', text: 'Share & Download', desc: 'HD quality' },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300">
-                    <span className="text-sm">{item.icon}</span>
-                    <span className="truncate">{item.text}</span>
+                  <div key={i} className="flex items-start gap-2 p-2.5 bg-white/60 dark:bg-gray-700/50 rounded-lg text-left">
+                    <span className="text-lg shrink-0">{item.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{item.text}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">{item.desc}</p>
+                    </div>
                   </div>
                 ))}
               </div>
+              
               <button
                 onClick={() => { onLoginClick(); onClose(); }}
-                className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-pink-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-shadow text-sm"
+                className="w-full py-3 bg-gradient-to-r from-blue-500 to-pink-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all text-sm active:scale-[0.98]"
               >
                 Get Started Free
               </button>
+              
+              <p className="text-[10px] text-gray-400 mt-3">
+                Free account • No credit card required
+              </p>
+            </div>
+            
+            {/* Quick Links for Guest */}
+            <div className="mt-4 space-y-2">
+              <Link
+                href="/about"
+                onClick={onClose}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">✨</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Explore Features</p>
+                    <p className="text-[10px] text-gray-500">See all what you can do</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-gray-400" />
+              </Link>
+              
+              <Link
+                href="/review"
+                onClick={onClose}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">⭐</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">User Reviews</p>
+                    <p className="text-[10px] text-gray-500">See what others say</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-gray-400" />
+              </Link>
             </div>
           </div>
         ) : (
@@ -1045,10 +1085,10 @@ export default function Sidebar({
             <div className="flex items-center justify-between gap-1">
               <Link
                 href="/about"
-                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all text-[10px] sm:text-xs font-medium"
+                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-pink-50 dark:from-blue-900/20 dark:to-pink-900/20 hover:from-blue-100 hover:to-pink-100 dark:hover:from-blue-900/30 dark:hover:to-pink-900/30 text-blue-600 dark:text-blue-400 transition-all text-[10px] sm:text-xs font-medium"
               >
                 <Info size={12} />
-                <span>About</span>
+                <span>Features</span>
               </Link>
               <Link
                 href="/contact"

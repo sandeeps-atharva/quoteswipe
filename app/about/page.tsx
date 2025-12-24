@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Heart, Sparkles, Users, Target, Zap, Globe, Quote, MessageSquare, Palette, PenLine, Camera, Image as ImageIcon, Share2, Lock } from 'lucide-react';
+import { 
+  Heart, Sparkles, Users, Target, Zap, Globe, Quote, MessageSquare, Palette, PenLine, 
+  Camera, Image as ImageIcon, Share2, Lock, Bookmark, ThumbsDown, Search, Filter, 
+  Download, Type, Sun, Moon, Smartphone, Monitor, Bell, Languages, Shuffle, 
+  RefreshCw, Eye, EyeOff, ChevronRight, Star, TrendingUp, Layers, Grid3X3,
+  Upload, Trash2, Edit, Copy, ExternalLink, QrCode, Instagram, MessageCircle,
+  Maximize, ZoomIn, Move, WrapText, LayoutGrid, ListFilter
+} from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import LegalPageLayout, { SectionCard } from '@/components/LegalPageLayout';
@@ -22,9 +29,10 @@ export default function About() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>('core');
   const [stats, setStats] = useState<Stats>({
-    quotes: '10K+',
-    categories: '130+',
+    quotes: '12K+',
+    categories: '210+',
     users: '1K+',
     saved: '5K+'
   });
@@ -67,10 +75,8 @@ export default function About() {
 
   const handleStartSwiping = () => {
     if (isAuthenticated) {
-      // User is logged in, redirect to home
       router.push('/');
     } else {
-      // User is not logged in, show auth modal
       setShowAuthModal(true);
     }
   };
@@ -118,45 +124,130 @@ export default function About() {
     router.push('/');
   };
 
-  const features = [
+  // All Features organized by category
+  const featureCategories = [
     {
-      icon: <PenLine className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 dark:text-purple-400" />,
-      title: "Create Your Own Quotes",
-      description: "Write your own inspirational quotes, upload photos or take pictures for backgrounds, customize with 60+ themes & 75+ fonts. Share publicly or keep private.",
-      isNew: true
+      id: 'core',
+      title: '🎯 Core Features',
+      description: 'Essential quote discovery features',
+      features: [
+        { icon: <Shuffle size={18} />, title: 'Swipe Discovery', desc: 'Swipe right to like, left to skip quotes' },
+        { icon: <Heart size={18} />, title: 'Like & Save', desc: 'Save your favorite quotes to collections' },
+        { icon: <ThumbsDown size={18} />, title: 'Skip Quotes', desc: 'Skip quotes that don\'t resonate with you' },
+        { icon: <Bookmark size={18} />, title: 'Bookmark', desc: 'Quick save quotes for later reading' },
+        { icon: <Search size={18} />, title: 'Search', desc: 'Find quotes by text, author, or category' },
+        { icon: <Filter size={18} />, title: 'Category Filter', desc: 'Filter quotes by 210+ categories' },
+      ]
     },
     {
-      icon: <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />,
-      title: "Curated Content",
-      description: "Thousands of hand-picked quotes from history's greatest minds, leaders, and thinkers."
+      id: 'create',
+      title: '✍️ Create Your Quotes',
+      description: 'Design stunning personalized quote cards',
+      features: [
+        { icon: <PenLine size={18} />, title: 'Write Quotes', desc: 'Create your own inspirational quotes' },
+        { icon: <Camera size={18} />, title: 'Take Photo', desc: 'Use camera for custom backgrounds' },
+        { icon: <Upload size={18} />, title: 'Upload Images', desc: 'Upload photos as backgrounds (bulk supported)' },
+        { icon: <Eye size={18} />, title: 'Public/Private', desc: 'Share publicly or keep private' },
+        { icon: <Edit size={18} />, title: 'Edit Anytime', desc: 'Modify your created quotes anytime' },
+        { icon: <Trash2 size={18} />, title: 'Delete', desc: 'Remove quotes you no longer want' },
+      ]
     },
     {
-      icon: <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-pink-600 dark:text-pink-400" />,
-      title: "Save Favorites",
-      description: "Build your personal collection of quotes that inspire and motivate you."
+      id: 'customize',
+      title: '🎨 Customization',
+      description: 'Make every quote card unique',
+      features: [
+        { icon: <Palette size={18} />, title: '60+ Themes', desc: 'Beautiful card themes and styles' },
+        { icon: <Type size={18} />, title: '75+ Fonts', desc: 'Wide variety of font styles' },
+        { icon: <ImageIcon size={18} />, title: '20+ Backgrounds', desc: 'Preset background images' },
+        { icon: <Upload size={18} />, title: 'Custom Backgrounds', desc: 'Upload your own images' },
+        { icon: <Sun size={18} />, title: 'Light/Dark Mode', desc: 'Choose your preferred theme' },
+        { icon: <Layers size={18} />, title: 'Card Styles', desc: 'Multiple card layout options' },
+      ]
     },
     {
-      icon: <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />,
-      title: "Smart Discovery",
-      description: "Swipe through quotes tailored to your interests and discover new perspectives."
+      id: 'share',
+      title: '📤 Share & Download',
+      description: 'Share your favorite quotes everywhere',
+      features: [
+        { icon: <Download size={18} />, title: 'Download Image', desc: 'Save as high-quality image' },
+        { icon: <Copy size={18} />, title: 'Copy Text', desc: 'Quick copy quote text' },
+        { icon: <ExternalLink size={18} />, title: 'Share Link', desc: 'Share via unique URL' },
+        { icon: <Instagram size={18} />, title: 'Instagram Ready', desc: 'Perfect size for stories/posts' },
+        { icon: <MessageCircle size={18} />, title: 'WhatsApp', desc: 'Share directly to WhatsApp' },
+        { icon: <QrCode size={18} />, title: 'QR Code', desc: 'Generate shareable QR codes' },
+      ]
     },
     {
-      icon: <Palette className="w-5 h-5 sm:w-6 sm:h-6 text-pink-600 dark:text-pink-400" />,
-      title: "Full Card Customization",
-      description: "60+ themes, 75+ fonts, 20+ background images, or upload your own photo to create stunning shareable quote cards."
+      id: 'share-tools',
+      title: '🔧 Share Modal Tools',
+      description: 'Advanced tools when sharing quotes',
+      features: [
+        { icon: <Maximize size={18} />, title: 'Multiple Formats', desc: 'Story, Square, Portrait sizes' },
+        { icon: <ZoomIn size={18} />, title: 'Background Zoom', desc: 'Zoom in/out on background image' },
+        { icon: <Move size={18} />, title: 'Background Pan', desc: 'Move background up/down/left/right' },
+        { icon: <Type size={18} />, title: 'Font Size Control', desc: 'Adjust text size' },
+        { icon: <WrapText size={18} />, title: 'Line Breaks', desc: 'Add line breaks to format text' },
+        { icon: <Copy size={18} />, title: 'Caption & Hashtags', desc: 'Auto-generated captions' },
+      ]
     },
     {
-      icon: <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400" />,
-      title: "Multi-Language",
-      description: "Access quotes in 100+ languages to inspire people worldwide."
-    }
+      id: 'categories',
+      title: '📚 Categories',
+      description: '210+ categories for every mood',
+      features: [
+        { icon: <TrendingUp size={18} />, title: 'Trending', desc: 'Situationship, Icks, Hot Takes, etc.' },
+        { icon: <Heart size={18} />, title: 'Relationships', desc: 'Love, Breakup, Ex Files, Crush' },
+        { icon: <Zap size={18} />, title: 'Motivation', desc: 'Success, Hustle, Goals, Dreams' },
+        { icon: <Star size={18} />, title: 'Lifestyle', desc: 'Coffee, Travel, Food, Music' },
+        { icon: <Globe size={18} />, title: 'Desi Special', desc: 'Desi Parents, Bollywood, Rishta Season' },
+        { icon: <Sparkles size={18} />, title: 'Mood', desc: '2am Quotes, Sunday Scaries, Party' },
+      ]
+    },
+    {
+      id: 'account',
+      title: '👤 Account Features',
+      description: 'Manage your profile and preferences',
+      features: [
+        { icon: <Users size={18} />, title: 'Profile', desc: 'View and edit your profile' },
+        { icon: <Heart size={18} />, title: 'Liked Quotes', desc: 'Access all your liked quotes' },
+        { icon: <ThumbsDown size={18} />, title: 'Skipped Quotes', desc: 'Review quotes you skipped' },
+        { icon: <Bookmark size={18} />, title: 'Saved Quotes', desc: 'Your bookmarked collection' },
+        { icon: <PenLine size={18} />, title: 'My Quotes', desc: 'Manage your created quotes' },
+        { icon: <Lock size={18} />, title: 'Change Password', desc: 'Update your password securely' },
+      ]
+    },
+    {
+      id: 'auth',
+      title: '🔐 Authentication',
+      description: 'Secure and easy sign-in options',
+      features: [
+        { icon: <Users size={18} />, title: 'Email Sign Up', desc: 'Register with email and password' },
+        { icon: <Globe size={18} />, title: 'Google Sign In', desc: 'Quick sign in with Google' },
+        { icon: <Lock size={18} />, title: 'Secure Sessions', desc: 'HTTP-only cookie authentication' },
+        { icon: <RefreshCw size={18} />, title: 'Password Reset', desc: 'Forgot password recovery' },
+        { icon: <Eye size={18} />, title: 'Guest Mode', desc: 'Browse without signing in' },
+        { icon: <EyeOff size={18} />, title: 'Privacy First', desc: 'Your data stays private' },
+      ]
+    },
+    {
+      id: 'navigation',
+      title: '📱 Navigation',
+      description: 'Easy-to-use interface',
+      features: [
+        { icon: <LayoutGrid size={18} />, title: 'Bottom Navigation', desc: 'Quick access to main features' },
+        { icon: <ListFilter size={18} />, title: 'Sidebar Menu', desc: 'Categories and settings' },
+        { icon: <Grid3X3 size={18} />, title: 'Options Menu', desc: 'Profile, Liked, Skipped access' },
+        { icon: <Smartphone size={18} />, title: 'Mobile First', desc: 'Optimized for mobile devices' },
+        { icon: <Monitor size={18} />, title: 'Desktop Support', desc: 'Works great on desktop too' },
+        { icon: <Languages size={18} />, title: 'Multi-Language', desc: '100+ language support' },
+      ]
+    },
   ];
 
   const statsDisplay = [
-    { value: stats.quotes, label: "Quotes" },
-    { value: stats.categories, label: "Categories" },
-    // { value: stats.users, label: "Users" },
-    // { value: stats.saved, label: "Quotes Saved" }
+    { value: stats.quotes, label: "Quotes", icon: <Quote size={20} /> },
+    { value: stats.categories, label: "Categories", icon: <Grid3X3 size={20} /> },
   ];
 
   return (
@@ -193,6 +284,7 @@ export default function About() {
               key={index}
               className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 text-center shadow-md sm:shadow-lg shadow-blue-500/5 dark:shadow-pink-500/5 border border-white/50 dark:border-gray-700/50"
             >
+              <div className="flex justify-center mb-2 text-blue-500">{stat.icon}</div>
               <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
                 {stat.value}
               </p>
@@ -201,40 +293,95 @@ export default function About() {
           ))}
         </div>
 
-        {/* Features */}
+        {/* All Features Section */}
         <div className="mb-6 sm:mb-8">
           <div className="text-center mb-5 sm:mb-6 md:mb-8">
-            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">What We Offer</h3>
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400">Features designed to enhance your quote discovery experience</p>
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
+              All Features
+            </h3>
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400">
+              Everything you can do with QuoteSwipe
+            </p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
-            {features.map((feature, index) => (
-              <SectionCard 
-                key={index} 
-                className={`hover:shadow-xl hover:-translate-y-1 transition-all relative ${
-                  (feature as { isNew?: boolean }).isNew ? 'ring-2 ring-purple-500/50 dark:ring-purple-400/50' : ''
-                }`}
+          <div className="space-y-3">
+            {featureCategories.map((category) => (
+              <div 
+                key={category.id}
+                className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden"
               >
-                {(feature as { isNew?: boolean }).isNew && (
-                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold rounded-full uppercase">
-                    New
-                  </span>
+                {/* Category Header */}
+                <button
+                  onClick={() => setExpandedSection(expandedSection === category.id ? null : category.id)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{category.title.split(' ')[0]}</span>
+                    <div className="text-left">
+                      <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                        {category.title.slice(category.title.indexOf(' ') + 1)}
+                      </h4>
+                      <p className="text-[10px] sm:text-xs text-gray-500">{category.description}</p>
+                    </div>
+                  </div>
+                  <ChevronRight 
+                    size={20} 
+                    className={`text-gray-400 transition-transform ${expandedSection === category.id ? 'rotate-90' : ''}`} 
+                  />
+                </button>
+                
+                {/* Features Grid */}
+                {expandedSection === category.id && (
+                  <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
+                    {category.features.map((feature, idx) => (
+                      <div 
+                        key={idx}
+                        className="flex items-start gap-2 p-2 sm:p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                      >
+                        <div className="text-blue-500 dark:text-blue-400 mt-0.5 shrink-0">
+                          {feature.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {feature.title}
+                          </p>
+                          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                            {feature.desc}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
-                <div className={`p-2 sm:p-3 w-fit rounded-lg sm:rounded-xl mb-2 sm:mb-3 md:mb-4 ${
-                  (feature as { isNew?: boolean }).isNew 
-                    ? 'bg-gradient-to-br from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20'
-                    : 'bg-gradient-to-br from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20'
-                }`}>
-                  {feature.icon}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Features Overview */}
+        <div className="mb-6 sm:mb-8">
+          <div className="text-center mb-5 sm:mb-6">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
+              Key Highlights
+            </h3>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            {[
+              { icon: <PenLine size={24} />, title: "Create Quotes", desc: "Write & customize", gradient: "from-purple-500 to-pink-500" },
+              { icon: <Camera size={24} />, title: "Photo Backgrounds", desc: "Camera or upload", gradient: "from-blue-500 to-cyan-500" },
+              { icon: <Palette size={24} />, title: "60+ Themes", desc: "Beautiful styles", gradient: "from-pink-500 to-orange-500" },
+              { icon: <Type size={24} />, title: "75+ Fonts", desc: "Unique typography", gradient: "from-green-500 to-teal-500" },
+              { icon: <Download size={24} />, title: "Download & Share", desc: "High quality", gradient: "from-indigo-500 to-purple-500" },
+              { icon: <Grid3X3 size={24} />, title: "210+ Categories", desc: "Every mood", gradient: "from-orange-500 to-red-500" },
+            ].map((item, idx) => (
+              <div key={idx} className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 text-center group hover:shadow-lg transition-all">
+                <div className={`w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center text-white shadow-lg`}>
+                  {item.icon}
                 </div>
-                <h4 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2">
-                  {feature.title}
-                </h4>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400">
-                  {feature.description}
-                </p>
-              </SectionCard>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{item.title}</h4>
+                <p className="text-[10px] text-gray-500">{item.desc}</p>
+              </div>
             ))}
           </div>
         </div>
@@ -249,50 +396,40 @@ export default function About() {
           <p className="text-white/80 text-sm sm:text-base">— Steve Jobs</p>
         </div>
 
-        {/* Create Your Own Quote - Feature Highlight */}
-        <SectionCard className="mb-6 sm:mb-8 relative overflow-hidden ring-2 ring-purple-500/30 dark:ring-purple-400/30">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+        {/* Trending Categories Highlight */}
+        <SectionCard className="mb-6 sm:mb-8 relative overflow-hidden ring-2 ring-orange-500/30 dark:ring-orange-400/30">
           <div className="absolute -top-1 -right-1">
-            <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold rounded-bl-xl rounded-tr-xl uppercase">
-              ✨ New Feature
+            <span className="px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold rounded-bl-xl rounded-tr-xl uppercase">
+              🔥 New
             </span>
           </div>
           
           <div className="relative">
             <div className="flex items-center gap-2 sm:gap-3 mb-4">
-              <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20">
-                <PenLine className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600 dark:text-purple-400" />
+              <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10">
+                <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-orange-600 dark:text-orange-400" />
               </div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Create Your Own Quotes</h3>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Trending Categories</h3>
             </div>
             
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">
-              Express yourself with beautifully designed quote cards. Write your own inspirational quotes and customize them with your personal touch.
+              19 new highly engaging categories just added! Perfect for sharing on social media.
             </p>
             
-            {/* Feature Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="flex flex-wrap gap-2">
               {[
-                { icon: <Camera className="w-5 h-5" />, label: "Take Photo", desc: "Use your camera" },
-                { icon: <ImageIcon className="w-5 h-5" />, label: "Upload Image", desc: "From gallery" },
-                { icon: <Palette className="w-5 h-5" />, label: "60+ Themes", desc: "Beautiful styles" },
-                { icon: <Share2 className="w-5 h-5" />, label: "Share", desc: "Public or Private" },
-              ].map((item, i) => (
-                <div key={i} className="flex flex-col items-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-center">
-                  <div className="text-purple-500 mb-1">{item.icon}</div>
-                  <span className="text-xs font-semibold text-gray-900 dark:text-white">{item.label}</span>
-                  <span className="text-[10px] text-gray-500">{item.desc}</span>
-                </div>
+                'Situationship', 'Icks', 'Ghosting', 'Hot Takes', 'Sunday Scaries',
+                'Desi Parents', 'Student Life', 'Corporate Humor', 'Broke Life',
+                'K-Drama Quotes', 'Bollywood Dialogues', 'Zodiac Vibes'
+              ].map((cat, idx) => (
+                <span key={idx} className="px-3 py-1.5 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 text-orange-700 dark:text-orange-300 text-xs font-medium rounded-full">
+                  {cat}
+                </span>
               ))}
+              <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-full">
+                +7 more
+              </span>
             </div>
-            
-            <button
-              onClick={handleStartSwiping}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg"
-            >
-              <PenLine className="w-4 h-4" />
-              Start Creating Now
-            </button>
           </div>
         </SectionCard>
 
