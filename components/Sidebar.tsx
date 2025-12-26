@@ -6,6 +6,8 @@ import { isQuotePublic } from '@/lib/helpers';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useUser } from '@/contexts/UserContext';
+import { apiCache, CACHE_KEYS, CACHE_TTL } from '@/lib/api-cache';
 import UpdatePasswordModal from './UpdatePasswordModal';
 import toast from 'react-hot-toast';
 
@@ -151,18 +153,24 @@ export default function Sidebar({
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroupData[]>([]);
   const [hasFetchedGroups, setHasFetchedGroups] = useState(false);
 
-  // Fetch category groups from API
+  // Fetch category groups from API with caching
   useEffect(() => {
     if (hasFetchedGroups) return;
     
     const fetchGroups = async () => {
       try {
-        const response = await fetch('/api/category-groups');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.groups) {
-            setCategoryGroups(data.groups);
-          }
+        const data = await apiCache.getOrFetch<{ success: boolean; groups: CategoryGroupData[] }>(
+          CACHE_KEYS.CATEGORY_GROUPS,
+          async () => {
+            const response = await fetch('/api/category-groups');
+            if (!response.ok) return { success: false, groups: [] };
+            return await response.json();
+          },
+          { ttl: CACHE_TTL.LONG }
+        );
+        
+        if (data.success && data.groups) {
+          setCategoryGroups(data.groups);
         }
       } catch (error) {
         console.error('Failed to fetch category groups:', error);
@@ -190,6 +198,10 @@ export default function Sidebar({
       setHasFetchedProfile(false);
       setHasFetchedLiked(false);
       setHasFetchedDisliked(false);
+      // Clear user-related cache
+      apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
+      apiCache.invalidate(`${CACHE_KEYS.USER_LIKES}-quotes`);
+      apiCache.invalidate(`${CACHE_KEYS.USER_DISLIKES}-quotes`);
     }
   }, [isAuthenticated]);
 
@@ -217,9 +229,17 @@ export default function Sidebar({
   const fetchProfile = async () => {
     setIsLoadingProfile(true);
     try {
-      const response = await fetch('/api/user/profile');
-      if (response.ok) {
-        const data = await response.json();
+      const data = await apiCache.getOrFetch(
+        CACHE_KEYS.USER_PROFILE,
+        async () => {
+          const response = await fetch('/api/user/profile');
+          if (!response.ok) return null;
+          return await response.json();
+        },
+        { ttl: CACHE_TTL.MEDIUM, sensitive: true }
+      );
+      
+      if (data) {
         setProfileData(data);
         setEditName(data.user.name);
         setHasFetchedProfile(true);
@@ -250,6 +270,9 @@ export default function Sidebar({
         setProfileData(prev => prev ? { ...prev, user: data.user } : null);
         setCurrentUser(prev => prev ? { ...prev, name: data.user.name } : null);
         setIsEditingName(false);
+        // Invalidate user cache
+        apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
+        apiCache.invalidate(CACHE_KEYS.USER);
         toast.success('Name updated!');
       } else {
         const error = await response.json();
@@ -370,12 +393,18 @@ export default function Sidebar({
   const fetchLikedQuotes = async () => {
     setIsLoadingLiked(true);
     try {
-      const response = await fetch('/api/user/likes');
-      if (response.ok) {
-        const data = await response.json();
-        setLikedQuotes(data.quotes || []);
-        setHasFetchedLiked(true);
-      }
+      const data = await apiCache.getOrFetch<{ quotes: SavedQuote[] }>(
+        `${CACHE_KEYS.USER_LIKES}-quotes`,
+        async () => {
+          const response = await fetch('/api/user/likes');
+          if (!response.ok) return { quotes: [] };
+          return await response.json();
+        },
+        { ttl: CACHE_TTL.MEDIUM, sensitive: true }
+      );
+      
+      setLikedQuotes(data.quotes || []);
+      setHasFetchedLiked(true);
     } catch (error) {
       console.error('Fetch liked quotes error:', error);
     } finally {
@@ -386,12 +415,18 @@ export default function Sidebar({
   const fetchDislikedQuotes = async () => {
     setIsLoadingDisliked(true);
     try {
-      const response = await fetch('/api/user/dislikes');
-      if (response.ok) {
-        const data = await response.json();
-        setDislikedQuotes(data.quotes || []);
-        setHasFetchedDisliked(true);
-      }
+      const data = await apiCache.getOrFetch<{ quotes: SavedQuote[] }>(
+        `${CACHE_KEYS.USER_DISLIKES}-quotes`,
+        async () => {
+          const response = await fetch('/api/user/dislikes');
+          if (!response.ok) return { quotes: [] };
+          return await response.json();
+        },
+        { ttl: CACHE_TTL.MEDIUM, sensitive: true }
+      );
+      
+      setDislikedQuotes(data.quotes || []);
+      setHasFetchedDisliked(true);
     } catch (error) {
       console.error('Fetch disliked quotes error:', error);
     } finally {

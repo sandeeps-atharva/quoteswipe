@@ -13,6 +13,7 @@ import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useTheme } from '@/contexts/ThemeContext';
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
 import { isQuotePublic } from '@/lib/helpers';
+import { apiCache, CACHE_KEYS, CACHE_TTL } from '@/lib/api-cache';
 
 // Lazy load modals for better initial bundle size
 const AuthModal = lazy(() => import('./AuthModal'));

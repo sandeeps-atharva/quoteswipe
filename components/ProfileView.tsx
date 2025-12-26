@@ -11,6 +11,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import UpdatePasswordModal from './UpdatePasswordModal';
+import { apiCache, CACHE_KEYS, CACHE_TTL } from '@/lib/api-cache';
 
 interface ProfileData {
   user: {
@@ -55,17 +56,23 @@ export default function ProfileView({
   const [showPictureOptions, setShowPictureOptions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch profile data
+  // Fetch profile data with caching
   useEffect(() => {
     const fetchProfile = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/user/profile');
-        if (response.ok) {
-          const data = await response.json();
-          setProfileData(data);
-          setEditName(data.user.name);
-        }
+        const data = await apiCache.getOrFetch<ProfileData>(
+          CACHE_KEYS.USER_PROFILE,
+          async () => {
+            const response = await fetch('/api/user/profile');
+            if (!response.ok) throw new Error('Failed to fetch');
+            return await response.json();
+          },
+          { ttl: CACHE_TTL.MEDIUM, sensitive: true }
+        );
+        
+        setProfileData(data);
+        setEditName(data.user.name);
       } catch (error) {
         console.error('Failed to fetch profile:', error);
         toast.error('Failed to load profile');
@@ -101,6 +108,9 @@ export default function ProfileView({
       if (response.ok) {
         const data = await response.json();
         setProfileData(prev => prev ? { ...prev, user: { ...prev.user, name: data.user.name } } : null);
+        // Invalidate cache after update
+        apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
+        apiCache.invalidate(CACHE_KEYS.USER);
         toast.success('Name updated');
         setIsEditingName(false);
       } else {
@@ -160,6 +170,9 @@ export default function ProfileView({
             ...prev, 
             user: { ...prev.user, profile_picture: data.user.profile_picture } 
           } : null);
+          // Invalidate cache
+          apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
+          apiCache.invalidate(CACHE_KEYS.USER);
           toast.success('Profile picture updated');
         } else {
           const data = await response.json();
@@ -198,6 +211,9 @@ export default function ProfileView({
           ...prev, 
           user: { ...prev.user, profile_picture: null } 
         } : null);
+        // Invalidate cache
+        apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
+        apiCache.invalidate(CACHE_KEYS.USER);
         toast.success('Profile picture removed');
       } else {
         toast.error('Failed to remove picture');

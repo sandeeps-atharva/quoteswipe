@@ -5,6 +5,7 @@ import { Star, Quote, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { apiCache, CACHE_KEYS, CACHE_TTL } from '@/lib/api-cache';
 
 interface Review {
   id: number;
@@ -48,11 +49,16 @@ export default function Testimonials() {
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch('/api/reviews');
-      if (response.ok) {
-        const data = await response.json();
-        setReviews(data.reviews || []);
-      }
+      const data = await apiCache.getOrFetch<{ reviews: Review[] }>(
+        CACHE_KEYS.REVIEWS,
+        async () => {
+          const response = await fetch('/api/reviews');
+          if (!response.ok) return { reviews: [] };
+          return await response.json();
+        },
+        { ttl: CACHE_TTL.LONG }
+      );
+      setReviews(data.reviews || []);
     } catch (error) {
       console.error('Failed to fetch reviews:', error);
     } finally {
@@ -62,15 +68,20 @@ export default function Testimonials() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/stats');
-      if (response.ok) {
-        const data = await response.json();
-        setStats({
-          users: data.stats.users,
-          avgRating: data.stats.avgRating,
-          saved: data.stats.saved
-        });
-      }
+      const data = await apiCache.getOrFetch<{ stats: { users: string; avgRating: string; saved: string } }>(
+        CACHE_KEYS.STATS,
+        async () => {
+          const response = await fetch('/api/stats');
+          if (!response.ok) return { stats: { users: '5K+', avgRating: '4.9', saved: '50K+' } };
+          return await response.json();
+        },
+        { ttl: CACHE_TTL.VERY_LONG }
+      );
+      setStats({
+        users: data.stats.users,
+        avgRating: data.stats.avgRating,
+        saved: data.stats.saved
+      });
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }

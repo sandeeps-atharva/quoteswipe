@@ -26,6 +26,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { BackgroundsProvider } from "@/contexts/BackgroundsContext";
+import { UserProvider } from "@/contexts/UserContext";
 import CustomToaster from "@/components/CustomToaster";
 import CookieConsent from "@/components/CookieConsent";
 import InstallAppModal from "@/components/InstallAppModal";
@@ -554,12 +555,14 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <LanguageProvider>
-            <BackgroundsProvider>
-              <CustomToaster />
-              {children}
-              <CookieConsent />
-              <InstallAppModal />
-            </BackgroundsProvider>
+            <UserProvider>
+              <BackgroundsProvider>
+                <CustomToaster />
+                {children}
+                <CookieConsent />
+                <InstallAppModal />
+              </BackgroundsProvider>
+            </UserProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

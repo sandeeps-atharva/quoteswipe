@@ -352,7 +352,7 @@ export default function CreateQuoteModal({
                           fontWeight: selectedFont.fontWeight,
                         }}
                       >
-                        "{text || 'Your quote preview...'}"
+                        {text || 'Your quote preview...'}
                       </p>
                       {author && (
                         <p className="text-white/80 text-xs mt-2 drop-shadow">— {author}</p>

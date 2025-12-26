@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical, Type, Minus, Plus, ZoomIn, ZoomOut, Move, RotateCcw, WrapText, Undo2 } from 'lucide-react';
+import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical, Type, Minus, Plus, ZoomIn, ZoomOut, Move, RotateCcw, WrapText, Undo2, AlignLeft, AlignCenter, AlignRight, AlignJustify, AlignStartVertical, AlignEndVertical } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { isQuotePublic } from '@/lib/helpers';
 import Image from 'next/image';
@@ -12,6 +12,7 @@ import { CardTheme, FontStyle, BackgroundImage, DEFAULT_THEME, DEFAULT_FONT, BAC
 // ============================================================================
 
 type ShareFormat = 'post' | 'story' | 'square';
+type TextAlignment = 'left' | 'center' | 'right' | 'justify' | 'start' | 'end';
 
 interface ShareFormatConfig {
   id: ShareFormat;
@@ -54,6 +55,8 @@ interface PreviewCardProps {
   backgroundImage?: BackgroundImage;
   customBackground?: string;
   verticalOffset?: number;
+  horizontalOffset?: number; // Text horizontal position (-15 to 15)
+  textAlign?: TextAlignment; // Text alignment (left, center, right)
   format?: ShareFormatConfig;
   fontSizePx?: number; // 0 = auto, otherwise direct px value
   bgZoom?: number; // Background zoom level (1 = 100%)
@@ -81,9 +84,12 @@ const POSITION_PRESETS = [
   { label: 'Bottom', value: 40 },
 ] as const;
 
-const POSITION_STEP = 10;
+const POSITION_STEP = 5;
 const POSITION_MIN = -50;
 const POSITION_MAX = 50;
+// Horizontal limits are smaller to keep text inside card
+const HORIZONTAL_MIN = -15;
+const HORIZONTAL_MAX = 15;
 const COPY_FEEDBACK_DURATION = 2000;
 
 // ============================================================================
@@ -295,6 +301,8 @@ function PreviewCard({
   backgroundImage,
   customBackground,
   verticalOffset = 0,
+  horizontalOffset = 0,
+  textAlign = 'left',
   format = DEFAULT_FORMAT,
   fontSizePx = 0,
   bgZoom = 1,
@@ -365,19 +373,6 @@ function PreviewCard({
     whiteSpace: 'normal' as const,
   }), [colors.text, fontStyle, typography, hasBackgroundImage]);
 
-  // Vertical position calculations
-  const getJustifyContent = useCallback(() => {
-    if (verticalOffset <= -30) return 'flex-start';
-    if (verticalOffset >= 30) return 'flex-end';
-    return 'center';
-  }, [verticalOffset]);
-
-  const getPadding = useCallback(() => ({
-    top: verticalOffset > 0 ? `${verticalOffset * 0.8}%` : '0',
-    bottom: verticalOffset < 0 ? `${Math.abs(verticalOffset) * 0.8}%` : '0',
-  }), [verticalOffset]);
-
-  const padding = getPadding();
 
   return (
     <div 
@@ -432,20 +427,23 @@ function PreviewCard({
         {/* Header spacer */}
         <div className="flex-shrink-0 h-6" />
 
-        {/* Quote Content Area - matches QuoteCard py-6 at sm breakpoint */}
-        <div 
-          className="flex-1 flex flex-col overflow-hidden transition-all duration-200 py-6"
-          style={{ 
-            justifyContent: getJustifyContent(),
-            paddingTop: verticalOffset > 0 ? `${verticalOffset * 0.8}%` : undefined,
-            paddingBottom: verticalOffset < 0 ? `${Math.abs(verticalOffset) * 0.8}%` : undefined,
-          }}
-        >
-          {/* Quote Mark */}
-          <QuoteMark color={colors.text} isDark={colors.isDark} />
-          
-          {/* Quote text */}
-          <p style={quoteTextStyle}>{quote.text}</p>
+        {/* Quote Content Area - fixed width container prevents text reflow */}
+        <div className="flex-1 flex flex-col justify-center py-6">
+          {/* Text container with fixed width - transform moves without changing layout */}
+          <div 
+            style={{
+              transform: `translate(${horizontalOffset}px, ${verticalOffset * 1.5}px)`,
+              minWidth: `${format.width - 48}px`, // Subtract padding (24px * 2)
+              maxWidth: `${format.width - 48}px`,
+              textAlign: textAlign,
+            }}
+          >
+            {/* Quote Mark */}
+            <QuoteMark color={colors.text} isDark={colors.isDark} />
+            
+            {/* Quote text */}
+            <p style={quoteTextStyle}>{quote.text}</p>
+          </div>
         </div>
         
         {/* Author Section */}
@@ -555,80 +553,210 @@ function FormatSelector({ selectedFormat, onChange }: FormatSelectorProps) {
 }
 
 // ============================================================================
-// Position Control Component
+// Text Position Control Component (Vertical & Horizontal)
 // ============================================================================
 
-interface PositionControlProps {
-  value: number;
-  onChange: (value: number) => void;
-  onAdjust: (delta: number) => void;
+interface TextPositionControlProps {
+  verticalOffset: number;
+  horizontalOffset: number;
+  onVerticalChange: (value: number) => void;
+  onHorizontalChange: (value: number) => void;
+  onReset: () => void;
 }
 
-function PositionControl({ value, onChange, onAdjust }: PositionControlProps) {
+function TextPositionControl({ 
+  verticalOffset, 
+  horizontalOffset, 
+  onVerticalChange, 
+  onHorizontalChange,
+  onReset,
+}: TextPositionControlProps) {
   const formatValue = (v: number) => v > 0 ? `+${v}` : String(v);
-  
-  const isPresetActive = (presetValue: number) => Math.abs(value - presetValue) < 15;
 
   return (
-    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-      <div className="flex items-center gap-3">
-        {/* Up Button */}
+    <div className="mt-3 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
+          <Move size={12} />
+          Text Position
+        </span>
         <button
-          onClick={() => onAdjust(-POSITION_STEP)}
-          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-          title="Move Up"
+          onClick={onReset}
+          className="text-[9px] px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
         >
-          <ChevronUp size={16} className="text-gray-600 dark:text-gray-300" />
+          <RotateCcw size={10} />
+          Center
         </button>
+      </div>
+      
+      {/* D-Pad Style Controls */}
+      <div className="flex items-center justify-center mb-3">
+        <div className="grid grid-cols-3 gap-1">
+          {/* Empty */}
+          <div />
+          {/* Up */}
+          <button
+            onClick={() => onVerticalChange(Math.max(POSITION_MIN, verticalOffset - POSITION_STEP))}
+            disabled={verticalOffset <= POSITION_MIN}
+            className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+          >
+            <ChevronUp size={18} className="text-blue-600 dark:text-blue-400" />
+          </button>
+          {/* Empty */}
+          <div />
+          
+          {/* Left - Limited range */}
+          <button
+            onClick={() => onHorizontalChange(Math.max(HORIZONTAL_MIN, horizontalOffset - POSITION_STEP))}
+            disabled={horizontalOffset <= HORIZONTAL_MIN}
+            className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+          >
+            <ChevronUp size={18} className="text-blue-600 dark:text-blue-400 -rotate-90" />
+          </button>
+          {/* Center indicator */}
+          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <span className="text-[8px] font-mono text-blue-600 dark:text-blue-400">
+              {horizontalOffset},{verticalOffset}
+            </span>
+          </div>
+          {/* Right - Limited range */}
+          <button
+            onClick={() => onHorizontalChange(Math.min(HORIZONTAL_MAX, horizontalOffset + POSITION_STEP))}
+            disabled={horizontalOffset >= HORIZONTAL_MAX}
+            className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+          >
+            <ChevronUp size={18} className="text-blue-600 dark:text-blue-400 rotate-90" />
+          </button>
+          
+          {/* Empty */}
+          <div />
+          {/* Down */}
+          <button
+            onClick={() => onVerticalChange(Math.min(POSITION_MAX, verticalOffset + POSITION_STEP))}
+            disabled={verticalOffset >= POSITION_MAX}
+            className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+          >
+            <ChevronDown size={18} className="text-blue-600 dark:text-blue-400" />
+          </button>
+          {/* Empty */}
+          <div />
+        </div>
+      </div>
+      
+      {/* Fine Adjustment Sliders */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Horizontal Slider - Limited range */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] text-gray-500 dark:text-gray-400">← → Left/Right</span>
+            <span className="text-[9px] font-mono text-blue-600 dark:text-blue-400">{formatValue(horizontalOffset)}</span>
+          </div>
+          <input
+            type="range"
+            min={HORIZONTAL_MIN}
+            max={HORIZONTAL_MAX}
+            step={1}
+            value={horizontalOffset}
+            onChange={(e) => onHorizontalChange(Number(e.target.value))}
+            className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+        </div>
         
-        {/* Slider */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">
-              Quote Position
-            </span>
-            <span className="text-[10px] font-mono text-gray-400">
-              {formatValue(value)}%
-            </span>
+        {/* Vertical Slider */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] text-gray-500 dark:text-gray-400">↑ ↓ Up/Down</span>
+            <span className="text-[9px] font-mono text-blue-600 dark:text-blue-400">{formatValue(verticalOffset)}</span>
           </div>
           <input
             type="range"
             min={POSITION_MIN}
             max={POSITION_MAX}
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            step={1}
+            value={verticalOffset}
+            onChange={(e) => onVerticalChange(Number(e.target.value))}
+            className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
           />
-          <div className="flex justify-between mt-1">
-            <span className="text-[9px] text-gray-400">↑ Top</span>
-            <span className="text-[9px] text-gray-400">Center</span>
-            <span className="text-[9px] text-gray-400">Bottom ↓</span>
-          </div>
         </div>
-        
-        {/* Down Button */}
-        <button
-          onClick={() => onAdjust(POSITION_STEP)}
-          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-          title="Move Down"
-        >
-          <ChevronDown size={16} className="text-gray-600 dark:text-gray-300" />
-        </button>
       </div>
       
-      {/* Quick Position Presets */}
-      <div className="flex items-center justify-center gap-2 mt-3">
-        {POSITION_PRESETS.map((preset) => (
+      {/* Quick Presets - Horizontal limited to keep text inside card */}
+      <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
+        {[
+          { label: '↖', v: -30, h: -15 },
+          { label: '↑', v: -30, h: 0 },
+          { label: '↗', v: -30, h: 15 },
+          { label: '←', v: 0, h: -15 },
+          { label: '●', v: 0, h: 0 },
+          { label: '→', v: 0, h: 15 },
+          { label: '↙', v: 30, h: -15 },
+          { label: '↓', v: 30, h: 0 },
+          { label: '↘', v: 30, h: 15 },
+        ].map((preset) => (
           <button
             key={preset.label}
-            onClick={() => onChange(preset.value)}
-            className={`px-3 py-1 rounded-lg text-[10px] font-medium transition-colors ${
-              isPresetActive(preset.value)
+            onClick={() => {
+              onVerticalChange(preset.v);
+              onHorizontalChange(preset.h);
+            }}
+            className={`w-7 h-7 rounded-lg text-[11px] font-medium transition-colors ${
+              Math.abs(verticalOffset - preset.v) < 10 && Math.abs(horizontalOffset - preset.h) < 8
                 ? 'bg-blue-500 text-white'
                 : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
             }`}
           >
             {preset.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Text Alignment Control Component
+// ============================================================================
+
+interface TextAlignmentControlProps {
+  value: TextAlignment;
+  onChange: (value: TextAlignment) => void;
+}
+
+function TextAlignmentControl({ value, onChange }: TextAlignmentControlProps) {
+  const alignments: { id: TextAlignment; label: string; icon: React.ReactNode }[] = [
+    { id: 'left', label: 'Left', icon: <AlignLeft size={14} /> },
+    { id: 'center', label: 'Center', icon: <AlignCenter size={14} /> },
+    { id: 'right', label: 'Right', icon: <AlignRight size={14} /> },
+    { id: 'justify', label: 'Justify', icon: <AlignJustify size={14} /> },
+    { id: 'start', label: 'Start', icon: <AlignStartVertical size={14} /> },
+    { id: 'end', label: 'End', icon: <AlignEndVertical size={14} /> },
+  ];
+
+  return (
+    <div className="mt-3 p-3 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-xl border border-violet-200/50 dark:border-violet-800/50">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold text-violet-700 dark:text-violet-400 flex items-center gap-1.5">
+          <AlignCenter size={12} />
+          Text Alignment
+        </span>
+      </div>
+      
+      {/* Alignment Buttons - Grid layout */}
+      <div className="grid grid-cols-3 gap-2">
+        {alignments.map((alignment) => (
+          <button
+            key={alignment.id}
+            onClick={() => onChange(alignment.id)}
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-medium transition-all ${
+              value === alignment.id
+                ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/30'
+                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-violet-100 dark:hover:bg-gray-600'
+            }`}
+          >
+            {alignment.icon}
+            <span>{alignment.label}</span>
           </button>
         ))}
       </div>
@@ -1301,9 +1429,12 @@ export default function ShareModal({
   const [linkCopied, setLinkCopied] = useState(false);
   const [captionCopied, setCaptionCopied] = useState(false);
   const [verticalOffset, setVerticalOffset] = useState(0);
+  const [horizontalOffset, setHorizontalOffset] = useState(0);
+  const [textAlign, setTextAlign] = useState<TextAlignment>('left');
   const [fontSizePx, setFontSizePx] = useState(0); // 0 = auto
   const [showPositionControl, setShowPositionControl] = useState(false);
   const [showFontSizeControl, setShowFontSizeControl] = useState(false);
+  const [showAlignmentControl, setShowAlignmentControl] = useState(false);
   const [showZoomControl, setShowZoomControl] = useState(false);
   const [showTextEditor, setShowTextEditor] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<ShareFormatConfig>(DEFAULT_FORMAT);
@@ -1339,6 +1470,11 @@ export default function ShareModal({
     setBgZoom(1);
     setBgPanX(0);
     setBgPanY(0);
+  }, []);
+  
+  const handleResetTextPosition = useCallback(() => {
+    setVerticalOffset(0);
+    setHorizontalOffset(0);
   }, []);
   
   const handleResetText = useCallback(() => {
@@ -1399,9 +1535,14 @@ export default function ShareModal({
     setLinkCopied(false);
     setCaptionCopied(false);
     setVerticalOffset(0);
+    setHorizontalOffset(0);
+    setTextAlign('left');
     setFontSizePx(0); // Reset to auto
     setShowPositionControl(false);
     setShowFontSizeControl(false);
+    setShowAlignmentControl(false);
+    setShowZoomControl(false);
+    setShowTextEditor(false);
     setSelectedFormat(DEFAULT_FORMAT);
   }, [isOpen, quote.id]);
 
@@ -1559,11 +1700,6 @@ export default function ShareModal({
     }
   }, [generateImage, getShareText, isPublicQuote, getQuoteUrl, getFilename, copyToClipboard]);
 
-  // Position adjustment handlers
-  const adjustPosition = useCallback((delta: number) => {
-    setVerticalOffset(prev => Math.max(POSITION_MIN, Math.min(POSITION_MAX, prev + delta)));
-  }, []);
-
   if (!isOpen) return null;
 
   return (
@@ -1644,6 +1780,8 @@ export default function ShareModal({
                     backgroundImage={backgroundImage}
                     customBackground={quote.custom_background}
                     verticalOffset={verticalOffset}
+                    horizontalOffset={horizontalOffset}
+                    textAlign={textAlign}
                     format={selectedFormat}
                     fontSizePx={fontSizePx}
                     bgZoom={bgZoom}
@@ -1663,6 +1801,7 @@ export default function ShareModal({
                     setShowPositionControl(!showPositionControl);
                     if (!showPositionControl) {
                       setShowFontSizeControl(false);
+                      setShowAlignmentControl(false);
                       setShowZoomControl(false);
                       setShowTextEditor(false);
                     }
@@ -1683,6 +1822,7 @@ export default function ShareModal({
                     setShowFontSizeControl(!showFontSizeControl);
                     if (!showFontSizeControl) {
                       setShowPositionControl(false);
+                      setShowAlignmentControl(false);
                       setShowZoomControl(false);
                       setShowTextEditor(false);
                     }
@@ -1697,6 +1837,32 @@ export default function ShareModal({
                   <span className="hidden sm:inline">Font</span>
                 </button>
                 
+                {/* Text Alignment Toggle */}
+                <button
+                  onClick={() => {
+                    setShowAlignmentControl(!showAlignmentControl);
+                    if (!showAlignmentControl) {
+                      setShowPositionControl(false);
+                      setShowFontSizeControl(false);
+                      setShowZoomControl(false);
+                      setShowTextEditor(false);
+                    }
+                  }}
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
+                    showAlignmentControl 
+                      ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' 
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {textAlign === 'left' && <AlignLeft size={12} />}
+                  {textAlign === 'center' && <AlignCenter size={12} />}
+                  {textAlign === 'right' && <AlignRight size={12} />}
+                  {textAlign === 'justify' && <AlignJustify size={12} />}
+                  {textAlign === 'start' && <AlignStartVertical size={12} />}
+                  {textAlign === 'end' && <AlignEndVertical size={12} />}
+                  <span className="hidden sm:inline">Align</span>
+                </button>
+                
                 {/* Background Zoom Toggle - Only show when there's a background image */}
                 {hasBackgroundImage && (
                   <button
@@ -1705,6 +1871,7 @@ export default function ShareModal({
                       if (!showZoomControl) {
                         setShowPositionControl(false);
                         setShowFontSizeControl(false);
+                        setShowAlignmentControl(false);
                         setShowTextEditor(false);
                       }
                     }}
@@ -1729,6 +1896,7 @@ export default function ShareModal({
                     if (!showTextEditor) {
                       setShowPositionControl(false);
                       setShowFontSizeControl(false);
+                      setShowAlignmentControl(false);
                       setShowZoomControl(false);
                     }
                   }}
@@ -1754,12 +1922,14 @@ export default function ShareModal({
               </span>
             </div>
             
-            {/* Position Control Panel */}
+            {/* Text Position Control Panel */}
             {showPositionControl && (
-              <PositionControl
-                value={verticalOffset}
-                onChange={setVerticalOffset}
-                onAdjust={adjustPosition}
+              <TextPositionControl
+                verticalOffset={verticalOffset}
+                horizontalOffset={horizontalOffset}
+                onVerticalChange={setVerticalOffset}
+                onHorizontalChange={setHorizontalOffset}
+                onReset={handleResetTextPosition}
               />
             )}
 
@@ -1769,6 +1939,14 @@ export default function ShareModal({
                 value={fontSizePx}
                 onChange={setFontSizePx}
                 autoSize={autoFontSize}
+              />
+            )}
+            
+            {/* Text Alignment Control Panel */}
+            {showAlignmentControl && (
+              <TextAlignmentControl
+                value={textAlign}
+                onChange={setTextAlign}
               />
             )}
             
