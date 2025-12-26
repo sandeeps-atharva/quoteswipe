@@ -793,3 +793,56 @@ ${ctaText}: ${ctaLink}
 ${getFooterText(appUrl)}
 `;
 }
+
+// Custom email template (without festival/quote requirement)
+export function customEmailTemplate(
+  user: User,
+  subject: string,
+  message: string,
+  appUrl: string
+): string {
+  const content = `
+${getHeader('QuoteSwipe', 'A message for you')}
+
+<!-- Content -->
+<tr>
+  <td class="mobile-padding" style="padding: 32px 24px;">
+    <p style="margin: 0 0 20px; font-size: 17px; color: #3f3f46;">
+      Hello <strong>${user.name}</strong>! 👋
+    </p>
+    
+    <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.8; color: #52525b; white-space: pre-wrap;">
+      ${message}
+    </p>
+    
+    ${getCTAButton('Visit QuoteSwipe', appUrl)}
+    
+    <p style="margin: 24px 0 0; font-size: 14px; color: #71717a; text-align: center;">
+      Best wishes,<br>
+      The QuoteSwipe Team
+    </p>
+  </td>
+</tr>
+`;
+
+  return getEmailWrapper(content, appUrl);
+}
+
+export function customEmailText(
+  user: User,
+  subject: string,
+  message: string,
+  appUrl: string
+): string {
+  return `
+Hello ${user.name}!
+
+${message}
+
+Visit QuoteSwipe: ${appUrl}
+
+Best wishes,
+The QuoteSwipe Team
+${getFooterText(appUrl)}
+`;
+}

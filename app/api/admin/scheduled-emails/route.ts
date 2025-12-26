@@ -40,14 +40,21 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      const recipientCount = await recipientsCollection.countDocuments({ 
-        scheduled_email_id: email._id.toString() 
-      });
+      // Get recipient count - either from stored user_count or by counting recipients
+      let userCount = email.user_count;
+      if (!userCount && !email.send_to_all) {
+        userCount = await recipientsCollection.countDocuments({ 
+          scheduled_email_id: email._id.toString() 
+        });
+      }
 
       return {
         ...email,
         id: email.id || email._id?.toString(),
-        recipient_count: recipientCount,
+        scheduled_date: email.scheduled_date instanceof Date 
+          ? email.scheduled_date.toISOString().split('T')[0] 
+          : email.scheduled_date,
+        user_count: email.send_to_all ? 'All users' : userCount,
         quote_text: quote?.text || null,
         quote_author: quote?.author || null
       };
@@ -78,18 +85,36 @@ export async function POST(request: NextRequest) {
       scheduled_time, 
       quote_id, 
       custom_message, 
-      user_ids 
+      user_ids,
+      send_to_all = false
     } = await request.json();
 
-    if (!title || !subject || !scheduled_date || !user_ids || user_ids.length === 0) {
+    if (!title || !subject || !scheduled_date) {
       return NextResponse.json(
-        { error: 'Title, subject, scheduled date, and recipients are required' },
+        { error: 'Title, subject, and scheduled date are required' },
+        { status: 400 }
+      );
+    }
+
+    // If not sending to all, require user_ids
+    if (!send_to_all && (!user_ids || user_ids.length === 0)) {
+      return NextResponse.json(
+        { error: 'Please select at least one user or choose "Send to All"' },
         { status: 400 }
       );
     }
 
     const scheduledEmailsCollection = await getCollection('scheduled_emails');
     const recipientsCollection = await getCollection('scheduled_email_recipients');
+    const usersCollection = await getCollection('users');
+
+    // Get user count for display
+    let userCount = 0;
+    if (send_to_all) {
+      userCount = await usersCollection.countDocuments({ role: { $ne: 'admin' } });
+    } else {
+      userCount = user_ids.length;
+    }
 
     // Create scheduled email
     const result = await scheduledEmailsCollection.insertOne({
@@ -100,25 +125,29 @@ export async function POST(request: NextRequest) {
       quote_id: quote_id || null,
       custom_message: custom_message || null,
       created_by: authResult.user.userId,
+      send_to_all,
+      user_count: userCount,
       status: 'pending',
       created_at: new Date()
     } as any);
 
     const scheduledEmailId = result.insertedId.toString();
 
-    // Add recipients
-    const recipientDocs = user_ids.map((userId: string) => ({
-      scheduled_email_id: scheduledEmailId,
-      user_id: userId,
-      created_at: new Date()
-    }));
-    
-    await recipientsCollection.insertMany(recipientDocs);
+    // Add recipients only if not sending to all
+    if (!send_to_all && user_ids && user_ids.length > 0) {
+      const recipientDocs = user_ids.map((userId: string) => ({
+        scheduled_email_id: scheduledEmailId,
+        user_id: userId,
+        created_at: new Date()
+      }));
+      
+      await recipientsCollection.insertMany(recipientDocs);
+    }
 
     return NextResponse.json({
       message: 'Email scheduled successfully',
       scheduledEmailId,
-      recipientCount: user_ids.length,
+      recipientCount: userCount,
     }, { status: 201 });
   } catch (error) {
     console.error('Create scheduled email error:', error);

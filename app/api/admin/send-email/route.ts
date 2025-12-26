@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection, toObjectId } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
-import { festivalEmailTemplate, festivalEmailText } from '@/lib/email-templates';
+import { festivalEmailTemplate, festivalEmailText, customEmailTemplate, customEmailText } from '@/lib/email-templates';
 
 interface User {
   _id: any;
@@ -10,21 +10,7 @@ interface User {
   email: string;
 }
 
-interface Quote {
-  id?: string;
-  _id?: any;
-  text: string;
-  author: string;
-  category_name?: string;
-}
-
-interface Festival {
-  id?: number;
-  _id?: any;
-  name: string;
-}
-
-// POST /api/admin/send-email - Send bulk festival emails
+// POST /api/admin/send-email - Send bulk emails (festival or custom)
 export async function POST(request: NextRequest) {
   const authResult = await requireAdmin(request);
   if (!authResult.authorized) {
@@ -38,13 +24,30 @@ export async function POST(request: NextRequest) {
       quoteId, 
       subject, 
       customMessage,
-      sendToAll = false 
+      sendToAll = false,
+      emailType = 'festival'
     } = await request.json();
 
     // Validate inputs
-    if (!festivalId || !quoteId || !subject) {
+    if (!subject) {
       return NextResponse.json(
-        { error: 'Festival, quote, and subject are required' },
+        { error: 'Subject is required' },
+        { status: 400 }
+      );
+    }
+
+    // For festival emails, require festival and quote
+    if (emailType === 'festival' && (!festivalId || !quoteId)) {
+      return NextResponse.json(
+        { error: 'Festival and quote are required for festival emails' },
+        { status: 400 }
+      );
+    }
+
+    // For custom emails, require message
+    if (emailType === 'custom' && !customMessage) {
+      return NextResponse.json(
+        { error: 'Message is required for custom emails' },
         { status: 400 }
       );
     }
@@ -56,38 +59,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const festivalsCollection = await getCollection('festivals');
-    const quotesCollection = await getCollection('quotes');
-    const categoriesCollection = await getCollection('categories');
     const usersCollection = await getCollection('users');
     const campaignsCollection = await getCollection('email_campaigns');
     const logsCollection = await getCollection('email_logs');
 
-    // Get festival
-    const festival: any = await festivalsCollection.findOne({
-      $or: [{ id: festivalId }, { _id: toObjectId(festivalId) as any }]
-    });
-
-    if (!festival) {
-      return NextResponse.json({ error: 'Festival not found' }, { status: 404 });
-    }
-
-    // Get quote with category
-    const quote: any = await quotesCollection.findOne({
-      $or: [{ id: quoteId }, { _id: toObjectId(quoteId) as any }]
-    });
-
-    if (!quote) {
-      return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
-    }
-
-    // Get category name
+    let festival: any = null;
+    let quote: any = null;
     let categoryName = '';
-    if (quote.category_id) {
-      const category: any = await categoriesCollection.findOne({
-        $or: [{ id: quote.category_id }, { _id: quote.category_id }]
-      }) as any;
-      categoryName = category?.name || '';
+
+    // Get festival and quote only for festival emails
+    if (emailType === 'festival') {
+      const festivalsCollection = await getCollection('festivals');
+      const quotesCollection = await getCollection('quotes');
+      const categoriesCollection = await getCollection('categories');
+
+      festival = await festivalsCollection.findOne({
+        $or: [{ id: festivalId }, { _id: toObjectId(festivalId) as any }]
+      });
+
+      if (!festival) {
+        return NextResponse.json({ error: 'Festival not found' }, { status: 404 });
+      }
+
+      quote = await quotesCollection.findOne({
+        $or: [{ id: quoteId }, { _id: toObjectId(quoteId) as any }]
+      });
+
+      if (!quote) {
+        return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
+      }
+
+      // Get category name
+      if (quote.category_id) {
+        const category: any = await categoriesCollection.findOne({
+          $or: [{ id: quote.category_id }, { _id: quote.category_id }]
+        });
+        categoryName = category?.name || '';
+      }
     }
 
     // Get users
@@ -105,11 +113,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Create email campaign record
+    const campaignName = emailType === 'festival' 
+      ? `${festival?.name} Campaign - ${new Date().toISOString().split('T')[0]}`
+      : `Custom Email - ${new Date().toISOString().split('T')[0]}`;
+
     const campaignResult = await campaignsCollection.insertOne({
-      name: `${festival.name} Campaign - ${new Date().toISOString().split('T')[0]}`,
+      name: campaignName,
       subject,
-      festival_id: festivalId,
-      quote_id: quoteId,
+      email_type: emailType,
+      festival_id: festivalId || null,
+      quote_id: quoteId || null,
+      custom_message: customMessage || null,
       sent_by: authResult.user.userId,
       total_recipients: users.length,
       status: 'sending',
@@ -125,21 +139,41 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
 
     for (const user of users) {
-      const html = festivalEmailTemplate(
-        { name: user.name, email: user.email },
-        festival.name,
-        { text: quote.text, author: quote.author, category: categoryName },
-        appUrl,
-        customMessage
-      );
+      let html: string;
+      let text: string;
 
-      const text = festivalEmailText(
-        { name: user.name, email: user.email },
-        festival.name,
-        { text: quote.text, author: quote.author, category: categoryName },
-        appUrl,
-        customMessage
-      );
+      if (emailType === 'festival' && festival && quote) {
+        html = festivalEmailTemplate(
+          { name: user.name, email: user.email },
+          festival.name,
+          { text: quote.text, author: quote.author, category: categoryName },
+          appUrl,
+          customMessage
+        );
+
+        text = festivalEmailText(
+          { name: user.name, email: user.email },
+          festival.name,
+          { text: quote.text, author: quote.author, category: categoryName },
+          appUrl,
+          customMessage
+        );
+      } else {
+        // Custom email
+        html = customEmailTemplate(
+          { name: user.name, email: user.email },
+          subject,
+          customMessage,
+          appUrl
+        );
+
+        text = customEmailText(
+          { name: user.name, email: user.email },
+          subject,
+          customMessage,
+          appUrl
+        );
+      }
 
       const result = await sendEmail({
         to: user.email,
@@ -153,7 +187,7 @@ export async function POST(request: NextRequest) {
         campaign_id: campaignId,
         user_id: user._id.toString(),
         email: user.email,
-        email_type: 'festival',
+        email_type: emailType,
         status: result.success ? 'sent' : 'failed',
         error_message: result.error || null,
         sent_at: result.success ? new Date() : null,
@@ -167,7 +201,7 @@ export async function POST(request: NextRequest) {
         errors.push(`${user.email}: ${result.error}`);
       }
 
-      // Rate limiting
+      // Rate limiting - wait 100ms between emails
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
