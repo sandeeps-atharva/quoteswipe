@@ -54,6 +54,7 @@ interface SidebarProps {
   totalCategories?: number;
   selectedCategories: string[];
   onCategoryToggle: (category: string) => void;
+  onMultipleCategoryToggle?: (categories: string[], select: boolean) => void;
   onLoginClick: () => void;
   onLogout: () => void;
   isLoggingOut?: boolean;
@@ -102,6 +103,7 @@ export default function Sidebar({
   onLikedClick,
   onSkippedClick,
   onProfileClick,
+  onMultipleCategoryToggle,
 }: SidebarProps) {
   const { theme } = useTheme();
   const [currentView, setCurrentView] = useState<ViewType>('main');
@@ -368,6 +370,49 @@ export default function Sidebar({
     }
     return categories;
   }, [categories, debouncedSearchQuery]);
+
+  // Get group selection state: 'all' | 'some' | 'none'
+  const getGroupSelectionState = useCallback((groupCategories: Category[]) => {
+    const categoryNames = groupCategories.map(c => c.name);
+    const selectedInGroup = categoryNames.filter(name => selectedCategories.includes(name));
+    if (selectedInGroup.length === 0) return 'none';
+    if (selectedInGroup.length === categoryNames.length) return 'all';
+    return 'some';
+  }, [selectedCategories]);
+
+  // Handle group toggle - select or deselect all categories in a group
+  const handleGroupToggle = useCallback((groupCategories: Category[]) => {
+    const categoryNames = groupCategories.map(c => c.name);
+    const selectionState = getGroupSelectionState(groupCategories);
+    
+    if (onMultipleCategoryToggle) {
+      // Use batch toggle if available (more efficient)
+      if (selectionState === 'all') {
+        // Deselect all
+        onMultipleCategoryToggle(categoryNames, false);
+      } else {
+        // Select all (including partial selection case)
+        onMultipleCategoryToggle(categoryNames, true);
+      }
+    } else {
+      // Fallback: toggle each category individually
+      if (selectionState === 'all') {
+        // Deselect all
+        categoryNames.forEach(name => {
+          if (selectedCategories.includes(name)) {
+            onCategoryToggle(name);
+          }
+        });
+      } else {
+        // Select all that aren't already selected
+        categoryNames.forEach(name => {
+          if (!selectedCategories.includes(name)) {
+            onCategoryToggle(name);
+          }
+        });
+      }
+    }
+  }, [getGroupSelectionState, onMultipleCategoryToggle, onCategoryToggle, selectedCategories]);
 
   // Filter quotes based on search
   const filteredLikedQuotes = useMemo(() => {
@@ -1035,19 +1080,52 @@ export default function Sidebar({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {groupedCategories.map((group) => (
+                  {groupedCategories.map((group) => {
+                    const groupState = getGroupSelectionState(group.categories);
+                    const isSearchResult = group.id === 'search';
+                    
+                    return (
                     <div key={group.id}>
-                      {/* Group Header */}
-                      <div className="flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-gray-900 py-1.5 z-10">
+                      {/* Group Header - Clickable to select/deselect all */}
+                      <button
+                        onClick={() => !isSearchResult && handleGroupToggle(group.categories)}
+                        disabled={isSearchResult}
+                        className={`w-full flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-gray-900 py-1.5 z-10 rounded-lg transition-all ${
+                          !isSearchResult ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer group' : ''
+                        }`}
+                      >
+                        {/* Selection indicator */}
+                        {!isSearchResult && (
+                          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                            groupState === 'all' 
+                              ? 'bg-gradient-to-r from-blue-500 to-pink-500 border-transparent' 
+                              : groupState === 'some'
+                                ? 'bg-gradient-to-r from-blue-200 to-pink-200 dark:from-blue-800 dark:to-pink-800 border-blue-300 dark:border-blue-700'
+                                : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400 dark:group-hover:border-blue-500'
+                          }`}>
+                            {groupState === 'all' && (
+                              <Check size={12} className="text-white" />
+                            )}
+                            {groupState === 'some' && (
+                              <div className="w-2 h-2 rounded-sm bg-gradient-to-r from-blue-500 to-pink-500" />
+                            )}
+                          </div>
+                        )}
                         <span className="text-base">{group.icon}</span>
                         <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
                           {group.label}
                         </h3>
                         <div className="flex-1 h-px bg-gradient-to-r from-gray-200 dark:from-gray-700 to-transparent" />
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                          {group.categories.length}
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          groupState === 'all' 
+                            ? 'bg-gradient-to-r from-blue-500 to-pink-500 text-white' 
+                            : groupState === 'some'
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+                        }`}>
+                          {groupState !== 'none' && `${group.categories.filter(c => selectedCategories.includes(c.name)).length}/`}{group.categories.length}
                         </span>
-                      </div>
+                      </button>
                       
                       {/* Categories Grid */}
                       <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
@@ -1073,7 +1151,8 @@ export default function Sidebar({
                         })}
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </div>

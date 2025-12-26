@@ -266,6 +266,7 @@ export default function SwipeQuotes() {
     isUserQuote?: boolean;
     is_public?: number | boolean;
     custom_background?: string;
+    background_id?: string;
   } | null>(null);
   
   // Pre-generated image for sharing (used when sharing from viewing modal)
@@ -1022,6 +1023,20 @@ export default function SwipeQuotes() {
     });
   };
 
+  // Handle multiple category toggle (for group selection)
+  const handleMultipleCategoryToggle = useCallback((categoryNames: string[], select: boolean) => {
+    setSelectedCategories(prev => {
+      if (select) {
+        // Add all categories that aren't already selected
+        const newCategories = categoryNames.filter(name => !prev.includes(name));
+        return [...prev, ...newCategories];
+      } else {
+        // Remove all specified categories
+        return prev.filter(name => !categoryNames.includes(name));
+      }
+    });
+  }, []);
+
   const fetchCategories = async () => {
     try {
       const cacheKey = `categories_${isAuthenticated ? 'auth' : 'guest'}`;
@@ -1579,6 +1594,7 @@ export default function SwipeQuotes() {
       isUserQuote: true,
       is_public: quote.is_public,
       custom_background: quote.custom_background || undefined,
+      background_id: quote.background_id,
     });
     setShowShareModal(true);
   };
@@ -1808,6 +1824,7 @@ export default function SwipeQuotes() {
         totalCategories={totalCategories}
         selectedCategories={selectedCategories}
         onCategoryToggle={handleCategoryToggle}
+        onMultipleCategoryToggle={handleMultipleCategoryToggle}
         onLoginClick={() => setShowAuthModal(true)}
         onLogout={handleLogout}
         isLoggingOut={isLoggingOut}
@@ -1953,7 +1970,7 @@ export default function SwipeQuotes() {
             cardTheme={cardTheme}
             fontStyle={fontStyle}
             backgroundImage={
-              // Use quote's custom background if available, or per-quote saved background, or global
+              // Use quote's custom background if available, or preset background, or per-quote saved background, or global
               shareQuote.custom_background
                 ? {
                     id: `share_custom_${shareQuote.id}`,
@@ -1966,7 +1983,9 @@ export default function SwipeQuotes() {
                     categoryBg: 'rgba(255,255,255,0.15)',
                     categoryText: '#ffffff',
                   }
-                : savedQuoteBackgrounds[String(shareQuote.id)] || backgroundImage
+                : shareQuote.background_id
+                  ? BACKGROUND_IMAGES.find(bg => bg.id === shareQuote.background_id) || backgroundImage
+                  : savedQuoteBackgrounds[String(shareQuote.id)] || backgroundImage
             }
           />
         </Suspense>
@@ -2203,17 +2222,21 @@ export default function SwipeQuotes() {
                 onDragMove={() => {}}
                 cardTheme={cardTheme}
                 fontStyle={fontStyle}
-                backgroundImage={viewingUserQuote.custom_background ? {
-                  id: 'user_custom',
-                  name: 'Custom',
-                  url: viewingUserQuote.custom_background,
-                  thumbnail: viewingUserQuote.custom_background,
-                  overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                  textColor: '#ffffff',
-                  authorColor: '#e5e5e5',
-                  categoryBg: 'rgba(255,255,255,0.15)',
-                  categoryText: '#ffffff',
-                } : backgroundImage}
+                backgroundImage={
+                  viewingUserQuote.custom_background ? {
+                    id: 'user_custom',
+                    name: 'Custom',
+                    url: viewingUserQuote.custom_background,
+                    thumbnail: viewingUserQuote.custom_background,
+                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                    textColor: '#ffffff',
+                    authorColor: '#e5e5e5',
+                    categoryBg: 'rgba(255,255,255,0.15)',
+                    categoryText: '#ffffff',
+                  } : viewingUserQuote.background_id 
+                    ? BACKGROUND_IMAGES.find(bg => bg.id === viewingUserQuote.background_id) || backgroundImage
+                    : backgroundImage
+                }
               />
             </div>
             
@@ -2608,6 +2631,7 @@ export default function SwipeQuotes() {
                 isUserQuote: true,
                 is_public: quote.is_public,
                 custom_background: quote.custom_background || undefined,
+                background_id: quote.background_id,
               });
               setShowShareModal(true);
             }}

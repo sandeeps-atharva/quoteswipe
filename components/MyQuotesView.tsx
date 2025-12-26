@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, Sparkles, Trash2, Share2, Loader2, X, Edit3, Globe, Lock, Plus, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { isQuotePublic } from '@/lib/helpers';
+import { BACKGROUND_IMAGES } from '@/lib/constants';
 
 interface UserQuote {
   id: string | number;
@@ -14,6 +15,7 @@ interface UserQuote {
   is_public?: boolean | number;
   created_at?: string;
   custom_background?: string;
+  background_id?: string;
 }
 
 interface MyQuotesViewProps {
@@ -191,6 +193,12 @@ export default function MyQuotesView({
               {filteredQuotes.map((quote) => {
                 const isPublic = isQuotePublic(quote.is_public);
                 const hasCustomBg = !!quote.custom_background;
+                // Get preset background URL if background_id is set
+                const presetBg = quote.background_id 
+                  ? BACKGROUND_IMAGES.find(bg => bg.id === quote.background_id)?.url 
+                  : null;
+                const hasBackground = hasCustomBg || !!presetBg;
+                const backgroundUrl = quote.custom_background || presetBg;
                 
                 return (
                   <div
@@ -198,11 +206,11 @@ export default function MyQuotesView({
                     onClick={() => onViewQuote(quote)}
                     className="group relative rounded-xl sm:rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-700 transition-all active:scale-[0.98] cursor-pointer"
                   >
-                    {/* Background - custom or default */}
-                    {hasCustomBg ? (
+                    {/* Background - custom, preset, or default */}
+                    {hasBackground && backgroundUrl ? (
                       <div 
                         className="absolute inset-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${quote.custom_background})` }}
+                        style={{ backgroundImage: `url(${backgroundUrl})` }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
                       </div>
@@ -220,7 +228,7 @@ export default function MyQuotesView({
                         <span className="text-lg sm:text-xl shrink-0">{quote.category_icon || '✨'}</span>
                         <div className="flex-1 min-w-0">
                           <p className={`text-xs sm:text-sm leading-relaxed line-clamp-3 ${
-                            hasCustomBg 
+                            hasBackground 
                               ? 'text-white drop-shadow-md' 
                               : 'text-gray-800 dark:text-gray-200'
                           }`}>
@@ -228,7 +236,7 @@ export default function MyQuotesView({
                           </p>
                           {quote.author && (
                             <p className={`text-[10px] sm:text-xs mt-1.5 sm:mt-2 ${
-                              hasCustomBg 
+                              hasBackground 
                                 ? 'text-white/80 drop-shadow' 
                                 : 'text-gray-500'
                             }`}>— {quote.author}</p>
@@ -238,14 +246,14 @@ export default function MyQuotesView({
 
                       {/* Meta & Actions */}
                       <div className={`flex items-center justify-between mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t ${
-                        hasCustomBg 
+                        hasBackground 
                           ? 'border-white/20' 
                           : 'border-gray-100 dark:border-gray-800'
                       }`}>
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                           {/* Visibility Badge */}
                           <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 sm:gap-1 ${
-                            hasCustomBg
+                            hasBackground
                               ? isPublic
                                 ? 'bg-green-500/30 text-green-200'
                                 : 'bg-white/20 text-white/80'
@@ -260,7 +268,7 @@ export default function MyQuotesView({
                           {/* Date */}
                           {quote.created_at && (
                             <span className={`text-[9px] sm:text-[10px] ${
-                              hasCustomBg ? 'text-white/60' : 'text-gray-400'
+                              hasBackground ? 'text-white/60' : 'text-gray-400'
                             }`}>
                               {formatDate(quote.created_at)}
                             </span>
@@ -274,7 +282,7 @@ export default function MyQuotesView({
                               onEditQuote(quote);
                             }}
                             className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                              hasCustomBg
+                              hasBackground
                                 ? 'bg-white/20 hover:bg-white/30 text-white'
                                 : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
                             }`}
@@ -287,7 +295,7 @@ export default function MyQuotesView({
                               onShareQuote(quote);
                             }}
                             className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                              hasCustomBg
+                              hasBackground
                                 ? 'bg-blue-500/30 hover:bg-blue-500/40 text-blue-200'
                                 : 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-blue-600'
                             }`}
@@ -301,7 +309,7 @@ export default function MyQuotesView({
                             }}
                             disabled={deletingId === quote.id}
                             className={`p-1.5 sm:p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                              hasCustomBg
+                              hasBackground
                                 ? 'bg-red-500/30 hover:bg-red-500/40 text-red-200'
                                 : 'bg-red-50 dark:bg-red-900/30 hover:bg-red-100 text-red-600'
                             }`}
