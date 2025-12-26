@@ -166,11 +166,14 @@ export async function POST(request: NextRequest) {
     // Get onboarding status for existing users
     const onboardingComplete = isNewUser ? false : (existingUser?.onboarding_complete ?? true);
 
+    // Get profile picture (existing user's profile_picture or Google's picture for new users)
+    const profilePicture = isNewUser ? (picture || null) : (existingUser?.profile_picture || picture || null);
+
     // Create response
     const response = NextResponse.json(
       { 
         message: isNewUser ? 'Account created successfully' : 'Login successful', 
-        user: { id: userId, name: userName, email, auth_provider: 'google' },
+        user: { id: userId, name: userName, email, auth_provider: 'google', profile_picture: profilePicture },
         isNewUser,
         onboarding_complete: onboardingComplete
       },

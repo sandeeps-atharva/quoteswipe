@@ -1,7 +1,8 @@
 'use client';
 
-import { Home, Bookmark, PlusCircle, Sparkles, Menu } from 'lucide-react';
+import { Home, Bookmark, PlusCircle, Sparkles, User } from 'lucide-react';
 import { memo } from 'react';
+import Image from 'next/image';
 
 export type NavTab = 'feed' | 'saved' | 'create' | 'myquotes' | 'profile' | 'liked' | 'skipped';
 
@@ -14,6 +15,8 @@ interface BottomNavBarProps {
   onLoginRequired: () => void;
   onMenuClick?: () => void;
   hidden?: boolean;
+  userProfilePicture?: string | null;
+  userName?: string;
 }
 
 function BottomNavBar({
@@ -25,6 +28,8 @@ function BottomNavBar({
   onLoginRequired,
   onMenuClick,
   hidden = false,
+  userProfilePicture,
+  userName,
 }: BottomNavBarProps) {
   
   const handleTabClick = (tab: NavTab) => {
@@ -135,14 +140,32 @@ function BottomNavBar({
             }`}>My Quotes</span>
           </button>
 
-          {/* Menu Tab */}
+          {/* Profile/Menu Tab */}
           <button
             onClick={onMenuClick}
             className="flex flex-col items-center justify-center flex-1 h-full gap-0.5"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <Menu size={22} className="sm:w-6 sm:h-6 text-gray-400 dark:text-gray-500" />
-            <span className="text-[10px] sm:text-xs font-medium text-gray-400 dark:text-gray-500">Menu</span>
+            {isAuthenticated && userProfilePicture ? (
+              <div className="relative w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-gray-700">
+                <Image
+                  src={userProfilePicture}
+                  alt={userName || 'Profile'}
+                  fill
+                  className="object-cover"
+                  sizes="28px"
+                />
+              </div>
+            ) : isAuthenticated && userName ? (
+              <div className="w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold ring-2 ring-gray-200 dark:ring-gray-700">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+            ) : (
+              <User size={22} className="sm:w-6 sm:h-6 text-gray-400 dark:text-gray-500" />
+            )}
+            <span className="text-[10px] sm:text-xs font-medium text-gray-400 dark:text-gray-500">
+              {isAuthenticated ? 'Menu' : 'Login'}
+            </span>
           </button>
         </div>
       </div>

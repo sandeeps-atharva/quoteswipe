@@ -50,7 +50,13 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json(
       { 
         message: 'Login successful', 
-        user: { id: user._id.toString(), name: user.name, email: user.email, auth_provider: 'email' },
+        user: { 
+          id: user._id.toString(), 
+          name: user.name, 
+          email: user.email, 
+          auth_provider: 'email',
+          profile_picture: user.profile_picture || null
+        },
         onboarding_complete: user.onboarding_complete ?? true  // Default true for existing users
       },
       { status: 200 }

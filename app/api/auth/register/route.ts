@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json(
       { 
         message: 'User created successfully', 
-        user: { id: userId, name, email, auth_provider: 'email' },
+        user: { id: userId, name, email, auth_provider: 'email', profile_picture: null },
         isNewUser: true,
         onboarding_complete: false
       },

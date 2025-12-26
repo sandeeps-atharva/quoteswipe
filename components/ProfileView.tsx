@@ -34,6 +34,7 @@ interface ProfileViewProps {
   skippedCount: number;
   myQuotesCount: number;
   isLoggingOut?: boolean;
+  onProfileUpdate?: (profilePicture: string | null) => void;
 }
 
 export default function ProfileView({
@@ -45,6 +46,7 @@ export default function ProfileView({
   skippedCount,
   myQuotesCount,
   isLoggingOut = false,
+  onProfileUpdate,
 }: ProfileViewProps) {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -173,6 +175,8 @@ export default function ProfileView({
           // Invalidate cache
           apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
           apiCache.invalidate(CACHE_KEYS.USER);
+          // Notify parent of profile picture change
+          onProfileUpdate?.(data.user.profile_picture);
           toast.success('Profile picture updated');
         } else {
           const data = await response.json();
@@ -194,7 +198,7 @@ export default function ProfileView({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, []);
+  }, [onProfileUpdate]);
 
   // Handle remove profile picture
   const handleRemovePicture = useCallback(async () => {
@@ -214,6 +218,8 @@ export default function ProfileView({
         // Invalidate cache
         apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
         apiCache.invalidate(CACHE_KEYS.USER);
+        // Notify parent of profile picture change
+        onProfileUpdate?.(null);
         toast.success('Profile picture removed');
       } else {
         toast.error('Failed to remove picture');
@@ -223,7 +229,7 @@ export default function ProfileView({
     } finally {
       setIsUploadingPicture(false);
     }
-  }, []);
+  }, [onProfileUpdate]);
 
   // Menu Item Component
   const MenuItem = ({ 

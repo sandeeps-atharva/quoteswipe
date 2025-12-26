@@ -68,6 +68,7 @@ interface User {
   email: string;
   role?: 'user' | 'admin';
   auth_provider?: 'google' | 'email';
+  profile_picture?: string | null;
 }
 
 interface UserQuote {
@@ -2504,6 +2505,8 @@ export default function SwipeQuotes() {
           showOnboarding ||
           viewingUserQuote !== null
         }
+        userProfilePicture={user?.profile_picture}
+        userName={user?.name}
       />
 
       {/* Liked Quotes View - Full Screen */}
@@ -2635,6 +2638,9 @@ export default function SwipeQuotes() {
             skippedCount={dislikedQuotes.length}
             myQuotesCount={userQuotes.length}
             isLoggingOut={isLoggingOut}
+            onProfileUpdate={(profilePicture) => {
+              setUser(prev => prev ? { ...prev, profile_picture: profilePicture } : null);
+            }}
           />
         </Suspense>
       )}
