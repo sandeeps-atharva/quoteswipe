@@ -475,11 +475,14 @@ const jsonLd = {
   description: "Swipe through thousands of inspirational quotes from history's greatest minds. Save your favorites and share wisdom.",
   url: siteUrl,
   applicationCategory: "LifestyleApplication",
-  operatingSystem: "Web",
+  operatingSystem: "Web, iOS, Android",
+  browserRequirements: "Requires JavaScript. Works best in Chrome, Safari, Firefox, Edge",
+  softwareVersion: "2.0",
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "USD",
+    availability: "https://schema.org/InStock",
   },
   aggregateRating: {
     "@type": "AggregateRating",
@@ -501,6 +504,17 @@ const jsonLd = {
       url: `${siteUrl}/logo.svg`,
     },
   },
+  screenshot: `${siteUrl}/og-image.png`,
+  featureList: [
+    "Swipe to discover quotes",
+    "Save and bookmark favorites",
+    "Share quotes on social media",
+    "Create custom quote cards",
+    "210+ quote categories",
+    "60+ themes and 75+ fonts",
+    "Multi-language support",
+    "Dark mode support",
+  ],
 };
 
 const organizationJsonLd = {
@@ -510,6 +524,7 @@ const organizationJsonLd = {
   url: siteUrl,
   logo: `${siteUrl}/logo.svg`,
   description: "A platform for discovering and sharing inspirational quotes",
+  foundingDate: "2024",
   sameAs: [
     "https://twitter.com/quoteswipe",
     "https://www.instagram.com/quote_swipe/",
@@ -519,6 +534,72 @@ const organizationJsonLd = {
     "@type": "ContactPoint",
     contactType: "customer support",
     email: "hello.quoteswipe@gmail.com",
+    availableLanguage: ["English", "Hindi"],
+  },
+};
+
+// FAQ Schema for better Google snippets
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is QuoteSwipe?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "QuoteSwipe is a free quote discovery app that lets you swipe through thousands of inspirational quotes from history's greatest minds. You can save favorites, create custom quote cards, and share wisdom with others.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is QuoteSwipe free to use?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes, QuoteSwipe is completely free to use. You can browse quotes, save favorites, and share them without any cost. No credit card required.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How many quote categories does QuoteSwipe have?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "QuoteSwipe has over 210 categories covering topics like motivation, love, success, wisdom, humor, spirituality, relationships, and trending topics like situationships, hot takes, and more.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I create my own quotes on QuoteSwipe?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes! You can create your own quotes, customize them with 60+ themes, 75+ fonts, and custom background images. You can make them public to share with others or keep them private.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How do I share quotes from QuoteSwipe?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "You can share quotes as high-quality images perfect for Instagram, WhatsApp, and other social media. Options include downloading the image, copying text, sharing via link, or generating a QR code.",
+      },
+    },
+  ],
+};
+
+// WebSite schema for sitelinks search box
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "QuoteSwipe",
+  url: siteUrl,
+  description: "Discover inspirational quotes daily",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${siteUrl}/?search={search_term_string}`,
+    },
+    "query-input": "required name=search_term_string",
   },
 };
 
@@ -530,13 +611,33 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Preconnect to external resources for faster loading */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        
+        {/* DNS Prefetch for analytics and APIs */}
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        
+        {/* Structured Data - WebApplication */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        {/* Structured Data - Organization */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        {/* Structured Data - FAQ Page */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+        {/* Structured Data - Website (for sitelinks search) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
       <body

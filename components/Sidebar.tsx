@@ -1033,35 +1033,92 @@ export default function Sidebar({
             
             {/* Quick Links for Guest */}
             <div className="mt-4 space-y-2">
+              <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium px-1 mb-2">
+                Explore QuoteSwipe
+              </p>
+              
               <Link
                 href="/about"
                 onClick={onClose}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">✨</span>
+                  <span className="text-lg group-hover:scale-110 transition-transform">✨</span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Explore Features</p>
-                    <p className="text-[10px] text-gray-500">See all what you can do</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">About & Features</p>
+                    <p className="text-[10px] text-gray-500">Learn about QuoteSwipe</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-gray-400" />
+                <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
               </Link>
               
               <Link
                 href="/review"
                 onClick={onClose}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">⭐</span>
+                  <span className="text-lg group-hover:scale-110 transition-transform">⭐</span>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">User Reviews</p>
                     <p className="text-[10px] text-gray-500">See what others say</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-gray-400" />
+                <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
               </Link>
+              
+              <Link
+                href="/feedback"
+                onClick={onClose}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg group-hover:scale-110 transition-transform">💬</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Send Feedback</p>
+                    <p className="text-[10px] text-gray-500">Help us improve</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              
+              <Link
+                href="/contact"
+                onClick={onClose}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg group-hover:scale-110 transition-transform">📧</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Contact Us</p>
+                    <p className="text-[10px] text-gray-500">Get in touch</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              
+              {/* Legal Links */}
+              <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium px-1 mb-2">
+                  Legal
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href="/privacy"
+                    onClick={onClose}
+                    className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                  >
+                    Privacy Policy
+                  </Link>
+                  <Link
+                    href="/terms"
+                    onClick={onClose}
+                    className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                  >
+                    Terms of Service
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         ) : (

@@ -1,8 +1,48 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Copy, Check, ChevronUp, ThumbsDown } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo, memo } from 'react';
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Copy, Check, ChevronUp, ThumbsDown, Loader2 } from 'lucide-react';
 import { BackgroundImage, FontStyle, CardTheme, getRandomBackgroundForQuote } from '@/lib/constants';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+// Separate component for translatable quote text
+interface TranslatableQuoteProps {
+  text: string;
+  fontStyle: FontStyle;
+  textColor: string;
+}
+
+const TranslatableQuote = memo(function TranslatableQuote({ text, fontStyle, textColor }: TranslatableQuoteProps) {
+  const { translatedText, isLoading: isTranslating } = useTranslation({ text, enabled: true });
+  const { isOriginal } = useLanguage();
+  
+  const displayText = translatedText || text;
+  
+  return (
+    <div className="text-center max-w-[90%]">
+      {/* Translation indicator */}
+      {!isOriginal && isTranslating && (
+        <div className="flex items-center justify-center gap-1.5 mb-3">
+          <Loader2 size={14} className="animate-spin" style={{ color: textColor }} />
+          <span className="text-xs font-medium" style={{ color: textColor, opacity: 0.8 }}>
+            Translating...
+          </span>
+        </div>
+      )}
+      <p
+        className={`text-xl sm:text-2xl leading-relaxed font-medium transition-opacity duration-200 ${isTranslating ? 'opacity-40' : 'opacity-100'}`}
+        style={{
+          fontFamily: fontStyle.fontFamily,
+          color: textColor,
+          textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+        }}
+      >
+        "{displayText}"
+      </p>
+    </div>
+  );
+});
 
 interface Quote {
   id: string | number;
@@ -296,18 +336,11 @@ export default function FeedView({
                 
                 {/* Quote Content */}
                 <div className="absolute inset-0 flex items-center justify-center p-8">
-                  <div className="text-center max-w-[90%]">
-                    <p
-                      className="text-xl sm:text-2xl leading-relaxed font-medium"
-                      style={{
-                        fontFamily: fontStyle.fontFamily,
-                        color: quoteBg.textColor || '#ffffff',
-                        textShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                      }}
-                    >
-                      "{quote.text}"
-                    </p>
-                  </div>
+                  <TranslatableQuote 
+                    text={quote.text}
+                    fontStyle={fontStyle}
+                    textColor={quoteBg.textColor || '#ffffff'}
+                  />
                 </div>
 
                 {/* Double-tap Heart Animation */}
