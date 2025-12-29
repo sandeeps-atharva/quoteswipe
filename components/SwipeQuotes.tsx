@@ -5,8 +5,9 @@ import { Menu, Info, Mail, Shield, MessageSquare, Search, Palette, Moon, Sun, Lo
 import Link from 'next/link';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import Sidebar from './Sidebar';
+import Sidebar, { ViewMode } from './Sidebar';
 import QuoteCard from './QuoteCard';
+import FeedView from './FeedView';
 import ControlButtons, { ActionButtons } from './ControlButtons';
 import LanguageSelector from './LanguageSelector';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
@@ -171,6 +172,9 @@ export default function SwipeQuotes() {
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('swipe');
+  const [feedTargetQuoteId, setFeedTargetQuoteId] = useState<string | number | null>(null);
+  const [feedTargetQuoteBackground, setFeedTargetQuoteBackground] = useState<BackgroundImage | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -1600,6 +1604,98 @@ export default function SwipeQuotes() {
     });
     setShowShareModal(true);
   };
+
+  // Feed View Handlers - Simple actions without swipe animation
+  const handleLikeQuote = useCallback((quote: Quote) => {
+    const alreadyLiked = likedQuotes.some(q => String(q.id) === String(quote.id));
+    
+    if (!alreadyLiked) {
+      // Optimistic update
+      setLikedQuotes(prev => [...prev, quote]);
+      setQuotes(prev => prev.map(q => 
+        String(q.id) === String(quote.id) 
+          ? { ...q, likes_count: (q.likes_count || 0) + 1 } 
+          : q
+      ));
+      
+      // Remove from dislikes if present
+      setDislikedQuotes(prev => prev.filter(q => String(q.id) !== String(quote.id)));
+      
+      // API call
+      if (isAuthenticated) {
+        fetch('/api/user/likes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId: quote.id }),
+        }).catch(console.error);
+      }
+      
+      toast.success('Liked! ❤️', { duration: 1500 });
+    } else {
+      toast('Already liked!', { icon: '❤️', duration: 1500 });
+    }
+  }, [likedQuotes, isAuthenticated]);
+
+  const handleDislikeQuote = useCallback((quote: Quote) => {
+    const alreadyDisliked = dislikedQuotes.some(q => String(q.id) === String(quote.id));
+    
+    if (!alreadyDisliked) {
+      // Optimistic update
+      setDislikedQuotes(prev => [...prev, quote]);
+      setQuotes(prev => prev.map(q => 
+        String(q.id) === String(quote.id) 
+          ? { ...q, dislikes_count: (q.dislikes_count || 0) + 1 } 
+          : q
+      ));
+      
+      // Remove from likes if present
+      setLikedQuotes(prev => prev.filter(q => String(q.id) !== String(quote.id)));
+      
+      // API call
+      if (isAuthenticated) {
+        fetch('/api/user/dislikes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId: quote.id }),
+        }).catch(console.error);
+      }
+      
+      toast('Skipped 👎', { duration: 1500 });
+    }
+  }, [dislikedQuotes, isAuthenticated]);
+
+  const handleSaveQuote = useCallback((quote: Quote) => {
+    const alreadySaved = savedQuotes.some(q => String(q.id) === String(quote.id));
+    
+    if (!alreadySaved) {
+      // Optimistic update
+      setSavedQuotes(prev => [...prev, quote]);
+      
+      // API call
+      if (isAuthenticated) {
+        fetch('/api/user/saved', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId: quote.id }),
+        }).catch(console.error);
+      }
+      
+      toast.success('Saved! 🔖', { duration: 1500 });
+    } else {
+      // Unsave
+      setSavedQuotes(prev => prev.filter(q => String(q.id) !== String(quote.id)));
+      
+      if (isAuthenticated) {
+        fetch('/api/user/saved', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId: quote.id }),
+        }).catch(console.error);
+      }
+      
+      toast('Removed from saved', { icon: '🔖', duration: 1500 });
+    }
+  }, [savedQuotes, isAuthenticated]);
   
   // Handle share for user-created quotes
   const handleShareUserQuote = (quote: UserQuote) => {
@@ -1643,9 +1739,10 @@ export default function SwipeQuotes() {
   const handleQuoteNavigation = useCallback(async (quoteId: string | number, category?: string, customBackground?: string | null) => {
     const quoteIdStr = String(quoteId);
     
-    // If quote has a saved custom background, store it for THIS quote only (not globally)
+    // Create background object if custom background provided
+    let quoteBackground: BackgroundImage | null = null;
     if (customBackground) {
-      const quoteBackground: BackgroundImage = {
+      quoteBackground = {
         id: `saved_custom_${quoteIdStr}`,
         name: 'Saved Background',
         url: customBackground,
@@ -1656,17 +1753,29 @@ export default function SwipeQuotes() {
         categoryBg: 'rgba(255,255,255,0.15)',
         categoryText: '#ffffff',
       };
-      // Store per-quote background - doesn't affect other quotes
+      // Store per-quote background for Swipe mode
       setSavedQuoteBackgrounds(prev => ({
         ...prev,
-        [quoteIdStr]: quoteBackground
+        [quoteIdStr]: quoteBackground!
       }));
     }
     
     // 1. Check if quote exists in current feed
     const existingIndex = quotes.findIndex(q => String(q.id) === quoteIdStr);
     if (existingIndex !== -1) {
-      navigateToQuote(quotes[existingIndex], existingIndex);
+      if (viewMode === 'swipe') {
+        navigateToQuote(quotes[existingIndex], existingIndex);
+      } else {
+        // For Feed View - move the quote to top and set as target
+        const targetQuote = quotes[existingIndex];
+        // Move target quote to top
+        setQuotes(prev => {
+          const filtered = prev.filter(q => String(q.id) !== quoteIdStr);
+          return [targetQuote, ...filtered];
+        });
+        setFeedTargetQuoteId(quoteId);
+        setFeedTargetQuoteBackground(quoteBackground);
+      }
       return;
     }
     
@@ -1678,12 +1787,22 @@ export default function SwipeQuotes() {
       if (response.ok) {
         const { quote } = await response.json();
         if (quote) {
-          // Add to feed (avoid duplicates)
-          setQuotes(prev => {
-            const exists = prev.some(q => String(q.id) === String(quote.id));
-            return exists ? prev : [quote, ...prev];
-          });
-          navigateToQuote(quote, 0);
+          if (viewMode === 'swipe') {
+            // Add to feed and navigate
+            setQuotes(prev => {
+              const exists = prev.some(q => String(q.id) === String(quote.id));
+              return exists ? prev : [quote, ...prev];
+            });
+            navigateToQuote(quote, 0);
+          } else {
+            // For Feed View - add quote at TOP and set as target
+            setQuotes(prev => {
+              const filtered = prev.filter(q => String(q.id) !== String(quote.id));
+              return [quote, ...filtered];
+            });
+            setFeedTargetQuoteId(quote.id);
+            setFeedTargetQuoteBackground(quoteBackground);
+          }
           
           // Include category in filter (without triggering refetch)
           if (category) addCategoryWithoutRefetch(category);
@@ -1704,11 +1823,23 @@ export default function SwipeQuotes() {
         const quotesResponse = await fetch(`/api/quotes?categories=${categoriesForFetch.join(',')}`);
         if (quotesResponse.ok) {
           const { quotes: fetchedQuotes = [] } = await quotesResponse.json();
-          setQuotes(fetchedQuotes);
           
           const foundIndex = fetchedQuotes.findIndex((q: Quote) => String(q.id) === quoteIdStr);
           if (foundIndex !== -1) {
-            navigateToQuote(fetchedQuotes[foundIndex], foundIndex);
+            const targetQuote = fetchedQuotes[foundIndex];
+            
+            if (viewMode === 'swipe') {
+              setQuotes(fetchedQuotes);
+              navigateToQuote(targetQuote, foundIndex);
+            } else {
+              // For Feed View - put target quote at top
+              const otherQuotes = fetchedQuotes.filter((_: Quote, i: number) => i !== foundIndex);
+              setQuotes([targetQuote, ...otherQuotes]);
+              setFeedTargetQuoteId(quoteId);
+              setFeedTargetQuoteBackground(quoteBackground);
+            }
+          } else {
+            setQuotes(fetchedQuotes);
           }
         }
       }
@@ -1718,7 +1849,7 @@ export default function SwipeQuotes() {
     } finally {
       setIsLoadingQuotes(false);
     }
-  }, [quotes, selectedCategories, navigateToQuote, addCategoryWithoutRefetch]);
+  }, [quotes, selectedCategories, navigateToQuote, addCategoryWithoutRefetch, viewMode]);
 
   // Use refs to track state for event handlers to avoid re-attaching listeners
   const isDraggingRef = useRef(isDragging);
@@ -1870,6 +2001,11 @@ export default function SwipeQuotes() {
         onLikedClick={() => setActiveNavTab('liked')}
         onSkippedClick={() => setActiveNavTab('skipped')}
         onProfileClick={() => setActiveNavTab('profile')}
+        viewMode={viewMode}
+        onViewModeChange={(mode) => {
+          setViewMode(mode);
+          setIsSidebarOpen(false);
+        }}
       />
 
       {/* Options Menu (Bottom Sheet) */}
@@ -2427,95 +2563,131 @@ export default function SwipeQuotes() {
           />
         </div>
 
-        {/* Card Stack - 4:5 aspect ratio container for Instagram-perfect cards */}
-        <div 
-          className={`relative w-full max-w-[280px] sm:max-w-[320px] md:max-w-[380px] lg:max-w-[420px] xl:max-w-[450px] mx-auto aspect-[4/5] mb-4 sm:mb-6 md:mb-8 mt-14 sm:mt-16 md:mt-12 lg:mt-8 px-2 sm:px-4 md:px-0 transition-opacity duration-300 ${
-            isChangingCategories ? 'opacity-0' : 'opacity-100'
-          }`}
-          key={`cards-${selectedCategories.join(',')}`}
-        >
-          {filteredQuotes
-            .map((quote, index) => ({ quote, index }))
-            .filter(({ index }) => {
-              // Only render cards that are visible (current, next, previous)
-              const offset = index - currentIndex;
-              return offset >= 0 && offset <= 2;
-            })
-            .map(({ quote, index }) => {
-              // Use per-quote custom background if available, otherwise use global background
-              const quoteIdStr = String(quote.id);
-              const quoteBackground = savedQuoteBackgrounds[quoteIdStr] || backgroundImage;
-              
-              return (
-                <QuoteCard
-                  key={quote.id}
-                  quote={quote}
-                  index={index}
-                  currentIndex={currentIndex}
-                  dragOffset={dragOffset}
-                  swipeDirection={swipeDirection}
-                  isDragging={isDragging}
-                  isAnimating={isAnimating}
-                  totalQuotes={filteredQuotes.length}
-                  onDragStart={handleDragStart}
-                  onDragMove={handleDragMove}
-                  cardTheme={cardTheme}
-                  fontStyle={fontStyle}
-                  backgroundImage={quoteBackground}
-                />
-              );
-            })}
-        </div>
+        {/* Conditional View: Swipe or Feed */}
+        {viewMode === 'swipe' ? (
+          <>
+            {/* Card Stack - 4:5 aspect ratio container for Instagram-perfect cards */}
+            <div 
+              className={`relative w-full max-w-[280px] sm:max-w-[320px] md:max-w-[380px] lg:max-w-[420px] xl:max-w-[450px] mx-auto aspect-[4/5] mb-4 sm:mb-6 md:mb-8 mt-14 sm:mt-16 md:mt-12 lg:mt-8 px-2 sm:px-4 md:px-0 transition-opacity duration-300 ${
+                isChangingCategories ? 'opacity-0' : 'opacity-100'
+              }`}
+              key={`cards-${selectedCategories.join(',')}`}
+            >
+              {filteredQuotes
+                .map((quote, index) => ({ quote, index }))
+                .filter(({ index }) => {
+                  // Only render cards that are visible (current, next, previous)
+                  const offset = index - currentIndex;
+                  return offset >= 0 && offset <= 2;
+                })
+                .map(({ quote, index }) => {
+                  // Use per-quote custom background if available, otherwise use global background
+                  const quoteIdStr = String(quote.id);
+                  const quoteBackground = savedQuoteBackgrounds[quoteIdStr] || backgroundImage;
+                  
+                  return (
+                    <QuoteCard
+                      key={quote.id}
+                      quote={quote}
+                      index={index}
+                      currentIndex={currentIndex}
+                      dragOffset={dragOffset}
+                      swipeDirection={swipeDirection}
+                      isDragging={isDragging}
+                      isAnimating={isAnimating}
+                      totalQuotes={filteredQuotes.length}
+                      onDragStart={handleDragStart}
+                      onDragMove={handleDragMove}
+                      cardTheme={cardTheme}
+                      fontStyle={fontStyle}
+                      backgroundImage={quoteBackground}
+                    />
+                  );
+                })}
+            </div>
 
-        {/* Control Buttons */}
-        <ControlButtons
-          onLike={handleLike}
-          onDislike={handleDislike}
-          onSave={handleSave}
-          onShare={handleShare}
-          onUndo={handleUndo}
-          canUndo={swipeHistory.length > 0}
-          swipeDirection={isDragging && !isAnimating ? swipeDirection : null}
-          isAnimating={isDragging && !isAnimating && Math.abs(dragOffset.x) > (isMobile ? 30 : 50)}
-        />
+            {/* Control Buttons */}
+            <ControlButtons
+              onLike={handleLike}
+              onDislike={handleDislike}
+              onSave={handleSave}
+              onShare={handleShare}
+              onUndo={handleUndo}
+              canUndo={swipeHistory.length > 0}
+              swipeDirection={isDragging && !isAnimating ? swipeDirection : null}
+              isAnimating={isDragging && !isAnimating && Math.abs(dragOffset.x) > (isMobile ? 30 : 50)}
+            />
 
-        {/* Action Buttons (Like/Dislike with arrows) */}
-        <ActionButtons
-          onLike={handleLike}
-          onDislike={handleDislike}
-          swipeDirection={isAnimating && !isDragging ? swipeDirection : null}
-          isAnimating={isAnimating && !isDragging}
-        />
-        {/* Quick Links Footer */}
-        <nav className="flex items-center justify-center gap-1 mt-3 sm:mt-4">
-            <Link 
-              href="/about" 
-            className="text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-            About
-            </Link>
-          <span className="text-gray-300 dark:text-gray-600">•</span>
-            <Link 
-              href="/contact" 
-            className="text-xs text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-            >
-            Contact
-            </Link>
-          <span className="text-gray-300 dark:text-gray-600">•</span>
-            <Link 
-              href="/privacy-policy" 
-            className="text-xs text-gray-400 dark:text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-            >
-            Privacy
-            </Link>
-          <span className="text-gray-300 dark:text-gray-600">•</span>
-            <Link 
-              href="/feedback" 
-            className="text-xs text-gray-400 dark:text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
-            >
-            Feedback
-            </Link>
-          </nav>
+            {/* Action Buttons (Like/Dislike with arrows) */}
+            <ActionButtons
+              onLike={handleLike}
+              onDislike={handleDislike}
+              swipeDirection={isAnimating && !isDragging ? swipeDirection : null}
+              isAnimating={isAnimating && !isDragging}
+            />
+            {/* Quick Links Footer */}
+            <nav className="flex items-center justify-center gap-1 mt-3 sm:mt-4">
+                <Link 
+                  href="/about" 
+                className="text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                About
+                </Link>
+              <span className="text-gray-300 dark:text-gray-600">•</span>
+                <Link 
+                  href="/contact" 
+                className="text-xs text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                >
+                Contact
+                </Link>
+              <span className="text-gray-300 dark:text-gray-600">•</span>
+                <Link 
+                  href="/privacy-policy" 
+                className="text-xs text-gray-400 dark:text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                >
+                Privacy
+                </Link>
+              <span className="text-gray-300 dark:text-gray-600">•</span>
+                <Link 
+                  href="/feedback" 
+                className="text-xs text-gray-400 dark:text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                >
+                Feedback
+                </Link>
+              </nav>
+          </>
+        ) : (
+          /* Feed View - Instagram-style scrolling */
+          <FeedView
+            quotes={filteredQuotes}
+            likedQuoteIds={new Set(likedQuotes.map(q => q.id))}
+            dislikedQuoteIds={new Set(dislikedQuotes.map(q => q.id))}
+            savedQuoteIds={new Set(savedQuotes.map(q => q.id))}
+            onLike={(quoteId) => {
+              const quote = filteredQuotes.find(q => q.id === quoteId);
+              if (quote) handleLikeQuote(quote);
+            }}
+            onDislike={(quoteId) => {
+              const quote = filteredQuotes.find(q => q.id === quoteId);
+              if (quote) handleDislikeQuote(quote);
+            }}
+            onSave={(quoteId) => {
+              const quote = filteredQuotes.find(q => q.id === quoteId);
+              if (quote) handleSaveQuote(quote);
+            }}
+            onShare={(quote) => {
+              setShareQuote(quote);
+              setShowShareModal(true);
+            }}
+            cardTheme={cardTheme}
+            fontStyle={fontStyle}
+            backgroundImage={backgroundImage}
+            isAuthenticated={isAuthenticated}
+            onLoginRequired={() => setShowAuthModal(true)}
+            targetQuoteId={feedTargetQuoteId}
+            targetQuoteBackground={feedTargetQuoteBackground}
+          />
+        )}
       </div>
 
       {/* Bottom Navigation Bar - Visible on all screens */}
