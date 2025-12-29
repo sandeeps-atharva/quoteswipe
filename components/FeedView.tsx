@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Copy, Check, ChevronUp, ThumbsDown } from 'lucide-react';
-import { BackgroundImage, FontStyle, CardTheme } from '@/lib/constants';
+import { BackgroundImage, FontStyle, CardTheme, getRandomBackgroundForQuote } from '@/lib/constants';
 
 interface Quote {
   id: string | number;
@@ -187,9 +187,21 @@ export default function FeedView({
   };
 
   // Get background for quote
+  // Priority: 1. Target quote custom BG, 2. User-selected global BG, 3. Random BG
   const getQuoteBackground = (quoteId: string | number): BackgroundImage => {
+    // First priority: target quote with custom background (from saved quotes)
     const isTargetQuote = targetQuoteId && String(quoteId) === String(targetQuoteId);
-    return (isTargetQuote && targetQuoteBackground) ? targetQuoteBackground : backgroundImage;
+    if (isTargetQuote && targetQuoteBackground) {
+      return targetQuoteBackground;
+    }
+    
+    // Second priority: user has selected a background image
+    if (backgroundImage && backgroundImage.id !== 'none' && backgroundImage.url) {
+      return backgroundImage;
+    }
+    
+    // Third priority: use seeded random background based on quote ID
+    return getRandomBackgroundForQuote(quoteId);
   };
 
   const getBackgroundStyle = (quoteId: string | number) => {

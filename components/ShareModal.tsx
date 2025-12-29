@@ -27,12 +27,12 @@ interface ShareFormatConfig {
 
 interface QuoteData {
   id: number | string;
-  text: string;
-  author: string;
-  category: string;
-  category_icon?: string;
-  likes_count?: number;
-  dislikes_count?: number;
+    text: string;
+    author: string;
+    category: string;
+    category_icon?: string;
+    likes_count?: number;
+    dislikes_count?: number;
   isUserQuote?: boolean;
   is_public?: number | boolean;
   custom_background?: string;
@@ -792,7 +792,7 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
     const val = parseInt(e.target.value) || 0;
     if (val === 0) {
       onChange(0); // Reset to auto
-    } else {
+          } else {
       onChange(Math.max(FONT_SIZE_PX_MIN, Math.min(FONT_SIZE_PX_MAX, val)));
     }
   };
@@ -833,8 +833,8 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
                 Auto
               </span>
             )}
-          </div>
-          
+      </div>
+
           {/* Pixel Input */}
           <div className="flex items-center gap-2">
             <input
@@ -1169,7 +1169,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
         <span className="text-[10px] font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
           <WrapText size={12} />
           Edit Quote Text (Add Line Breaks)
-        </span>
+                </span>
         {isEdited && (
           <button
             onClick={onReset}
@@ -1179,7 +1179,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
             Reset
           </button>
         )}
-      </div>
+              </div>
       
       {/* Instructions */}
       <p className="text-[9px] text-gray-500 dark:text-gray-400 mb-2">
@@ -1198,7 +1198,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
       
       {/* Action Buttons */}
       <div className="flex items-center gap-2 mt-2">
-        <button
+              <button
           onClick={handleInsertLineBreak}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[10px] font-medium transition-colors"
         >
@@ -1244,24 +1244,24 @@ function CopyLinkSection({ url, copied, onCopy }: CopyLinkSectionProps) {
           onClick={onCopy}
           className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all active:scale-95 ${
             copied 
-              ? 'bg-green-500 text-white' 
+                    ? 'bg-green-500 text-white' 
               : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
-          }`}
-        >
+                }`}
+              >
           {copied ? (
-            <>
+                  <>
               <Check size={12} className="sm:w-3.5 sm:h-3.5" />
               <span>Done</span>
-            </>
-          ) : (
-            <>
+                  </>
+                ) : (
+                  <>
               <Copy size={12} className="sm:w-3.5 sm:h-3.5" />
               <span>Copy</span>
-            </>
-          )}
-        </button>
-      </div>
-    </div>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
   );
 }
 
@@ -1796,7 +1796,7 @@ export default function ShareModal({
             <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 {/* Position Toggle */}
-                <button
+            <button
                   onClick={() => {
                     setShowPositionControl(!showPositionControl);
                     if (!showPositionControl) {
@@ -1814,10 +1814,10 @@ export default function ShareModal({
                 >
                   <MoveVertical size={12} />
                   <span className="hidden sm:inline">Position</span>
-                </button>
+            </button>
 
                 {/* Font Size Toggle */}
-                <button
+            <button
                   onClick={() => {
                     setShowFontSizeControl(!showFontSizeControl);
                     if (!showFontSizeControl) {
@@ -1835,10 +1835,10 @@ export default function ShareModal({
                 >
                   <Type size={12} />
                   <span className="hidden sm:inline">Font</span>
-                </button>
-                
+            </button>
+
                 {/* Text Alignment Toggle */}
-                <button
+            <button
                   onClick={() => {
                     setShowAlignmentControl(!showAlignmentControl);
                     if (!showAlignmentControl) {
@@ -1886,11 +1886,11 @@ export default function ShareModal({
                     {bgZoom > 1 && (
                       <span className="text-[9px] bg-emerald-500 text-white px-1 rounded">{bgZoom.toFixed(1)}x</span>
                     )}
-                  </button>
+            </button>
                 )}
-                
+
                 {/* Text Editor Toggle - Add Line Breaks */}
-                <button
+            <button
                   onClick={() => {
                     setShowTextEditor(!showTextEditor);
                     if (!showTextEditor) {
@@ -1911,8 +1911,8 @@ export default function ShareModal({
                   {isTextEdited && (
                     <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
                   )}
-                </button>
-              </div>
+            </button>
+          </div>
               
               {/* Output size indicator */}
               <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
@@ -1973,7 +1973,7 @@ export default function ShareModal({
                 isEdited={isTextEdited}
               />
             )}
-          </div>
+            </div>
 
           {/* Caption & Hashtags Section */}
           <CaptionSection 
@@ -2007,8 +2007,8 @@ export default function ShareModal({
             <Share2 size={14} className="sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
             <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">More sharing options</span>
           </button>
+          </div>
         </div>
-      </div>
     </div>
   );
 }

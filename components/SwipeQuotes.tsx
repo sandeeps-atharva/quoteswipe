@@ -12,7 +12,7 @@ import ControlButtons, { ActionButtons } from './ControlButtons';
 import LanguageSelector from './LanguageSelector';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useTheme } from '@/contexts/ThemeContext';
-import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
+import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage, getRandomBackgroundForQuote } from '@/lib/constants';
 import { isQuotePublic } from '@/lib/helpers';
 import { apiCache, CACHE_KEYS, CACHE_TTL } from '@/lib/api-cache';
 
@@ -1240,6 +1240,9 @@ export default function SwipeQuotes() {
       setPreferencesLoaded(false);
       setCardTheme(CARD_THEMES[0]);
       setFontStyle(FONT_STYLES[0]);
+      setBackgroundImage(BACKGROUND_IMAGES[0]); // Reset to 'none' so random BGs are used
+      setSavedQuoteBackgrounds({}); // Clear saved quote backgrounds
+      setViewMode('swipe'); // Reset to swipe mode on logout
       
       // ✅ Fetch guest data in BACKGROUND (non-blocking)
       // Using .then() instead of await so it doesn't block
@@ -2142,7 +2145,7 @@ export default function SwipeQuotes() {
                   }
                 : shareQuote.background_id
                   ? BACKGROUND_IMAGES.find(bg => bg.id === shareQuote.background_id) || backgroundImage
-                  : savedQuoteBackgrounds[String(shareQuote.id)] || backgroundImage
+                  : savedQuoteBackgrounds[String(shareQuote.id)] || (backgroundImage && backgroundImage.id !== 'none' ? backgroundImage : getRandomBackgroundForQuote(shareQuote.id))
             }
           />
         </Suspense>
@@ -2584,9 +2587,20 @@ export default function SwipeQuotes() {
                   return offset >= 0 && offset <= 2;
                 })
                 .map(({ quote, index }) => {
-                  // Use per-quote custom background if available, otherwise use global background
+                  // Use per-quote custom background if available, otherwise random
                   const quoteIdStr = String(quote.id);
-                  const quoteBackground = savedQuoteBackgrounds[quoteIdStr] || backgroundImage;
+                  let quoteBackground: BackgroundImage;
+                  
+                  if (savedQuoteBackgrounds[quoteIdStr]) {
+                    // First priority: saved custom background
+                    quoteBackground = savedQuoteBackgrounds[quoteIdStr];
+                  } else if (backgroundImage && backgroundImage.id !== 'none' && backgroundImage.url) {
+                    // Second priority: user-selected global background
+                    quoteBackground = backgroundImage;
+                  } else {
+                    // Third priority: seeded random background
+                    quoteBackground = getRandomBackgroundForQuote(quote.id);
+                  }
                   
                   return (
                     <QuoteCard

@@ -675,14 +675,37 @@ function CardCustomization({
                 )}
               </div>
               
+              {/* Random BG Button - Each quote gets its own unique random gradient */}
+              <div className="mb-3">
+                <button
+                  onClick={() => {
+                    // Setting to 'none' enables per-quote random backgrounds
+                    // Each quote will get its own unique random gradient via getRandomBackgroundForQuote(quoteId)
+                    setSelectedBackground(BACKGROUND_IMAGES[0]); // 'none'
+                    onBackgroundChange(BACKGROUND_IMAGES[0]);
+                  }}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg ${
+                    selectedBackground.id === 'none'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white ring-2 ring-purple-300 dark:ring-purple-700'
+                      : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                  }`}
+                >
+                  <Sparkles size={16} />
+                  {selectedBackground.id === 'none' ? 'Random BG Active ✓' : 'Random BG (Different for Each Quote)'}
+                </button>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1.5">
+                  Each quote gets a unique random gradient background
+                </p>
+              </div>
+
               {/* Preset Images Section - always visible */}
               <div className="space-y-2">
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
-                  Preset Backgrounds ({BACKGROUND_IMAGES.length})
+                  Preset Backgrounds ({BACKGROUND_IMAGES.length - 1})
                 </p>
                 <div className="max-h-64 sm:max-h-72 overflow-y-auto">
                   <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-                    {BACKGROUND_IMAGES.map((bg) => (
+                    {BACKGROUND_IMAGES.filter(bg => bg.id !== 'none').map((bg) => (
                       <ImageButton
                         key={bg.id}
                         background={bg}
