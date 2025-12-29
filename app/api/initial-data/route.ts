@@ -19,7 +19,7 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-const categoriesCache: CacheEntry<any[]> | null = { data: [], timestamp: 0 };
+const categoriesCache: CacheEntry<any[]> = { data: [], timestamp: 0 };
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Get categories with caching
@@ -170,40 +170,43 @@ async function getUserData(userId: string): Promise<{
   const dislikesCollection = await getCollection('user_dislikes');
   const savedCollection = await getCollection('user_saved');
 
+  // Build user query - try ObjectId first if valid, otherwise use string id
+  const userQuery = ObjectId.isValid(userId) 
+    ? { $or: [{ _id: new ObjectId(userId) }, { id: userId }] as any }
+    : { id: userId };
+
   // Run all user queries in parallel
   const [user, preferences, likes, dislikes, saved] = await Promise.all([
-    usersCollection.findOne({ 
-      $or: [
-        { _id: ObjectId.isValid(userId) ? new ObjectId(userId) : userId },
-        { id: userId }
-      ]
-    }),
+    usersCollection.findOne(userQuery),
     preferencesCollection.findOne({ user_id: userId }),
     likesCollection.find({ user_id: userId }).project({ quote_id: 1 }).toArray(),
     dislikesCollection.find({ user_id: userId }).project({ quote_id: 1 }).toArray(),
     savedCollection.find({ user_id: userId }).project({ quote_id: 1 }).toArray()
   ]);
 
+  const userDoc = user as any;
+  const prefsDoc = preferences as any;
+  
   return {
-    user: user ? {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role || 'user',
-      profile_picture: user.profile_picture,
-      auth_provider: user.google_id ? 'google' : 'email',
+    user: userDoc ? {
+      id: userDoc._id.toString(),
+      name: userDoc.name,
+      email: userDoc.email,
+      role: userDoc.role || 'user',
+      profile_picture: userDoc.profile_picture,
+      auth_provider: userDoc.google_id ? 'google' : 'email',
     } : null,
-    preferences: preferences ? {
-      selectedCategories: preferences.selected_categories || [],
-      themeId: preferences.theme_id || 'default',
-      fontId: preferences.font_id || 'default',
-      backgroundId: preferences.background_id || 'none',
-      customBackgrounds: preferences.custom_backgrounds || [],
+    preferences: prefsDoc ? {
+      selectedCategories: prefsDoc.selected_categories || [],
+      themeId: prefsDoc.theme_id || 'default',
+      fontId: prefsDoc.font_id || 'default',
+      backgroundId: prefsDoc.background_id || 'none',
+      customBackgrounds: prefsDoc.custom_backgrounds || [],
     } : null,
     likedIds: likes.map((l: any) => String(l.quote_id)),
     dislikedIds: dislikes.map((d: any) => String(d.quote_id)),
     savedIds: saved.map((s: any) => String(s.quote_id)),
-    onboardingComplete: user?.onboarding_complete ?? true,
+    onboardingComplete: userDoc?.onboarding_complete ?? true,
   };
 }
 
