@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { Eye, EyeOff } from 'lucide-react';
 import Modal from './Modal';
 import GoogleSignInButton from './GoogleSignInButton';
 
@@ -39,6 +40,7 @@ export default function AuthModal({
   const [successMessage, setSuccessMessage] = useState('');
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   // Validation functions
   const validateEmail = (email: string): string | undefined => {
@@ -290,16 +292,30 @@ export default function AuthModal({
             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              onBlur={handleBlur}
-              className={getInputClassName('password')}
-              placeholder="••••••••"
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
+                className={`${getInputClassName('password')} pr-10`}
+                placeholder="••••••••"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
+            </div>
             {touched.password && validationErrors.password && (
               <p className="mt-1 text-xs text-red-500 dark:text-red-400">{validationErrors.password}</p>
             )}
@@ -454,16 +470,30 @@ export default function AuthModal({
             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              onBlur={handleBlur}
-              className={getInputClassName('password')}
-              placeholder="••••••••"
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
+                className={`${getInputClassName('password')} pr-10`}
+                placeholder="••••••••"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
+              </button>
+            </div>
             {touched.password && validationErrors.password && (
               <p className="mt-1 text-xs text-red-500 dark:text-red-400">{validationErrors.password}</p>
             )}

@@ -447,6 +447,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const categoriesParam = searchParams.get('categories');
     const userId = getUserIdFromRequest(request);
+    
+    // PAGINATION SUPPORT
+    const limit = parseInt(searchParams.get('limit') || '0', 10); // 0 = no limit (legacy)
+    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const paginated = limit > 0;
 
     // Create cache key based on categories
     const cacheKey = `quotes:${categoriesParam || 'all'}`;
@@ -463,6 +468,13 @@ export async function GET(request: NextRequest) {
       // Cache miss - fetch fresh data
       quotes = await getOptimizedQuotes(categoriesParam);
       quotesCache.set(cacheKey, { data: quotes, timestamp: Date.now() });
+    }
+
+    const totalQuotes = quotes.length;
+
+    // Apply pagination if requested
+    if (paginated) {
+      quotes = quotes.slice(offset, offset + limit);
     }
 
     // ========================================================================
@@ -488,8 +500,16 @@ export async function GET(request: NextRequest) {
       }));
     }
 
-    // Return with optimized cache headers
-    const response = NextResponse.json({ quotes }, { status: 200 });
+    // Return with pagination info
+    const response = NextResponse.json({ 
+      quotes,
+      pagination: paginated ? {
+        total: totalQuotes,
+        limit,
+        offset,
+        hasMore: offset + limit < totalQuotes,
+      } : undefined,
+    }, { status: 200 });
     response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
 
     return response;
