@@ -1546,11 +1546,6 @@ export default function SwipeQuotes() {
   const handleConfirmSave = useCallback((customBackground: string | null, fontId?: string) => {
     if (!quoteToSave) return;
     
-    // Start the visual animation
-    setIsAnimating(true);
-    setSwipeDirection('right');
-    setDragOffset({ x: 300, y: 0 });
-    
     // OPTIMISTIC UPDATE: Update UI immediately
     setSavedQuotes(prev => [...prev, quoteToSave]);
     
@@ -1569,11 +1564,19 @@ export default function SwipeQuotes() {
       });
     }
     
-    // After animation completes, move to next quote
-    setTimeout(() => {
-      handleSwipe('right');
-      setIsAnimating(false);
-    }, 300);
+    // Only animate and move to next quote in Swipe mode
+    if (viewMode === 'swipe') {
+      // Start the visual animation
+      setIsAnimating(true);
+      setSwipeDirection('right');
+      setDragOffset({ x: 300, y: 0 });
+      
+      // After animation completes, move to next quote
+      setTimeout(() => {
+        handleSwipe('right');
+        setIsAnimating(false);
+      }, 300);
+    }
     
     // Clear the quote to save
     setQuoteToSave(null);
@@ -1584,7 +1587,7 @@ export default function SwipeQuotes() {
     } else {
       toast.success('Quote saved! 🔖');
     }
-  }, [quoteToSave, isAuthenticated, handleSwipe]);
+  }, [quoteToSave, isAuthenticated, handleSwipe, viewMode]);
 
   const handleShare = () => {
     const filteredQuotes = getFilteredQuotes();
@@ -2673,7 +2676,11 @@ export default function SwipeQuotes() {
             }}
             onSave={(quoteId) => {
               const quote = filteredQuotes.find(q => q.id === quoteId);
-              if (quote) handleSaveQuote(quote);
+              if (quote) {
+                // Open save modal with customization options (same as swipe view)
+                setQuoteToSave(quote);
+                setShowSaveQuoteModal(true);
+              }
             }}
             onShare={(quote) => {
               setShareQuote(quote);
