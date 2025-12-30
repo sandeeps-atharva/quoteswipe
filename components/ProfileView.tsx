@@ -5,8 +5,23 @@ import {
   ArrowLeft, User, Heart, ThumbsDown, Bookmark, Sparkles, 
   Edit2, Check, X, Lock, Loader2, Mail, Calendar, LogOut,
   PenLine, Camera, Palette, ImageIcon, ChevronRight, Settings,
-  Info, MessageSquare, Star, Shield, Trash2, Upload
+  Info, MessageSquare, Star, Shield, Trash2, Upload, Grid3X3, Plus
 } from 'lucide-react';
+import { getRandomBackgroundForQuote } from '@/lib/constants';
+
+// Simple gradient array for created quotes that don't have custom backgrounds
+const PROFILE_GRADIENTS = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+  'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+  'linear-gradient(135deg, #667db6 0%, #0082c8 50%, #0082c8 100%)',
+  'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+];
 import Link from 'next/link';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -25,6 +40,27 @@ interface ProfileData {
   };
 }
 
+interface SavedQuote {
+  id: string | number;
+  text: string;
+  author: string;
+  category: string;
+  category_icon?: string;
+  custom_background?: string | null;
+}
+
+interface UserQuote {
+  id: string | number;
+  text: string;
+  author: string;
+  category?: string;
+  category_icon?: string;
+  custom_background?: string;
+  is_public?: boolean;
+}
+
+type ProfileTab = 'saved' | 'created';
+
 interface ProfileViewProps {
   onBack: () => void;
   onCreateQuote: () => void;
@@ -35,6 +71,9 @@ interface ProfileViewProps {
   myQuotesCount: number;
   isLoggingOut?: boolean;
   onProfileUpdate?: (profilePicture: string | null) => void;
+  savedQuotes?: SavedQuote[];
+  userQuotes?: UserQuote[];
+  onQuoteClick?: (quoteId: string | number, category?: string, customBackground?: string | null) => void;
 }
 
 export default function ProfileView({
@@ -47,12 +86,16 @@ export default function ProfileView({
   myQuotesCount,
   isLoggingOut = false,
   onProfileUpdate,
+  savedQuotes = [],
+  userQuotes = [],
+  onQuoteClick,
 }: ProfileViewProps) {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('saved');
   const [showUpdatePasswordModal, setShowUpdatePasswordModal] = useState(false);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [showPictureOptions, setShowPictureOptions] = useState(false);
@@ -554,6 +597,196 @@ export default function ProfileView({
                     <div className="text-[10px] sm:text-xs text-gray-500 font-medium">{stat.label}</div>
                   </div>
                 ))}
+              </div>
+
+              {/* Instagram-style Quote Grid */}
+              <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                {/* Tab Switcher */}
+                <div className="flex border-b border-gray-100 dark:border-gray-800">
+                  <button
+                    onClick={() => setActiveTab('saved')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 text-sm font-semibold transition-colors relative ${
+                      activeTab === 'saved'
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Bookmark size={18} />
+                    <span>Saved</span>
+                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                      {savedQuotes.length}
+                    </span>
+                    {activeTab === 'saved' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('created')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 text-sm font-semibold transition-colors relative ${
+                      activeTab === 'created'
+                        ? 'text-purple-600 dark:text-purple-400'
+                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Sparkles size={18} />
+                    <span>Created</span>
+                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                      {userQuotes.length}
+                    </span>
+                    {activeTab === 'created' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Grid Content */}
+                <div className="p-1">
+                  {activeTab === 'saved' ? (
+                    savedQuotes.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
+                        {savedQuotes.map((quote) => {
+                          // Get background - custom or random
+                          const bgStyle = quote.custom_background
+                            ? quote.custom_background.startsWith('linear-gradient') || quote.custom_background.startsWith('radial-gradient')
+                              ? { background: quote.custom_background }
+                              : { backgroundImage: `url(${quote.custom_background})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                            : (() => {
+                                const randomBg = getRandomBackgroundForQuote(quote.id);
+                                return randomBg.url?.startsWith('linear-gradient') || randomBg.url?.startsWith('radial-gradient')
+                                  ? { background: randomBg.url }
+                                  : { backgroundImage: `url(${randomBg.url})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+                              })();
+
+                          return (
+                            <button
+                              key={quote.id}
+                              onClick={() => onQuoteClick?.(quote.id, quote.category, quote.custom_background)}
+                              className="relative aspect-square overflow-hidden group active:scale-95 transition-transform"
+                            >
+                              {/* Background */}
+                              <div 
+                                className="absolute inset-0"
+                                style={bgStyle}
+                              />
+                              {/* Dark overlay for text readability */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+                              
+                              {/* Quote Content - Always visible */}
+                              <div className="absolute inset-0 p-2 flex flex-col justify-between">
+                                {/* Category icon */}
+                                <div className="flex justify-end">
+                                  <span className="text-white/80 text-xs drop-shadow-lg">{quote.category_icon || '📝'}</span>
+                                </div>
+                                
+                                {/* Quote text */}
+                                <div className="text-left">
+                                  <p className="text-white text-[9px] sm:text-[11px] font-medium leading-tight line-clamp-3 drop-shadow-lg">
+                                    &ldquo;{quote.text.slice(0, 80)}{quote.text.length > 80 ? '...' : ''}&rdquo;
+                                  </p>
+                                  <p className="text-white/70 text-[8px] sm:text-[10px] mt-0.5 truncate drop-shadow">
+                                    — {quote.author}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {/* Hover effect */}
+                              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      /* Empty State for Saved */
+                      <div className="py-12 px-4 text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center">
+                          <Bookmark size={28} className="text-amber-500" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">No Saved Quotes Yet</h3>
+                        <p className="text-sm text-gray-500 mb-4">Save quotes you love to see them here</p>
+                        <button
+                          onClick={onBack}
+                          className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
+                        >
+                          Browse Quotes
+                        </button>
+                      </div>
+                    )
+                  ) : (
+                    userQuotes.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-0.5 sm:gap-1">
+                        {userQuotes.map((quote) => {
+                          // Get background - custom or random gradient
+                          const bgStyle = quote.custom_background
+                            ? quote.custom_background.startsWith('linear-gradient') || quote.custom_background.startsWith('radial-gradient')
+                              ? { background: quote.custom_background }
+                              : { backgroundImage: `url(${quote.custom_background})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                            : { background: PROFILE_GRADIENTS[Math.abs(String(quote.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % PROFILE_GRADIENTS.length] };
+
+                          return (
+                            <button
+                              key={quote.id}
+                              onClick={() => onQuoteClick?.(`user_${quote.id}`, quote.category, quote.custom_background)}
+                              className="relative aspect-square overflow-hidden group active:scale-95 transition-transform"
+                            >
+                              {/* Background */}
+                              <div 
+                                className="absolute inset-0"
+                                style={bgStyle}
+                              />
+                              {/* Dark overlay for text readability */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+                              
+                              {/* Quote Content - Always visible */}
+                              <div className="absolute inset-0 p-2 flex flex-col justify-between">
+                                {/* Top row - Public/Private indicator & Category */}
+                                <div className="flex justify-between items-start">
+                                  <span className="text-white/80 text-xs drop-shadow-lg">{quote.category_icon || '✨'}</span>
+                                  {quote.is_public ? (
+                                    <div className="w-5 h-5 rounded-full bg-green-500/90 flex items-center justify-center shadow-lg">
+                                      <Check size={12} className="text-white" />
+                                    </div>
+                                  ) : (
+                                    <div className="w-5 h-5 rounded-full bg-gray-600/90 flex items-center justify-center shadow-lg">
+                                      <Lock size={10} className="text-white" />
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Quote text */}
+                                <div className="text-left">
+                                  <p className="text-white text-[9px] sm:text-[11px] font-medium leading-tight line-clamp-3 drop-shadow-lg">
+                                    &ldquo;{quote.text.slice(0, 80)}{quote.text.length > 80 ? '...' : ''}&rdquo;
+                                  </p>
+                                  <p className="text-white/70 text-[8px] sm:text-[10px] mt-0.5 truncate drop-shadow">
+                                    — {quote.author}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {/* Hover effect */}
+                              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      /* Empty State for Created */
+                      <div className="py-12 px-4 text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 flex items-center justify-center">
+                          <Plus size={28} className="text-purple-500" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">No Quotes Created Yet</h3>
+                        <p className="text-sm text-gray-500 mb-4">Create your first inspiring quote</p>
+                        <button
+                          onClick={onCreateQuote}
+                          className="px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-500 text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
+                        >
+                          Create Quote
+                        </button>
+                      </div>
+                    )
+                  )}
+                </div>
               </div>
 
               {/* Create Quote CTA */}

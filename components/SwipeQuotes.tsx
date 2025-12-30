@@ -54,6 +54,7 @@ interface Quote {
   category_icon?: string;
   likes_count?: number;
   dislikes_count?: number;
+  custom_background?: string | null;
 }
 
 interface Category {
@@ -454,7 +455,29 @@ export default function SwipeQuotes() {
               }
               if (savedRes.ok) {
                 const savedData = await savedRes.json();
-                setSavedQuotes(savedData.quotes || []);
+                const savedQuotesList = savedData.quotes || [];
+                setSavedQuotes(savedQuotesList);
+                
+                // Populate savedQuoteBackgrounds from saved quotes with custom backgrounds
+                const backgrounds: Record<string, BackgroundImage> = {};
+                savedQuotesList.forEach((q: any) => {
+                  if (q.custom_background) {
+                    backgrounds[String(q.id)] = {
+                      id: `saved_custom_${q.id}`,
+                      name: 'Saved Background',
+                      url: q.custom_background,
+                      thumbnail: q.custom_background,
+                      overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+                      textColor: '#ffffff',
+                      authorColor: '#e5e5e5',
+                      categoryBg: 'rgba(255,255,255,0.15)',
+                      categoryText: '#ffffff',
+                    };
+                  }
+                });
+                if (Object.keys(backgrounds).length > 0) {
+                  setSavedQuoteBackgrounds(prev => ({ ...prev, ...backgrounds }));
+                }
               }
               if (userQuotesRes.ok) {
                 const userQuotesData = await userQuotesRes.json();
@@ -764,7 +787,29 @@ export default function SwipeQuotes() {
 
       if (savedRes.ok) {
         const savedData = await savedRes.json();
-        setSavedQuotes(savedData.quotes || []);
+        const savedQuotesList = savedData.quotes || [];
+        setSavedQuotes(savedQuotesList);
+        
+        // Populate savedQuoteBackgrounds from saved quotes with custom backgrounds
+        const backgrounds: Record<string, BackgroundImage> = {};
+        savedQuotesList.forEach((q: any) => {
+          if (q.custom_background) {
+            backgrounds[String(q.id)] = {
+              id: `saved_custom_${q.id}`,
+              name: 'Saved Background',
+              url: q.custom_background,
+              thumbnail: q.custom_background,
+              overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+              textColor: '#ffffff',
+              authorColor: '#e5e5e5',
+              categoryBg: 'rgba(255,255,255,0.15)',
+              categoryText: '#ffffff',
+            };
+          }
+        });
+        if (Object.keys(backgrounds).length > 0) {
+          setSavedQuoteBackgrounds(prev => ({ ...prev, ...backgrounds }));
+        }
       }
     } catch (error) {
       console.error('Fetch user data error:', error);
@@ -1552,6 +1597,25 @@ export default function SwipeQuotes() {
     // OPTIMISTIC UPDATE: Update UI immediately
     setSavedQuotes(prev => [...prev, quoteToSave]);
     
+    // Store custom background in savedQuoteBackgrounds for use when navigating from anywhere
+    if (customBackground) {
+      const quoteIdStr = String(quoteToSave.id);
+      setSavedQuoteBackgrounds(prev => ({
+        ...prev,
+        [quoteIdStr]: {
+          id: `saved_custom_${quoteIdStr}`,
+          name: 'Saved Background',
+          url: customBackground,
+          thumbnail: customBackground,
+          overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
+          textColor: '#ffffff',
+          authorColor: '#e5e5e5',
+          categoryBg: 'rgba(255,255,255,0.15)',
+          categoryText: '#ffffff',
+        }
+      }));
+    }
+    
     // API call in background (fire and forget)
     if (isAuthenticated) {
       fetch('/api/user/saved', {
@@ -1745,9 +1809,17 @@ export default function SwipeQuotes() {
   const handleQuoteNavigation = useCallback(async (quoteId: string | number, category?: string, customBackground?: string | null) => {
     const quoteIdStr = String(quoteId);
     
-    // Create background object if custom background provided
-    let quoteBackground: BackgroundImage | null = null;
-    if (customBackground) {
+    // Priority for background:
+    // 1. Already saved background in savedQuoteBackgrounds (from saved quotes with custom bg)
+    // 2. Explicitly passed customBackground (when clicking from saved quotes view)
+    // 3. Random background based on quote ID
+    let quoteBackground: BackgroundImage;
+    
+    // First check if we already have a saved background for this quote
+    if (savedQuoteBackgrounds[quoteIdStr]) {
+      quoteBackground = savedQuoteBackgrounds[quoteIdStr];
+    } else if (customBackground) {
+      // Use explicitly passed custom background
       quoteBackground = {
         id: `saved_custom_${quoteIdStr}`,
         name: 'Saved Background',
@@ -1759,11 +1831,14 @@ export default function SwipeQuotes() {
         categoryBg: 'rgba(255,255,255,0.15)',
         categoryText: '#ffffff',
       };
-      // Store per-quote background for Swipe mode
+      // Store for future use
       setSavedQuoteBackgrounds(prev => ({
         ...prev,
-        [quoteIdStr]: quoteBackground!
+        [quoteIdStr]: quoteBackground
       }));
+    } else {
+      // Generate consistent random background for this quote
+      quoteBackground = getRandomBackgroundForQuote(quoteId);
     }
     
     // 1. Check if quote exists in current feed
@@ -1788,11 +1863,25 @@ export default function SwipeQuotes() {
     // 2. Fetch the specific quote directly
     setIsLoadingQuotes(true);
     
+    // Check if this is a user quote (created quote)
+    const isUserQuote = quoteIdStr.startsWith('user_');
+    const actualQuoteId = isUserQuote ? quoteIdStr.replace('user_', '') : quoteIdStr;
+    
     try {
-      const response = await fetch(`/api/quotes/${quoteId}`);
+      // Use different API endpoint for user quotes
+      const apiUrl = isUserQuote 
+        ? `/api/user/quotes/${actualQuoteId}`
+        : `/api/quotes/${quoteId}`;
+      
+      const response = await fetch(apiUrl);
       if (response.ok) {
-        const { quote } = await response.json();
-        if (quote) {
+        const { quote: fetchedQuote } = await response.json();
+        if (fetchedQuote) {
+          // For user quotes, add the user_ prefix to match the feed format
+          const quote = isUserQuote 
+            ? { ...fetchedQuote, id: `user_${fetchedQuote.id}` }
+            : fetchedQuote;
+          
           if (viewMode === 'swipe') {
             // Add to feed and navigate
             setQuotes(prev => {
@@ -1855,7 +1944,7 @@ export default function SwipeQuotes() {
     } finally {
       setIsLoadingQuotes(false);
     }
-  }, [quotes, selectedCategories, navigateToQuote, addCategoryWithoutRefetch, viewMode]);
+  }, [quotes, selectedCategories, navigateToQuote, addCategoryWithoutRefetch, viewMode, savedQuoteBackgrounds]);
 
   // Use refs to track state for event handlers to avoid re-attaching listeners
   const isDraggingRef = useRef(isDragging);
@@ -2875,6 +2964,27 @@ export default function SwipeQuotes() {
             isLoggingOut={isLoggingOut}
             onProfileUpdate={(profilePicture) => {
               setUser(prev => prev ? { ...prev, profile_picture: profilePicture } : null);
+            }}
+            savedQuotes={savedQuotes.map(q => ({
+              id: q.id,
+              text: q.text,
+              author: q.author,
+              category: q.category,
+              category_icon: q.category_icon,
+              custom_background: q.custom_background || null,
+            }))}
+            userQuotes={userQuotes.map(q => ({
+              id: q.id,
+              text: q.text,
+              author: q.author,
+              category: q.category,
+              category_icon: q.category_icon,
+              custom_background: q.custom_background,
+              is_public: Boolean(q.is_public),
+            }))}
+            onQuoteClick={(quoteId, category, customBackground) => {
+              setActiveNavTab('feed');
+              handleQuoteNavigation(quoteId, category, customBackground);
             }}
           />
         </Suspense>
