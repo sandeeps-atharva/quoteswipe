@@ -363,7 +363,7 @@ export default function SwipeQuotes() {
         // OPTIMIZED: Single API call replaces 7+ separate calls!
         // This reduces initial load time from 2-4s to 0.5-1s
         // ====================================================================
-        const initialDataResponse = await fetch('/api/initial-data?limit=100', {
+        const initialDataResponse = await fetch('/api/initial-data?limit=20', {
           credentials: 'include',
         });
         
@@ -2514,13 +2514,16 @@ export default function SwipeQuotes() {
               <Menu size={16} className="sm:w-[18px] sm:h-[18px] text-gray-700 dark:text-gray-300" />
           </button>
           
-          <button
-            onClick={() => setShowSearchModal(true)}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
-              title="Search"
-          >
-              <Search size={14} className="sm:w-4 sm:h-4 text-gray-700 dark:text-gray-300" />
-          </button>
+          {/* Search - Only show when logged in */}
+          {isAuthenticated && (
+            <button
+              onClick={() => setShowSearchModal(true)}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
+                title="Search"
+            >
+                <Search size={14} className="sm:w-4 sm:h-4 text-gray-700 dark:text-gray-300" />
+            </button>
+          )}
           
             {/* Dark Mode - Hidden on mobile, shown on desktop */}
             <button
@@ -2539,10 +2542,12 @@ export default function SwipeQuotes() {
               )}
             </button>
             
-            {/* Language - Hidden on mobile, shown on desktop */}
-            <div className="hidden sm:block">
-          <LanguageSelector compact />
-        </div>
+            {/* Language - Hidden on mobile, shown on desktop - Only show when logged in */}
+            {isAuthenticated && (
+              <div className="hidden sm:block">
+                <LanguageSelector compact />
+              </div>
+            )}
                 </div>
           
           {/* Center - Categories (mobile only) */}
@@ -2598,9 +2603,12 @@ export default function SwipeQuotes() {
               )}
             </button>
             
-            <div className="sm:hidden">
-              <LanguageSelector compact />
-          </div>
+            {/* Language - Mobile - Only show when logged in */}
+            {isAuthenticated && (
+              <div className="sm:hidden">
+                <LanguageSelector compact />
+              </div>
+            )}
             
             {/* Desktop only - Categories */}
             <div className="hidden sm:block">
