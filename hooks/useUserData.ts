@@ -1,276 +1,194 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { apiCache, CACHE_KEYS, CACHE_TTL } from '@/lib/api-cache';
-
-// Types
-interface Quote {
-  _id: string;
-  text: string;
-  author: string;
-  category?: string;
-  [key: string]: unknown;
-}
-
-interface UserPreferences {
-  preferredCategories: string[];
-  language: string;
-  [key: string]: unknown;
-}
+import { useState, useCallback } from 'react';
+import { Quote, UserQuote } from '@/types/quotes';
+import { BackgroundImage } from '@/lib/constants';
+import { createCustomBg } from './useCardStyle';
 
 interface UseUserDataReturn {
-  likes: string[];
-  dislikes: string[];
-  saved: string[];
-  preferences: UserPreferences | null;
-  userQuotes: Quote[];
-  isLoading: boolean;
-  
-  // Fetch functions
-  fetchLikes: (force?: boolean) => Promise<string[]>;
-  fetchDislikes: (force?: boolean) => Promise<string[]>;
-  fetchSaved: (force?: boolean) => Promise<string[]>;
-  fetchPreferences: (force?: boolean) => Promise<UserPreferences | null>;
-  fetchUserQuotes: (force?: boolean) => Promise<Quote[]>;
-  fetchAll: (force?: boolean) => Promise<void>;
-  
-  // Update functions
-  addLike: (quoteId: string) => void;
-  removeLike: (quoteId: string) => void;
-  addDislike: (quoteId: string) => void;
-  removeDislike: (quoteId: string) => void;
-  addSaved: (quoteId: string) => void;
-  removeSaved: (quoteId: string) => void;
-  
-  // Invalidate cache
-  invalidateAll: () => void;
+  likedQuotes: Quote[];
+  dislikedQuotes: Quote[];
+  savedQuotes: Quote[];
+  userQuotes: UserQuote[];
+  savedQuoteBackgrounds: Record<string, BackgroundImage>;
+  setLikedQuotes: React.Dispatch<React.SetStateAction<Quote[]>>;
+  setDislikedQuotes: React.Dispatch<React.SetStateAction<Quote[]>>;
+  setSavedQuotes: React.Dispatch<React.SetStateAction<Quote[]>>;
+  setUserQuotes: React.Dispatch<React.SetStateAction<UserQuote[]>>;
+  setSavedQuoteBackgrounds: React.Dispatch<React.SetStateAction<Record<string, BackgroundImage>>>;
+  fetchUserData: () => Promise<void>;
+  fetchUserQuotes: () => Promise<void>;
+  likeQuote: (quote: Quote, isAuthenticated: boolean) => void;
+  dislikeQuote: (quote: Quote, isAuthenticated: boolean) => void;
+  saveQuote: (quote: Quote, customBackground: string | null, isAuthenticated: boolean) => void;
+  unsaveQuote: (quoteId: string | number, isAuthenticated: boolean) => void;
+  resetUserData: () => void;
 }
 
-export function useUserData(isAuthenticated: boolean): UseUserDataReturn {
-  const [likes, setLikes] = useState<string[]>([]);
-  const [dislikes, setDislikes] = useState<string[]>([]);
-  const [saved, setSaved] = useState<string[]>([]);
-  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [userQuotes, setUserQuotes] = useState<Quote[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+export function useUserData(): UseUserDataReturn {
+  const [likedQuotes, setLikedQuotes] = useState<Quote[]>([]);
+  const [dislikedQuotes, setDislikedQuotes] = useState<Quote[]>([]);
+  const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
+  const [userQuotes, setUserQuotes] = useState<UserQuote[]>([]);
+  const [savedQuoteBackgrounds, setSavedQuoteBackgrounds] = useState<Record<string, BackgroundImage>>({});
 
-  const fetchLikes = useCallback(async (force = false): Promise<string[]> => {
-    if (!isAuthenticated) return [];
-    
+  const fetchUserData = useCallback(async () => {
     try {
-      if (force) apiCache.invalidate(CACHE_KEYS.USER_LIKES);
-      
-      const data = await apiCache.getOrFetch<string[]>(
-        CACHE_KEYS.USER_LIKES,
-        async () => {
-          const response = await fetch('/api/user/likes');
-          if (!response.ok) return [];
-          const json = await response.json();
-          return json.likes || [];
-        },
-        { ttl: CACHE_TTL.MEDIUM, sensitive: true }
-      );
-      
-      setLikes(data);
-      return data;
-    } catch (error) {
-      console.error('Error fetching likes:', error);
-      return [];
-    }
-  }, [isAuthenticated]);
-
-  const fetchDislikes = useCallback(async (force = false): Promise<string[]> => {
-    if (!isAuthenticated) return [];
-    
-    try {
-      if (force) apiCache.invalidate(CACHE_KEYS.USER_DISLIKES);
-      
-      const data = await apiCache.getOrFetch<string[]>(
-        CACHE_KEYS.USER_DISLIKES,
-        async () => {
-          const response = await fetch('/api/user/dislikes');
-          if (!response.ok) return [];
-          const json = await response.json();
-          return json.dislikes || [];
-        },
-        { ttl: CACHE_TTL.MEDIUM, sensitive: true }
-      );
-      
-      setDislikes(data);
-      return data;
-    } catch (error) {
-      console.error('Error fetching dislikes:', error);
-      return [];
-    }
-  }, [isAuthenticated]);
-
-  const fetchSaved = useCallback(async (force = false): Promise<string[]> => {
-    if (!isAuthenticated) return [];
-    
-    try {
-      if (force) apiCache.invalidate(CACHE_KEYS.USER_SAVED);
-      
-      const data = await apiCache.getOrFetch<string[]>(
-        CACHE_KEYS.USER_SAVED,
-        async () => {
-          const response = await fetch('/api/user/saved');
-          if (!response.ok) return [];
-          const json = await response.json();
-          return json.savedQuotes || [];
-        },
-        { ttl: CACHE_TTL.MEDIUM, sensitive: true }
-      );
-      
-      setSaved(data);
-      return data;
-    } catch (error) {
-      console.error('Error fetching saved:', error);
-      return [];
-    }
-  }, [isAuthenticated]);
-
-  const fetchPreferences = useCallback(async (force = false): Promise<UserPreferences | null> => {
-    if (!isAuthenticated) return null;
-    
-    try {
-      if (force) apiCache.invalidate(CACHE_KEYS.USER_PREFERENCES);
-      
-      const data = await apiCache.getOrFetch<UserPreferences | null>(
-        CACHE_KEYS.USER_PREFERENCES,
-        async () => {
-          const response = await fetch('/api/user/all-preferences', { credentials: 'include' });
-          if (!response.ok) return null;
-          return await response.json();
-        },
-        { ttl: CACHE_TTL.MEDIUM, sensitive: true }
-      );
-      
-      setPreferences(data);
-      return data;
-    } catch (error) {
-      console.error('Error fetching preferences:', error);
-      return null;
-    }
-  }, [isAuthenticated]);
-
-  const fetchUserQuotes = useCallback(async (force = false): Promise<Quote[]> => {
-    if (!isAuthenticated) return [];
-    
-    try {
-      if (force) apiCache.invalidate(CACHE_KEYS.USER_QUOTES);
-      
-      const data = await apiCache.getOrFetch<Quote[]>(
-        CACHE_KEYS.USER_QUOTES,
-        async () => {
-          const response = await fetch('/api/user/quotes', { credentials: 'include' });
-          if (!response.ok) return [];
-          const json = await response.json();
-          return json.quotes || [];
-        },
-        { ttl: CACHE_TTL.MEDIUM, sensitive: true }
-      );
-      
-      setUserQuotes(data);
-      return data;
-    } catch (error) {
-      console.error('Error fetching user quotes:', error);
-      return [];
-    }
-  }, [isAuthenticated]);
-
-  const fetchAll = useCallback(async (force = false) => {
-    if (!isAuthenticated) return;
-    
-    setIsLoading(true);
-    try {
-      await Promise.all([
-        fetchLikes(force),
-        fetchDislikes(force),
-        fetchSaved(force),
-        fetchPreferences(force),
-        fetchUserQuotes(force),
+      const [likesRes, dislikesRes, savedRes] = await Promise.all([
+        fetch('/api/user/likes'),
+        fetch('/api/user/dislikes'),
+        fetch('/api/user/saved'),
       ]);
-    } finally {
-      setIsLoading(false);
+
+      if (likesRes.ok) {
+        const likesData = await likesRes.json();
+        setLikedQuotes(likesData.quotes || []);
+      }
+
+      if (dislikesRes.ok) {
+        const dislikesData = await dislikesRes.json();
+        setDislikedQuotes(dislikesData.quotes || []);
+      }
+
+      if (savedRes.ok) {
+        const savedData = await savedRes.json();
+        const savedQuotesList = savedData.quotes || [];
+        setSavedQuotes(savedQuotesList);
+        
+        // Populate savedQuoteBackgrounds from saved quotes with custom backgrounds
+        const backgrounds: Record<string, BackgroundImage> = {};
+        savedQuotesList.forEach((q: Quote) => {
+          if (q.custom_background) {
+            backgrounds[String(q.id)] = createCustomBg({
+              id: `saved_custom_${q.id}`,
+              name: 'Saved Background',
+              url: q.custom_background,
+            });
+          }
+        });
+        if (Object.keys(backgrounds).length > 0) {
+          setSavedQuoteBackgrounds(prev => ({ ...prev, ...backgrounds }));
+        }
+      }
+    } catch (error) {
+      console.error('Fetch user data error:', error);
     }
-  }, [isAuthenticated, fetchLikes, fetchDislikes, fetchSaved, fetchPreferences, fetchUserQuotes]);
-
-  // Optimistic updates
-  const addLike = useCallback((quoteId: string) => {
-    setLikes(prev => [...prev, quoteId]);
-    apiCache.update<string[]>(CACHE_KEYS.USER_LIKES, (current) => 
-      current ? [...current, quoteId] : [quoteId]
-    );
   }, []);
 
-  const removeLike = useCallback((quoteId: string) => {
-    setLikes(prev => prev.filter(id => id !== quoteId));
-    apiCache.update<string[]>(CACHE_KEYS.USER_LIKES, (current) => 
-      current ? current.filter(id => id !== quoteId) : []
-    );
+  const fetchUserQuotes = useCallback(async () => {
+    try {
+      const response = await fetch('/api/user/quotes', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setUserQuotes(data.quotes || []);
+      }
+    } catch (error) {
+      console.error('Fetch user quotes error:', error);
+    }
   }, []);
 
-  const addDislike = useCallback((quoteId: string) => {
-    setDislikes(prev => [...prev, quoteId]);
-    apiCache.update<string[]>(CACHE_KEYS.USER_DISLIKES, (current) => 
-      current ? [...current, quoteId] : [quoteId]
-    );
+  const likeQuote = useCallback((quote: Quote, isAuthenticated: boolean) => {
+    const alreadyLiked = likedQuotes.some(q => String(q.id) === String(quote.id));
+    
+    if (!alreadyLiked) {
+      // Optimistic update
+      setLikedQuotes(prev => [...prev, quote]);
+      setDislikedQuotes(prev => prev.filter(q => String(q.id) !== String(quote.id)));
+      
+      // API call
+      if (isAuthenticated) {
+        fetch('/api/user/likes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId: quote.id }),
+        }).catch(console.error);
+      }
+    }
+  }, [likedQuotes]);
+
+  const dislikeQuote = useCallback((quote: Quote, isAuthenticated: boolean) => {
+    const alreadyDisliked = dislikedQuotes.some(q => String(q.id) === String(quote.id));
+    
+    if (!alreadyDisliked) {
+      // Optimistic update
+      setDislikedQuotes(prev => [...prev, quote]);
+      setLikedQuotes(prev => prev.filter(q => String(q.id) !== String(quote.id)));
+      
+      // API call
+      if (isAuthenticated) {
+        fetch('/api/user/dislikes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId: quote.id }),
+        }).catch(console.error);
+      }
+    }
+  }, [dislikedQuotes]);
+
+  const saveQuote = useCallback((quote: Quote, customBackground: string | null, isAuthenticated: boolean) => {
+    // Optimistic update
+    setSavedQuotes(prev => [...prev, quote]);
+    
+    // Store custom background
+    if (customBackground) {
+      const quoteIdStr = String(quote.id);
+      setSavedQuoteBackgrounds(prev => ({
+        ...prev,
+        [quoteIdStr]: createCustomBg({
+          id: `saved_custom_${quoteIdStr}`,
+          name: 'Saved Background',
+          url: customBackground,
+        }),
+      }));
+    }
+    
+    // API call
+    if (isAuthenticated) {
+      fetch('/api/user/saved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quoteId: quote.id, customBackground }),
+      }).catch(console.error);
+    }
   }, []);
 
-  const removeDislike = useCallback((quoteId: string) => {
-    setDislikes(prev => prev.filter(id => id !== quoteId));
-    apiCache.update<string[]>(CACHE_KEYS.USER_DISLIKES, (current) => 
-      current ? current.filter(id => id !== quoteId) : []
-    );
+  const unsaveQuote = useCallback((quoteId: string | number, isAuthenticated: boolean) => {
+    setSavedQuotes(prev => prev.filter(q => String(q.id) !== String(quoteId)));
+    
+    if (isAuthenticated) {
+      fetch('/api/user/saved', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quoteId }),
+      }).catch(console.error);
+    }
   }, []);
 
-  const addSaved = useCallback((quoteId: string) => {
-    setSaved(prev => [...prev, quoteId]);
-    apiCache.update<string[]>(CACHE_KEYS.USER_SAVED, (current) => 
-      current ? [...current, quoteId] : [quoteId]
-    );
-  }, []);
-
-  const removeSaved = useCallback((quoteId: string) => {
-    setSaved(prev => prev.filter(id => id !== quoteId));
-    apiCache.update<string[]>(CACHE_KEYS.USER_SAVED, (current) => 
-      current ? current.filter(id => id !== quoteId) : []
-    );
-  }, []);
-
-  const invalidateAll = useCallback(() => {
-    apiCache.invalidate(CACHE_KEYS.USER_LIKES);
-    apiCache.invalidate(CACHE_KEYS.USER_DISLIKES);
-    apiCache.invalidate(CACHE_KEYS.USER_SAVED);
-    apiCache.invalidate(CACHE_KEYS.USER_PREFERENCES);
-    apiCache.invalidate(CACHE_KEYS.USER_QUOTES);
-    setLikes([]);
-    setDislikes([]);
-    setSaved([]);
-    setPreferences(null);
+  const resetUserData = useCallback(() => {
+    setLikedQuotes([]);
+    setDislikedQuotes([]);
+    setSavedQuotes([]);
     setUserQuotes([]);
+    setSavedQuoteBackgrounds({});
   }, []);
 
   return {
-    likes,
-    dislikes,
-    saved,
-    preferences,
+    likedQuotes,
+    dislikedQuotes,
+    savedQuotes,
     userQuotes,
-    isLoading,
-    fetchLikes,
-    fetchDislikes,
-    fetchSaved,
-    fetchPreferences,
+    savedQuoteBackgrounds,
+    setLikedQuotes,
+    setDislikedQuotes,
+    setSavedQuotes,
+    setUserQuotes,
+    setSavedQuoteBackgrounds,
+    fetchUserData,
     fetchUserQuotes,
-    fetchAll,
-    addLike,
-    removeLike,
-    addDislike,
-    removeDislike,
-    addSaved,
-    removeSaved,
-    invalidateAll,
+    likeQuote,
+    dislikeQuote,
+    saveQuote,
+    unsaveQuote,
+    resetUserData,
   };
 }
-

@@ -1,20 +1,39 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
-import { Menu, Info, Mail, Shield, MessageSquare, Search, Palette, Moon, Sun, Loader2 } from 'lucide-react';
+import { Menu, Search, Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import toast from 'react-hot-toast';
+
+// Types
+import { Quote, Category, User, UserQuote, ShareQuote } from '@/types/quotes';
+
+// Components
 import Sidebar, { ViewMode } from './Sidebar';
 import QuoteCard from './QuoteCard';
 import FeedView from './FeedView';
 import ControlButtons, { ActionButtons } from './ControlButtons';
 import LanguageSelector from './LanguageSelector';
+import BottomNavBar, { NavTab } from './BottomNavBar';
+import OptionsMenu from './OptionsMenu';
+import { ModalLoader, AppLoader, NavigationLoader } from './ThematicLoader';
+
+// Hooks
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useTheme } from '@/contexts/ThemeContext';
+
+// Constants & Utilities
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage, getRandomBackgroundForQuote } from '@/lib/constants';
-import { isQuotePublic } from '@/lib/helpers';
-import { apiCache, CACHE_KEYS, CACHE_TTL } from '@/lib/api-cache';
+import { 
+  getFromCache, 
+  setToCache, 
+  clearUserCache, 
+  canShowInstagramModal, 
+  markInstagramModalShown,
+  CACHE_DURATIONS,
+  CACHE_PREFIX
+} from '@/lib/cache-utils';
+import { createCustomBg, resolveBackground } from '@/hooks/useCardStyle';
 
 // Lazy load modals for better initial bundle size
 const AuthModal = lazy(() => import('./AuthModal'));
@@ -25,6 +44,7 @@ const CardCustomization = lazy(() => import('./CardCustomization'));
 const CreateQuoteModal = lazy(() => import('./CreateQuoteModal'));
 const CategoryOnboarding = lazy(() => import('./CategoryOnboarding'));
 const SaveQuoteModal = lazy(() => import('./SaveQuoteModal'));
+const ViewUserQuoteModal = lazy(() => import('./ViewUserQuoteModal'));
 
 // Lazy load views for bottom navigation
 const SavedQuotesView = lazy(() => import('./SavedQuotesView'));
@@ -33,142 +53,9 @@ const LikedQuotesView = lazy(() => import('./LikedQuotesView'));
 const SkippedQuotesView = lazy(() => import('./SkippedQuotesView'));
 const ProfileView = lazy(() => import('./ProfileView'));
 
-// Bottom Navigation Bar
-import BottomNavBar, { NavTab } from './BottomNavBar';
-import OptionsMenu from './OptionsMenu';
-
-// Modal loading fallback - Thematic Quote Bubble Style
-const ModalLoader = () => (
-  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-200">
-      <div className="relative animate-bounce">
-        <span className="text-5xl">💬</span>
-        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </div>
-      <p className="text-gray-700 dark:text-gray-300 font-medium">Loading...</p>
-    </div>
-  </div>
-);
-
-interface Quote {
-  id: string | number;
-  text: string;
-  author: string;
-  category: string;
-  category_icon?: string;
-  likes_count?: number;
-  dislikes_count?: number;
-  custom_background?: string | null;
-}
-
-interface Category {
-  id: string | number;
-  name: string;
-  icon: string;
-  count: number;
-}
-
-interface User {
-  id: string | number;
-  name: string;
-  email: string;
-  role?: 'user' | 'admin';
-  auth_provider?: 'google' | 'email';
-  profile_picture?: string | null;
-}
-
-interface UserQuote {
-  id: string | number;
-  text: string;
-  author: string;
-  theme_id?: string;
-  font_id?: string;
-  background_id?: string;
-  category_id?: string | number;
-  category?: string;
-  category_icon?: string;
-  is_public?: number | boolean;
-  created_at?: string;
-  custom_background?: string;
-}
-
-// Client-side cache utilities for rarely-changing data
-const CACHE_PREFIX = 'qs_cache_';
-const QUOTES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const CATEGORIES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
-
-// Instagram modal cooldown (show once every 2 days)
-const INSTAGRAM_MODAL_KEY = 'qs_instagram_modal_last_shown';
-const INSTAGRAM_MODAL_COOLDOWN = 2 * 24 * 60 * 60 * 1000; // 2 days in milliseconds
-
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-}
-
-function getFromCache<T>(key: string, maxAge: number): T | null {
-  try {
-    const cached = sessionStorage.getItem(CACHE_PREFIX + key);
-    if (!cached) return null;
-    
-    const entry: CacheEntry<T> = JSON.parse(cached);
-    if (Date.now() - entry.timestamp > maxAge) {
-      sessionStorage.removeItem(CACHE_PREFIX + key);
-      return null;
-    }
-    return entry.data;
-  } catch {
-    return null;
-  }
-}
-
-function setToCache<T>(key: string, data: T): void {
-  try {
-    const entry: CacheEntry<T> = { data, timestamp: Date.now() };
-    sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
-  } catch {
-    // Ignore storage errors (quota exceeded, etc.)
-  }
-}
-
-function clearUserCache(): void {
-  try {
-    // Clear user-specific cache on logout
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i);
-      if (key?.startsWith(CACHE_PREFIX + 'quotes_')) {
-        keysToRemove.push(key);
-      }
-    }
-    keysToRemove.forEach(key => sessionStorage.removeItem(key));
-  } catch {
-    // Ignore errors
-  }
-}
-
-// Instagram modal cooldown helpers
-function canShowInstagramModal(): boolean {
-  try {
-    const lastShown = localStorage.getItem(INSTAGRAM_MODAL_KEY);
-    if (!lastShown) return true;
-    
-    const lastShownTime = parseInt(lastShown, 10);
-    return Date.now() - lastShownTime >= INSTAGRAM_MODAL_COOLDOWN;
-  } catch {
-    return true; // Show modal if localStorage fails
-  }
-}
-
-function markInstagramModalShown(): void {
-  try {
-    localStorage.setItem(INSTAGRAM_MODAL_KEY, Date.now().toString());
-  } catch {
-    // Ignore storage errors
-  }
-}
+// Cache duration constants (imported from cache-utils)
+const QUOTES_CACHE_DURATION = CACHE_DURATIONS.QUOTES;
+const CATEGORIES_CACHE_DURATION = CACHE_DURATIONS.CATEGORIES;
 
 export default function SwipeQuotes() {
   // Track visitor on page load
@@ -268,18 +155,7 @@ export default function SwipeQuotes() {
   const [allCategoriesForOnboarding, setAllCategoriesForOnboarding] = useState<Category[]>([]);
   
   // Quote to share (can be either regular quote or user quote)
-  const [shareQuote, setShareQuote] = useState<{
-    id: number | string;
-    text: string;
-    author: string;
-    category: string;
-    category_icon?: string;
-    likes_count?: number;
-    isUserQuote?: boolean;
-    is_public?: number | boolean;
-    custom_background?: string;
-    background_id?: string;
-  } | null>(null);
+  const [shareQuote, setShareQuote] = useState<ShareQuote | null>(null);
   
   // Pre-generated image for sharing (used when sharing from viewing modal)
   const [preGeneratedShareImage, setPreGeneratedShareImage] = useState<string | null>(null);
@@ -823,51 +699,8 @@ export default function SwipeQuotes() {
     }
   };
 
-  // Helper: Create custom BackgroundImage object
-  const createCustomBg = (img: { id: string; name: string; url: string }): BackgroundImage => ({
-    id: img.id,
-    name: img.name,
-    url: img.url,
-    thumbnail: img.url,
-    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-    textColor: '#ffffff',
-    authorColor: '#e5e5e5',
-    categoryBg: 'rgba(255,255,255,0.15)',
-    categoryText: '#ffffff',
-  });
-
-  // Helper: Resolve background ID to BackgroundImage object
-  const resolveBackground = (bgId: string | undefined, serverBgs: Array<{ id: string; url: string; name: string }>): BackgroundImage => {
-    if (!bgId || bgId === 'none') return BACKGROUND_IMAGES[0];
-
-    // Check for custom background
-    if (bgId === 'custom' || bgId.startsWith('custom_')) {
-      // Try server-provided backgrounds first
-      const serverImg = serverBgs.find(img => img.id === bgId);
-      if (serverImg) return createCustomBg(serverImg);
-
-      // Fallback to localStorage
-      try {
-        const localJson = localStorage.getItem('quoteswipe_custom_images');
-        if (localJson) {
-          const localImgs = JSON.parse(localJson);
-          const localImg = localImgs.find((img: { id: string }) => img.id === bgId);
-          if (localImg) return createCustomBg(localImg);
-        }
-        // Legacy single image
-        const legacyUrl = localStorage.getItem('quoteswipe_custom_bg');
-        if (legacyUrl && bgId === 'custom') {
-          return createCustomBg({ id: 'custom', name: 'My Photo', url: legacyUrl });
-        }
-      } catch (e) {
-        console.error('Failed to load custom background:', e);
-      }
-    }
-
-    return BACKGROUND_IMAGES.find(b => b.id === bgId) || BACKGROUND_IMAGES[0];
-  };
-
   // Fetch ALL user preferences in single optimized call (categories + card style)
+  // Note: createCustomBg and resolveBackground are imported from @/hooks/useCardStyle
   const fetchAllPreferences = async () => {
     try {
       isLoadingPreferences.current = true;
@@ -2015,29 +1848,9 @@ export default function SwipeQuotes() {
     ? ((currentIndex + 1) / filteredQuotes.length) * 100 
     : 0;
 
-  // Show loading state until app is ready to prevent flickering - Thematic Quote Bubble Style
+  // Show loading state until app is ready to prevent flickering
   if (!isAppReady) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-pink-950 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-900 rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
-          {/* Quote Bubble with spinning indicator */}
-          <div className="relative animate-bounce">
-            <span className="text-6xl">💬</span>
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          </div>
-          
-          {/* App name */}
-          <div className="text-center">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
-              QuoteSwipe
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Loading your quotes...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <AppLoader />;
   }
 
   return (
@@ -2336,168 +2149,24 @@ export default function SwipeQuotes() {
 
       {/* View User Quote Modal */}
       {viewingUserQuote && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setViewingUserQuote(null)}
+        <Suspense fallback={<ModalLoader />}>
+          <ViewUserQuoteModal
+            quote={viewingUserQuote}
+            onClose={() => setViewingUserQuote(null)}
+            onEdit={(quote) => {
+              setEditingQuote(quote);
+              setViewingUserQuote(null);
+              setShowCreateQuoteModal(true);
+            }}
+            onShare={(quote) => {
+              setViewingUserQuote(null);
+              handleShareUserQuote(quote);
+            }}
+            cardTheme={cardTheme}
+            fontStyle={fontStyle}
+            backgroundImage={backgroundImage}
           />
-          
-          {/* Quote Card Container */}
-          <div className="relative w-full max-w-md animate-in zoom-in-95 duration-200">
-            {/* Close button */}
-            <button
-              onClick={() => setViewingUserQuote(null)}
-              className="absolute -top-12 right-0 flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-sm font-medium transition-all"
-            >
-              <span>Close</span>
-              <span className="text-lg">×</span>
-            </button>
-            
-            {/* Action buttons */}
-            <div className="absolute -top-12 left-0 flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setEditingQuote(viewingUserQuote);
-                  setViewingUserQuote(null);
-                  setShowCreateQuoteModal(true);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-medium transition-all"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                Edit
-              </button>
-              <button
-                onClick={async () => {
-                  const quoteToShare = viewingUserQuote;
-                  
-                  // Generate image first while quote card is still visible
-                  try {
-                    const { toPng } = await import('html-to-image');
-                    // Find the actual QuoteCard element (not the wrapper) - it has data-quote-id without "user_" prefix
-                    const quoteCardElement = document.querySelector(`[data-quote-id="${quoteToShare.id}"][data-quote-card="true"]`) as HTMLElement;
-                    
-                    if (quoteCardElement) {
-                      // Wait for any animations to complete
-                      await new Promise(resolve => setTimeout(resolve, 100));
-                      
-                      // Store original styles
-                      const originalTransform = quoteCardElement.style.transform;
-                      const originalTransition = quoteCardElement.style.transition;
-                      
-                      // Hide elements marked with data-hide-on-download (like category)
-                      const hideElements = quoteCardElement.querySelectorAll('[data-hide-on-download="true"]') as NodeListOf<HTMLElement>;
-                      hideElements.forEach(el => el.style.display = 'none');
-                      
-                      // Reset transform for clean capture
-                      quoteCardElement.style.transform = 'none';
-                      quoteCardElement.style.transition = 'none';
-                      
-                      // Wait for style update
-                      await new Promise(resolve => setTimeout(resolve, 50));
-                      
-                      const dataUrl = await toPng(quoteCardElement, {
-                        quality: 1.0,
-                        pixelRatio: 3,
-                        cacheBust: true,
-                        width: quoteCardElement.offsetWidth,
-                        height: quoteCardElement.offsetHeight,
-                        style: {
-                          borderRadius: '0px',
-                          overflow: 'hidden',
-                        },
-                      });
-                      
-                      // Restore hidden elements
-                      hideElements.forEach(el => el.style.display = '');
-                      
-                      // Restore original styles
-                      quoteCardElement.style.transform = originalTransform;
-                      quoteCardElement.style.transition = originalTransition;
-                      
-                      setPreGeneratedShareImage(dataUrl);
-              }
-            } catch (error) {
-                    console.error('Error pre-generating image:', error);
-                  }
-                  
-                  // Close viewing screen
-                  setViewingUserQuote(null);
-                  
-                  // Open share modal
-                  handleShareUserQuote(quoteToShare);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-full text-sm font-medium transition-all"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
-                Share
-              </button>
-            </div>
-            
-            {/* Quote Card */}
-            <div 
-              className="aspect-[4/5] overflow-hidden shadow-2xl flex items-center justify-center"
-              style={{ borderRadius: '24px' }}
-            >
-              <QuoteCard
-                quote={{
-                  id: viewingUserQuote.id,
-                  text: viewingUserQuote.text,
-                  author: viewingUserQuote.author,
-                  category: viewingUserQuote.category || 'Personal',
-                  category_icon: viewingUserQuote.category_icon || '✨',
-                }}
-                index={0}
-                currentIndex={0}
-                dragOffset={{ x: 0, y: 0 }}
-                swipeDirection={null}
-                isDragging={false}
-                isAnimating={false}
-                totalQuotes={1}
-                onDragStart={() => {}}
-                onDragMove={() => {}}
-                cardTheme={cardTheme}
-                fontStyle={fontStyle}
-                backgroundImage={
-                  viewingUserQuote.custom_background ? {
-                    id: 'user_custom',
-                    name: 'Custom',
-                    url: viewingUserQuote.custom_background,
-                    thumbnail: viewingUserQuote.custom_background,
-                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                    textColor: '#ffffff',
-                    authorColor: '#e5e5e5',
-                    categoryBg: 'rgba(255,255,255,0.15)',
-                    categoryText: '#ffffff',
-                  } : viewingUserQuote.background_id 
-                    ? BACKGROUND_IMAGES.find(bg => bg.id === viewingUserQuote.background_id) || backgroundImage
-                    : backgroundImage
-                }
-              />
-            </div>
-            
-            {/* Quote info */}
-            <div className="mt-4 text-center">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-                isQuotePublic(viewingUserQuote.is_public)
-                  ? 'bg-green-500/20 text-green-300' 
-                  : 'bg-gray-500/20 text-gray-300'
-              }`}>
-                {isQuotePublic(viewingUserQuote.is_public) ? (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-                    Public - Visible to everyone
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    Private - Only you can see
-                  </>
-                )}
-              </span>
-            </div>
-          </div>
-        </div>
+        </Suspense>
       )}
 
       {/* Main Content - Hidden when other views are active */}
@@ -2985,20 +2654,8 @@ export default function SwipeQuotes() {
         </Suspense>
       )}
 
-      {/* Navigation Loading Overlay - Thematic Quote Bubble */}
-      {isNavigatingToQuote && (
-        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-200">
-            <div className="relative animate-bounce">
-              <span className="text-5xl">💬</span>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            </div>
-            <p className="text-gray-700 dark:text-gray-300 font-medium">Opening quote...</p>
-          </div>
-        </div>
-      )}
+      {/* Navigation Loading Overlay */}
+      {isNavigatingToQuote && <NavigationLoader />}
     </div>
   );
 }
