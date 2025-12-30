@@ -15,8 +15,28 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Get initial theme from localStorage or system preference (matches blocking script)
+function getInitialTheme(): Theme {
+  if (typeof window === 'undefined') return 'light';
+  
+  try {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      return savedTheme;
+    }
+    // Fall back to system preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+  } catch {
+    // localStorage might be blocked
+  }
+  return 'light';
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
+  // Initialize with the same logic as the blocking script to avoid mismatch
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasFetchedUserTheme, setHasFetchedUserTheme] = useState(false);
 
@@ -71,13 +91,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [hasFetchedUserTheme, fetchUserTheme]);
 
-  // Initialize theme on mount from localStorage
+  // Sync theme on mount - ensures the class is applied (may already be set by blocking script)
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    const initialTheme: Theme = (savedTheme === 'light' || savedTheme === 'dark') ? savedTheme : 'light';
-    setThemeState(initialTheme);
-    applyTheme(initialTheme);
-  }, [applyTheme]);
+    // Apply theme class to ensure consistency with React state
+    applyTheme(theme);
+  }, []); // Only run once on mount
 
   // When authentication changes, sync theme
   useEffect(() => {

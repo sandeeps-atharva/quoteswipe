@@ -37,11 +37,17 @@ const ProfileView = lazy(() => import('./ProfileView'));
 import BottomNavBar, { NavTab } from './BottomNavBar';
 import OptionsMenu from './OptionsMenu';
 
-// Modal loading fallback
+// Modal loading fallback - Thematic Quote Bubble Style
 const ModalLoader = () => (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl">
-      <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-200">
+      <div className="relative animate-bounce">
+        <span className="text-5xl">💬</span>
+        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+      <p className="text-gray-700 dark:text-gray-300 font-medium">Loading...</p>
     </div>
   </div>
 );
@@ -210,6 +216,7 @@ export default function SwipeQuotes() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(false);
   const [isChangingCategories, setIsChangingCategories] = useState(false);
+  const [isNavigatingToQuote, setIsNavigatingToQuote] = useState(false); // Show loader when navigating from other screens
   const [likedQuotes, setLikedQuotes] = useState<Quote[]>([]);
   const [dislikedQuotes, setDislikedQuotes] = useState<Quote[]>([]);
   const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
@@ -1807,6 +1814,9 @@ export default function SwipeQuotes() {
 
   // Handle navigation to a specific quote from sidebar (liked/saved/created quotes)
   const handleQuoteNavigation = useCallback(async (quoteId: string | number, category?: string, customBackground?: string | null) => {
+    // Show loading overlay for better UX
+    setIsNavigatingToQuote(true);
+    
     const quoteIdStr = String(quoteId);
     
     // Priority for background:
@@ -1857,6 +1867,8 @@ export default function SwipeQuotes() {
         setFeedTargetQuoteId(quoteId);
         setFeedTargetQuoteBackground(quoteBackground);
       }
+      // Small delay to ensure smooth transition
+      setTimeout(() => setIsNavigatingToQuote(false), 300);
       return;
     }
     
@@ -1903,6 +1915,7 @@ export default function SwipeQuotes() {
           if (category) addCategoryWithoutRefetch(category);
           
           setIsLoadingQuotes(false);
+          setTimeout(() => setIsNavigatingToQuote(false), 300);
           return;
         }
       }
@@ -1943,6 +1956,7 @@ export default function SwipeQuotes() {
       toast.error('Failed to load quote');
     } finally {
       setIsLoadingQuotes(false);
+      setTimeout(() => setIsNavigatingToQuote(false), 300);
     }
   }, [quotes, selectedCategories, navigateToQuote, addCategoryWithoutRefetch, viewMode, savedQuoteBackgrounds]);
 
@@ -2001,54 +2015,27 @@ export default function SwipeQuotes() {
     ? ((currentIndex + 1) / filteredQuotes.length) * 100 
     : 0;
 
-  // Show loading state until app is ready to prevent flickering
+  // Show loading state until app is ready to prevent flickering - Thematic Quote Bubble Style
   if (!isAppReady) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          {/* Logo with spinning ring */}
-          <div className="relative w-24 h-24 mx-auto mb-6">
-            {/* Spinning ring */}
-            <div 
-              className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-purple-500"
-              style={{ animation: 'spin 1s linear infinite' }}
-            />
-            
-            {/* Second ring (slower, opposite) */}
-            <div 
-              className="absolute inset-2 rounded-full border-4 border-transparent border-b-pink-500 border-l-purple-500"
-              style={{ animation: 'spin 1.5s linear infinite reverse' }}
-            />
-            
-            {/* Logo in center */}
-            <div 
-              className="absolute inset-4 flex items-center justify-center"
-              style={{ animation: 'logoPulse 2s ease-in-out infinite' }}
-            >
-              <Image 
-                src="/logo.svg" 
-                alt="QuoteSwipe" 
-                width={64}
-                height={64}
-                priority
-              />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-pink-950 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-900 rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
+          {/* Quote Bubble with spinning indicator */}
+          <div className="relative animate-bounce">
+            <span className="text-6xl">💬</span>
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             </div>
           </div>
           
-          {/* Loading text */}
-          <p className="text-sm text-gray-400 dark:text-gray-500">Loading...</p>
+          {/* App name */}
+          <div className="text-center">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
+              QuoteSwipe
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Loading your quotes...</p>
+          </div>
         </div>
-
-        <style dangerouslySetInnerHTML={{ __html: `
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          @keyframes logoPulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(0.95); opacity: 0.8; }
-          }
-        `}} />
       </div>
     );
   }
@@ -2988,6 +2975,21 @@ export default function SwipeQuotes() {
             }}
           />
         </Suspense>
+      )}
+
+      {/* Navigation Loading Overlay - Thematic Quote Bubble */}
+      {isNavigatingToQuote && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-200">
+            <div className="relative animate-bounce">
+              <span className="text-5xl">💬</span>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </div>
+            <p className="text-gray-700 dark:text-gray-300 font-medium">Opening quote...</p>
+          </div>
+        </div>
       )}
     </div>
   );

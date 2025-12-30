@@ -155,8 +155,13 @@ export default function SavedQuotesView({
         <div className="max-w-5xl mx-auto">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20">
-              <Loader2 size={28} className="sm:w-8 sm:h-8 animate-spin text-yellow-500 mb-3" />
-              <p className="text-xs sm:text-sm text-gray-500">Loading saved quotes...</p>
+              <div className="relative animate-bounce mb-3">
+                <span className="text-5xl">💬</span>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-full flex items-center justify-center shadow-lg">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm text-gray-500 font-medium">Loading saved quotes...</p>
             </div>
           ) : quotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-4 sm:px-6 text-center">
