@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
-import { Menu, Search, Moon, Sun } from 'lucide-react';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 // Types
@@ -13,14 +11,16 @@ import Sidebar, { ViewMode } from './Sidebar';
 import QuoteCard from './QuoteCard';
 import FeedView from './FeedView';
 import ControlButtons, { ActionButtons } from './ControlButtons';
-import LanguageSelector from './LanguageSelector';
 import BottomNavBar, { NavTab } from './BottomNavBar';
 import OptionsMenu from './OptionsMenu';
+import Header from './Header';
+import FooterLinks from './FooterLinks';
 import { ModalLoader, AppLoader, NavigationLoader } from './ThematicLoader';
 
 // Hooks
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useCacheSync } from '@/hooks/useCacheSync';
 
 // Constants & Utilities
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage, getRandomBackgroundForQuote } from '@/lib/constants';
@@ -290,12 +290,7 @@ export default function SwipeQuotes() {
               if (bgId === 'custom' || bgId.startsWith('custom_')) {
                 const serverImg = customBgs.find((img: { id: string }) => img.id === bgId);
                 if (serverImg) {
-                  bg = {
-                    id: serverImg.id, name: serverImg.name, url: serverImg.url, thumbnail: serverImg.url,
-                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                    textColor: '#ffffff', authorColor: '#e5e5e5',
-                    categoryBg: 'rgba(255,255,255,0.15)', categoryText: '#ffffff',
-                  };
+                  bg = createCustomBg({ id: serverImg.id, name: serverImg.name, url: serverImg.url });
                 } else {
                   // Fallback to localStorage
                   try {
@@ -304,12 +299,7 @@ export default function SwipeQuotes() {
                       const localImgs = JSON.parse(localJson);
                       const localImg = localImgs.find((img: { id: string }) => img.id === bgId);
                       if (localImg) {
-                        bg = {
-                          id: localImg.id, name: localImg.name, url: localImg.url, thumbnail: localImg.url,
-                          overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                          textColor: '#ffffff', authorColor: '#e5e5e5',
-                          categoryBg: 'rgba(255,255,255,0.15)', categoryText: '#ffffff',
-                        };
+                        bg = createCustomBg({ id: localImg.id, name: localImg.name, url: localImg.url });
                       }
                     }
                   } catch {}
@@ -345,17 +335,7 @@ export default function SwipeQuotes() {
                 const backgrounds: Record<string, BackgroundImage> = {};
                 savedQuotesList.forEach((q: any) => {
                   if (q.custom_background) {
-                    backgrounds[String(q.id)] = {
-                      id: `saved_custom_${q.id}`,
-                      name: 'Saved Background',
-                      url: q.custom_background,
-                      thumbnail: q.custom_background,
-                      overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                      textColor: '#ffffff',
-                      authorColor: '#e5e5e5',
-                      categoryBg: 'rgba(255,255,255,0.15)',
-                      categoryText: '#ffffff',
-                    };
+                    backgrounds[String(q.id)] = createCustomBg({ id: `saved_custom_${q.id}`, name: 'Saved Background', url: q.custom_background });
                   }
                 });
                 if (Object.keys(backgrounds).length > 0) {
@@ -422,28 +402,15 @@ export default function SwipeQuotes() {
     fetchCategories();
   }, [isAuthenticated]);
 
-  // Cache card style for instant restoration on navigation back
-  useEffect(() => {
-    if (!isAppReady) return; // Only cache after initial load
-    setToCache('cardTheme', cardTheme);
-  }, [cardTheme, isAppReady]);
-
-  useEffect(() => {
-    if (!isAppReady) return;
-    setToCache('fontStyle', fontStyle);
-  }, [fontStyle, isAppReady]);
-
-  useEffect(() => {
-    if (!isAppReady) return;
-    setToCache('backgroundImage', backgroundImage);
-  }, [backgroundImage, isAppReady]);
-
-  // Cache quotes and index for instant restoration
-  useEffect(() => {
-    if (!isAppReady || quotes.length === 0) return;
-    setToCache('swipeQuotes', quotes);
-    setToCache('swipeCategories', categories);
-  }, [quotes, categories, isAppReady]);
+  // Sync state to cache for instant restoration on navigation back
+  useCacheSync({
+    isAppReady,
+    quotes,
+    categories,
+    cardTheme,
+    fontStyle,
+    backgroundImage,
+  });
 
   useEffect(() => {
     if (!isAppReady) return;
@@ -615,41 +582,6 @@ export default function SwipeQuotes() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/auth/me');
-      if (response.ok) {
-        const data = await response.json();
-        setIsAuthenticated(true);
-        setUser(data.user);
-        fetchUserData();
-        // Load user's saved category preferences
-        fetchUserPreferences();
-        
-        // Check if user needs onboarding (not completed yet)
-        if (data.onboarding_complete === false) {
-          // Fetch all categories for onboarding
-          try {
-            const onboardingCatsRes = await fetch('/api/categories?onboarding=true');
-            if (onboardingCatsRes.ok) {
-              const onboardingData = await onboardingCatsRes.json();
-              setAllCategoriesForOnboarding(onboardingData.categories || []);
-            }
-          } catch {}
-          setShowOnboarding(true);
-        }
-      } else {
-        // Explicitly set to false if not authenticated
-        setIsAuthenticated(false);
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Auth check error:', error);
-      setIsAuthenticated(false);
-      setUser(null);
-    }
-  };
-
   const fetchUserData = async () => {
     try {
       const [likesRes, dislikesRes, savedRes] = await Promise.all([
@@ -677,17 +609,7 @@ export default function SwipeQuotes() {
         const backgrounds: Record<string, BackgroundImage> = {};
         savedQuotesList.forEach((q: any) => {
           if (q.custom_background) {
-            backgrounds[String(q.id)] = {
-              id: `saved_custom_${q.id}`,
-              name: 'Saved Background',
-              url: q.custom_background,
-              thumbnail: q.custom_background,
-              overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-              textColor: '#ffffff',
-              authorColor: '#e5e5e5',
-              categoryBg: 'rgba(255,255,255,0.15)',
-              categoryText: '#ffffff',
-            };
+            backgrounds[String(q.id)] = createCustomBg({ id: `saved_custom_${q.id}`, name: 'Saved Background', url: q.custom_background });
           }
         });
         if (Object.keys(backgrounds).length > 0) {
@@ -733,8 +655,6 @@ export default function SwipeQuotes() {
     }
   };
 
-  // Legacy wrapper - kept for backward compatibility
-  const fetchCardStyle = async () => fetchAllPreferences();
 
   // Fetch user's created quotes
   const fetchUserQuotes = useCallback(async () => {
@@ -769,8 +689,6 @@ export default function SwipeQuotes() {
     }
   };
 
-  // Legacy wrapper - kept for backward compatibility  
-  const fetchUserPreferences = async () => fetchAllPreferences();
 
   // Save category preferences (uses combined API)
   const saveUserPreferences = async (categories: string[]) => {
@@ -1009,41 +927,43 @@ export default function SwipeQuotes() {
       throw new Error(data.error || 'Login failed');
     }
 
-    // ✅ Show toast IMMEDIATELY after successful login
-    toast.success(`Welcome back, ${data.user.name}! 👋`);
-
     // Set flag to preserve current quote during login transition
     isLoggingIn.current = true;
     
+    // ✅ Update state and close modal IMMEDIATELY
     setIsAuthenticated(true);
     setUser(data.user);
     setShowAuthModal(false);
     setSwipeCount(0);
     setAuthenticatedSwipeCount(0);
     
+    // ✅ Show toast IMMEDIATELY (after modal closes)
+    toast.success(`Welcome back, ${data.user.name}! 👋`);
+    
     // Clear guest category cache
     try {
       sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
     } catch {}
     
-    // ✅ Run all data fetching in PARALLEL (not sequential)
-    await Promise.all([
+    // ✅ Fetch data in BACKGROUND (non-blocking) - don't await
+    Promise.all([
       fetchUserData(),
       fetchCategories(),
-      fetchUserPreferences(),
-    ]);
-    
-    // Check if user needs onboarding (runs after parallel fetch)
-    if (data.onboarding_complete === false) {
-      try {
-        const onboardingCatsRes = await fetch('/api/categories?onboarding=true');
-        if (onboardingCatsRes.ok) {
-          const onboardingData = await onboardingCatsRes.json();
-          setAllCategoriesForOnboarding(onboardingData.categories || []);
-        }
-      } catch {}
-      setShowOnboarding(true);
-    }
+      fetchAllPreferences(),
+    ]).then(() => {
+      // Check if user needs onboarding after data is loaded
+      if (data.onboarding_complete === false) {
+        fetch('/api/categories?onboarding=true')
+          .then(res => res.ok ? res.json() : null)
+          .then(onboardingData => {
+            if (onboardingData?.categories) {
+              setAllCategoriesForOnboarding(onboardingData.categories);
+              setShowOnboarding(true);
+            }
+          })
+          .catch(() => {});
+      }
+    }).catch(console.error);
   };
 
   const handleRegister = async (name: string, email: string, password: string) => {
@@ -1059,44 +979,44 @@ export default function SwipeQuotes() {
       throw new Error(data.error || 'Registration failed');
     }
 
-    // ✅ Show toast IMMEDIATELY after successful registration
-    toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
-
     // Set flag to preserve current quote during registration transition
     isLoggingIn.current = true;
     
+    // ✅ Update state and close modal IMMEDIATELY
     setIsAuthenticated(true);
     setUser(data.user);
     setShowAuthModal(false);
     setSwipeCount(0);
     setAuthenticatedSwipeCount(0);
     
+    // ✅ Show toast IMMEDIATELY (after modal closes)
+    toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
+    
     // Clear guest category cache
     try {
       sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
     } catch {}
     
-    // ✅ Run data fetching in PARALLEL
-    await Promise.all([
-      fetchUserData(),
-      fetchCategories(),
-    ]);
-    
-    // New users won't have preferences yet
-    isLoadingPreferences.current = false;
-    isLoggingIn.current = false;
-    
-    // Show onboarding for new users
-    if (data.onboarding_complete === false) {
-      try {
-        const onboardingCatsRes = await fetch('/api/categories?onboarding=true');
-        if (onboardingCatsRes.ok) {
-          const onboardingData = await onboardingCatsRes.json();
-          setAllCategoriesForOnboarding(onboardingData.categories || []);
+    // ✅ Fetch data in BACKGROUND (non-blocking) - don't await
+    Promise.all([fetchUserData(), fetchCategories()])
+      .then(() => {
+        isLoadingPreferences.current = false;
+        isLoggingIn.current = false;
+        
+        // Show onboarding for new users
+        if (data.onboarding_complete === false) {
+          fetch('/api/categories?onboarding=true')
+            .then(res => res.ok ? res.json() : null)
+            .then(onboardingData => {
+              if (onboardingData?.categories) {
+                setAllCategoriesForOnboarding(onboardingData.categories);
+                setShowOnboarding(true);
+              }
+            })
+            .catch(() => {});
         }
-      } catch {}
-      setShowOnboarding(true);
-    }
+      })
+      .catch(console.error);
   };
 
   const handleLogout = async () => {
@@ -1442,17 +1362,7 @@ export default function SwipeQuotes() {
       const quoteIdStr = String(quoteToSave.id);
       setSavedQuoteBackgrounds(prev => ({
         ...prev,
-        [quoteIdStr]: {
-          id: `saved_custom_${quoteIdStr}`,
-          name: 'Saved Background',
-          url: customBackground,
-          thumbnail: customBackground,
-          overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-          textColor: '#ffffff',
-          authorColor: '#e5e5e5',
-          categoryBg: 'rgba(255,255,255,0.15)',
-          categoryText: '#ffffff',
-        }
+        [quoteIdStr]: createCustomBg({ id: `saved_custom_${quoteIdStr}`, name: 'Saved Background', url: customBackground })
       }));
     }
     
@@ -1663,17 +1573,7 @@ export default function SwipeQuotes() {
       quoteBackground = savedQuoteBackgrounds[quoteIdStr];
     } else if (customBackground) {
       // Use explicitly passed custom background
-      quoteBackground = {
-        id: `saved_custom_${quoteIdStr}`,
-        name: 'Saved Background',
-        url: customBackground,
-        thumbnail: customBackground,
-        overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-        textColor: '#ffffff',
-        authorColor: '#e5e5e5',
-        categoryBg: 'rgba(255,255,255,0.15)',
-        categoryText: '#ffffff',
-      };
+      quoteBackground = createCustomBg({ id: `saved_custom_${quoteIdStr}`, name: 'Saved Background', url: customBackground });
       // Store for future use
       setSavedQuoteBackgrounds(prev => ({
         ...prev,
@@ -1976,29 +1876,28 @@ export default function SwipeQuotes() {
         onClose={() => setShowAuthModal(false)}
         onLogin={handleLogin}
         onRegister={handleRegister}
-        onGoogleSuccess={async (googleUser) => {
+        onGoogleSuccess={(googleUser) => {
           // Set flag to preserve current quote during login transition
           isLoggingIn.current = true;
           
+          // ✅ Update state and close modal IMMEDIATELY
           setIsAuthenticated(true);
           setUser(googleUser);
           setShowAuthModal(false);
           setSwipeCount(0);
           setAuthenticatedSwipeCount(0);
           
-          // Clear guest category cache to force fresh fetch with all categories
+          // ✅ Show toast IMMEDIATELY
+          toast.success(`Welcome, ${googleUser.name}! 🎉`);
+          
+          // Clear guest category cache
           try {
             sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
           } catch {}
           
-          await fetchUserData();
-          await fetchCardStyle();
-          await fetchCategories();
-          // Load user's saved category preferences (this will trigger fetchQuotes with isLoggingIn=true)
-          await fetchUserPreferences();
-          
-          // Show success toast
-          toast.success(`Welcome, ${googleUser.name}! 🎉`);
+          // ✅ Fetch data in BACKGROUND (non-blocking)
+          Promise.all([fetchUserData(), fetchAllPreferences(), fetchCategories()])
+            .catch(console.error);
         }}
         swipeCount={swipeCount}
       />
@@ -2021,17 +1920,7 @@ export default function SwipeQuotes() {
             backgroundImage={
               // Use quote's custom background if available, or preset background, or per-quote saved background, or global
               shareQuote.custom_background
-                ? {
-                    id: `share_custom_${shareQuote.id}`,
-                    name: 'Custom Background',
-                    url: shareQuote.custom_background,
-                    thumbnail: shareQuote.custom_background,
-                    overlay: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%)',
-                    textColor: '#ffffff',
-                    authorColor: '#e5e5e5',
-                    categoryBg: 'rgba(255,255,255,0.15)',
-                    categoryText: '#ffffff',
-                  }
+                ? createCustomBg({ id: `share_custom_${shareQuote.id}`, name: 'Custom Background', url: shareQuote.custom_background })
                 : shareQuote.background_id
                   ? BACKGROUND_IMAGES.find(bg => bg.id === shareQuote.background_id) || backgroundImage
                   : savedQuoteBackgrounds[String(shareQuote.id)] || (backgroundImage && backgroundImage.id !== 'none' ? backgroundImage : getRandomBackgroundForQuote(shareQuote.id))
@@ -2171,149 +2060,17 @@ export default function SwipeQuotes() {
 
       {/* Main Content - Hidden when other views are active */}
       <div className={`flex-1 flex flex-col items-center justify-center p-4 pb-20 sm:pb-20 relative ${activeNavTab !== 'feed' ? 'hidden' : ''}`}>
-        {/* Top Header - Full Width Rounded Bar */}
-        <div className="fixed top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-30 flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-          {/* Left Group - All icons on desktop, Menu & Search on mobile */}
-          <div className="flex items-center gap-1 sm:gap-2">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
-              title="Menu"
-          >
-              <Menu size={16} className="sm:w-[18px] sm:h-[18px] text-gray-700 dark:text-gray-300" />
-          </button>
-          
-          {/* Search - Only show when logged in */}
-          {isAuthenticated && (
-            <button
-              onClick={() => setShowSearchModal(true)}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
-                title="Search"
-            >
-                <Search size={14} className="sm:w-4 sm:h-4 text-gray-700 dark:text-gray-300" />
-            </button>
-          )}
-          
-            {/* Dark Mode - Hidden on mobile, shown on desktop */}
-            <button
-              onClick={toggleTheme}
-              className={`hidden sm:flex w-9 h-9 rounded-full items-center justify-center active:scale-95 transition-all ${
-                theme === 'dark' 
-                  ? 'bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50' 
-                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            >
-              {theme === 'dark' ? (
-                <Sun size={16} className="text-yellow-600 dark:text-yellow-400" />
-              ) : (
-                <Moon size={16} className="text-gray-600 dark:text-gray-400" />
-              )}
-            </button>
-            
-            {/* Language - Hidden on mobile, shown on desktop - Only show when logged in */}
-            {isAuthenticated && (
-              <div className="hidden sm:block">
-                <LanguageSelector compact />
-              </div>
-            )}
-                </div>
-          
-          {/* Center - Categories (mobile only) */}
-          <div className="sm:hidden">
-            {selectedCategories.length > 0 ? (
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="h-7 px-2.5 rounded-full bg-gradient-to-r from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 border border-blue-200/50 dark:border-blue-700/50 flex items-center gap-1.5 hover:from-blue-500/20 hover:to-pink-500/20 active:scale-95 transition-all"
-                title="Manage categories"
-              >
-                <span className="flex items-center">
-                  {selectedCategories.slice(0, 3).map((catName) => {
-                    const cat = categories.find(c => c.name === catName);
-                    return cat ? (
-                      <span key={catName} className="text-xs leading-none">{cat.icon}</span>
-              ) : null;
-            })}
-                </span>
-                <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
-                  {selectedCategories.length === 1 
-                    ? categories.find(c => c.name === selectedCategories[0])?.name?.slice(0, 8) 
-                    : `${selectedCategories.length}`}
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="h-7 px-2.5 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
-                title="Select categories"
-              >
-                <span className="text-xs">📚</span>
-                <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">All</span>
-              </button>
-            )}
-              </div>
-          
-          {/* Right Group - Theme & Language on mobile, Categories on desktop */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Mobile only - Theme & Language */}
-            <button
-              onClick={toggleTheme}
-              className={`sm:hidden w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-all ${
-                theme === 'dark' 
-                  ? 'bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50' 
-                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            >
-              {theme === 'dark' ? (
-                <Sun size={14} className="text-yellow-600 dark:text-yellow-400" />
-              ) : (
-                <Moon size={14} className="text-gray-600 dark:text-gray-400" />
-              )}
-            </button>
-            
-            {/* Language - Mobile - Only show when logged in */}
-            {isAuthenticated && (
-              <div className="sm:hidden">
-                <LanguageSelector compact />
-              </div>
-            )}
-            
-            {/* Desktop only - Categories */}
-            <div className="hidden sm:block">
-              {selectedCategories.length > 0 ? (
-                <button
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="h-8 px-3 rounded-full bg-gradient-to-r from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 border border-blue-200/50 dark:border-blue-700/50 flex items-center gap-2 hover:from-blue-500/20 hover:to-pink-500/20 active:scale-95 transition-all"
-                  title="Manage categories"
-                >
-                  <span className="flex items-center gap-0.5">
-                    {selectedCategories.slice(0, 4).map((catName) => {
-                      const cat = categories.find(c => c.name === catName);
-                      return cat ? (
-                        <span key={catName} className="text-sm leading-none">{cat.icon}</span>
-                      ) : null;
-                    })}
-                  </span>
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                    {selectedCategories.length === 1 
-                      ? categories.find(c => c.name === selectedCategories[0])?.name 
-                      : `${selectedCategories.length} categories`}
-                  </span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="h-8 px-3 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
-                  title="Select categories"
-                >
-                  <span className="text-sm">📚</span>
-                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">All quotes</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Top Header */}
+        <Header
+          theme={theme}
+          toggleTheme={toggleTheme}
+          isAuthenticated={isAuthenticated}
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onMenuClick={() => setIsSidebarOpen(true)}
+          onSearchClick={() => setShowSearchModal(true)}
+          onCategoriesClick={() => setIsSidebarOpen(true)}
+        />
         {/* Progress Bar */}
         <div className="fixed top-0 left-0 right-0 h-[2px] bg-white/30 backdrop-blur-sm z-50">
           <div
@@ -2396,35 +2153,7 @@ export default function SwipeQuotes() {
               isAnimating={isAnimating && !isDragging}
             />
             {/* Quick Links Footer */}
-            <nav className="flex items-center justify-center gap-1 mt-3 sm:mt-4">
-                <Link 
-                  href="/about" 
-                className="text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                >
-                About
-                </Link>
-              <span className="text-gray-300 dark:text-gray-600">•</span>
-                <Link 
-                  href="/contact" 
-                className="text-xs text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                >
-                Contact
-                </Link>
-              <span className="text-gray-300 dark:text-gray-600">•</span>
-                <Link 
-                  href="/privacy-policy" 
-                className="text-xs text-gray-400 dark:text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-                >
-                Privacy
-                </Link>
-              <span className="text-gray-300 dark:text-gray-600">•</span>
-                <Link 
-                  href="/feedback" 
-                className="text-xs text-gray-400 dark:text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
-                >
-                Feedback
-                </Link>
-              </nav>
+            <FooterLinks />
           </>
         ) : (
           /* Feed View - Instagram-style scrolling */

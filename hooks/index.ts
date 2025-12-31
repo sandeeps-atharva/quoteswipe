@@ -14,3 +14,13 @@ export { useVisitorTracking } from './useVisitorTracking';
 
 export { useUserData } from './useUserData';
 
+export { useQuoteUrl } from './useQuoteUrl';
+
+export { useCacheSync, getInitialCachedState } from './useCacheSync';
+
+export { useSwipeActions } from './useSwipeActions';
+
+export { useAuthActions } from './useAuthActions';
+
+export { useQuoteFetch } from './useQuoteFetch';
+
