@@ -129,6 +129,15 @@ export default function SwipeQuotes() {
   // (preserves the quote they were viewing)
   const isLoggingIn = useRef(false);
   
+  // Pagination state for efficient quote loading
+  const QUOTES_PAGE_SIZE = 50; // Fetch 50 quotes at a time
+  const PREFETCH_THRESHOLD = 10; // Prefetch when 10 quotes away from end
+  const [quotesOffset, setQuotesOffset] = useState(0);
+  const [hasMoreQuotes, setHasMoreQuotes] = useState(true);
+  const [totalQuotes, setTotalQuotes] = useState(0);
+  const isFetchingMore = useRef(false);
+  const fetchAbortController = useRef<AbortController | null>(null);
+  
   // Card Customization - restore from cache immediately for instant display
   const [showCustomizationModal, setShowCustomizationModal] = useState(false);
   const [cardTheme, setCardTheme] = useState<CardTheme>(() => {
@@ -725,29 +734,45 @@ export default function SwipeQuotes() {
     const shouldPreserveQuote = isLoggingIn.current;
     const currentQuoteId = quotes[currentIndex]?.id;
     
+    // Cancel any in-flight request when category changes
+    if (isCategoryChange && fetchAbortController.current) {
+      fetchAbortController.current.abort();
+    }
+    fetchAbortController.current = new AbortController();
+    
     try {
       setIsLoadingQuotes(true);
       if (isCategoryChange && !shouldPreserveQuote) {
         setIsChangingCategories(true);
+        // Reset pagination state on category change
+        setQuotesOffset(0);
+        setHasMoreQuotes(true);
+        setTotalQuotes(0);
       }
       
-      // Build cache key and URL
+      // Build cache key and URL with pagination
       let categoriesKey = 'all';
-      let url = '/api/quotes';
+      let baseUrl = '/api/quotes';
       
       if (selectedCategories.length > 0) {
         categoriesKey = selectedCategories.sort().join(',');
-        url = `/api/quotes?categories=${encodeURIComponent(categoriesKey)}`;
+        baseUrl = `/api/quotes?categories=${encodeURIComponent(categoriesKey)}`;
       } else if (!isAuthenticated && categories.length > 0) {
         categoriesKey = categories[0].name;
-        url = `/api/quotes?categories=${encodeURIComponent(categoriesKey)}`;
+        baseUrl = `/api/quotes?categories=${encodeURIComponent(categoriesKey)}`;
       }
       
-      const cacheKey = `quotes_${categoriesKey}_${isAuthenticated ? 'auth' : 'guest'}`;
+      // Add pagination parameters
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      const url = `${baseUrl}${separator}limit=${QUOTES_PAGE_SIZE}&offset=0`;
+      const cacheKey = `quotes_${categoriesKey}_${isAuthenticated ? 'auth' : 'guest'}_page0`;
       
       // Helper to set quotes and optionally preserve current position
-      const applyQuotes = (quotesData: Quote[]) => {
+      const applyQuotes = (quotesData: Quote[], total: number) => {
         setQuotes(quotesData);
+        setTotalQuotes(total);
+        setHasMoreQuotes(quotesData.length < total);
+        setQuotesOffset(quotesData.length);
         
         if (shouldPreserveQuote && currentQuoteId) {
           // Try to find the same quote in the new array
@@ -764,13 +789,13 @@ export default function SwipeQuotes() {
       };
       
       // Try to get from cache first (instant display)
-      const cachedQuotes = getFromCache<Quote[]>(cacheKey, QUOTES_CACHE_DURATION);
-      if (cachedQuotes && cachedQuotes.length > 0) {
-        let quotesData = cachedQuotes;
+      const cachedData = getFromCache<{ quotes: Quote[]; total: number }>(cacheKey, QUOTES_CACHE_DURATION);
+      if (cachedData && cachedData.quotes && cachedData.quotes.length > 0) {
+        let quotesData = cachedData.quotes;
         if (selectedCategories.length > 1) {
           quotesData = shuffleArray(quotesData);
         }
-        applyQuotes(quotesData);
+        applyQuotes(quotesData, cachedData.total);
         setDragOffset({ x: 0, y: 0 });
         setSwipeDirection(null);
         setIsDragging(false);
@@ -778,25 +803,27 @@ export default function SwipeQuotes() {
         setIsLoadingQuotes(false);
         
         // Fetch fresh data in background (stale-while-revalidate pattern)
-        fetch(url).then(async (response) => {
+        fetch(url, { signal: fetchAbortController.current?.signal }).then(async (response) => {
           if (response.ok) {
             const data = await response.json();
             const freshQuotes = data.quotes || [];
-            setToCache(cacheKey, freshQuotes);
-            // Only update if:
-            // 1. Data changed significantly
-            // 2. User is not currently interacting (dragging/animating)
-            // 3. User is still at index 0 (hasn't swiped yet)
+            const total = data.pagination?.total || freshQuotes.length;
+            setToCache(cacheKey, { quotes: freshQuotes, total });
+            // Only update if user hasn't swiped yet
             const canSafelyUpdate = 
-              freshQuotes.length !== cachedQuotes.length && 
               !isDraggingRef.current && 
               !isAnimatingRef.current &&
               currentIndexRef.current === 0;
-            if (canSafelyUpdate) {
+            if (canSafelyUpdate && freshQuotes.length !== cachedData.quotes.length) {
               setQuotes(selectedCategories.length > 1 ? shuffleArray(freshQuotes) : freshQuotes);
+              setTotalQuotes(total);
+              setHasMoreQuotes(freshQuotes.length < total);
+              setQuotesOffset(freshQuotes.length);
             }
           }
-        }).catch(() => {});
+        }).catch((e) => {
+          if (e.name !== 'AbortError') console.error('Background fetch error:', e);
+        });
         
         if (isCategoryChange && !shouldPreserveQuote) {
           setTimeout(() => setIsChangingCategories(false), 150);
@@ -804,14 +831,15 @@ export default function SwipeQuotes() {
         return;
       }
       
-      // No cache - fetch from server
-      const response = await fetch(url);
+      // No cache - fetch from server with pagination
+      const response = await fetch(url, { signal: fetchAbortController.current.signal });
       if (response.ok) {
         const data = await response.json();
         let quotesData = data.quotes || [];
+        const total = data.pagination?.total || quotesData.length;
         
         // Cache the response
-        setToCache(cacheKey, quotesData);
+        setToCache(cacheKey, { quotes: quotesData, total });
         
         // Shuffle quotes if multiple categories are selected
         if (selectedCategories.length > 1) {
@@ -823,14 +851,16 @@ export default function SwipeQuotes() {
           await new Promise(resolve => setTimeout(resolve, 50));
         }
         
-        applyQuotes(quotesData);
+        applyQuotes(quotesData, total);
         setDragOffset({ x: 0, y: 0 });
         setSwipeDirection(null);
         setIsDragging(false);
         setIsAnimating(false);
       }
-    } catch (error) {
-      console.error('Fetch quotes error:', error);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Fetch quotes error:', error);
+      }
     } finally {
       setIsLoadingQuotes(false);
       isLoggingIn.current = false; // Reset login flag
@@ -839,6 +869,77 @@ export default function SwipeQuotes() {
       }
     }
   };
+
+  // Fetch more quotes when approaching end (infinite scroll)
+  const fetchMoreQuotes = useCallback(async () => {
+    // Prevent duplicate fetches
+    if (isFetchingMore.current || !hasMoreQuotes || isLoadingQuotes) return;
+    
+    isFetchingMore.current = true;
+    
+    try {
+      // Build URL with current offset
+      let categoriesKey = 'all';
+      let baseUrl = '/api/quotes';
+      
+      if (selectedCategories.length > 0) {
+        categoriesKey = selectedCategories.sort().join(',');
+        baseUrl = `/api/quotes?categories=${encodeURIComponent(categoriesKey)}`;
+      } else if (!isAuthenticated && categories.length > 0) {
+        categoriesKey = categories[0].name;
+        baseUrl = `/api/quotes?categories=${encodeURIComponent(categoriesKey)}`;
+      }
+      
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      const url = `${baseUrl}${separator}limit=${QUOTES_PAGE_SIZE}&offset=${quotesOffset}`;
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        const newQuotes = data.quotes || [];
+        const total = data.pagination?.total || (quotesOffset + newQuotes.length);
+        
+        if (newQuotes.length > 0) {
+          // Filter out duplicates (by quote ID)
+          const existingIds = new Set(quotes.map(q => String(q.id)));
+          const uniqueNewQuotes = newQuotes.filter((q: Quote) => !existingIds.has(String(q.id)));
+          
+          if (uniqueNewQuotes.length > 0) {
+            // Shuffle new quotes if multiple categories
+            const processedQuotes = selectedCategories.length > 1 
+              ? shuffleArray(uniqueNewQuotes) 
+              : uniqueNewQuotes;
+            
+            // Append to existing quotes
+            setQuotes(prev => [...prev, ...processedQuotes]);
+            setQuotesOffset(prev => prev + processedQuotes.length);
+          }
+          
+          setHasMoreQuotes(quotesOffset + newQuotes.length < total);
+          setTotalQuotes(total);
+        } else {
+          setHasMoreQuotes(false);
+        }
+      }
+    } catch (error) {
+      console.error('Fetch more quotes error:', error);
+    } finally {
+      isFetchingMore.current = false;
+    }
+  }, [quotesOffset, hasMoreQuotes, isLoadingQuotes, selectedCategories, isAuthenticated, categories, quotes]);
+
+  // Prefetch more quotes when user approaches end (infinite scroll)
+  useEffect(() => {
+    if (!isAppReady || quotes.length === 0 || !hasMoreQuotes) return;
+    
+    // Calculate remaining quotes
+    const remainingQuotes = quotes.length - currentIndex - 1;
+    
+    // Prefetch when approaching end
+    if (remainingQuotes <= PREFETCH_THRESHOLD) {
+      fetchMoreQuotes();
+    }
+  }, [currentIndex, quotes.length, isAppReady, hasMoreQuotes, fetchMoreQuotes]);
 
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories(prev => {
