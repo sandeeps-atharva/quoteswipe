@@ -116,26 +116,24 @@ export async function POST(request: NextRequest) {
     let isNewUser = false;
 
     if (existingUser) {
-      // User exists
-      // Check if user registered with email/password but NOT with Google
-      if (existingUser.password && !existingUser.google_id) {
-        return NextResponse.json(
-          { 
-            error: 'This email is already registered with email and password. Please login using your email and password instead of Google Sign-In.',
-            type: 'email_password_account'
-          },
-          { status: 400 }
-        );
-      }
-
+      // User exists - link Google account if not already linked
       userId = existingUser._id.toString();
       userName = existingUser.name;
 
-      // Link Google account if not already linked
+      // Auto-link Google account to existing email/password account
+      // This allows users to sign in with either method
       if (!existingUser.google_id) {
         await usersCollection.updateOne(
           { _id: existingUser._id },
-          { $set: { google_id: googleId, profile_picture: picture || null } }
+          { 
+            $set: { 
+              google_id: googleId, 
+              // Only update profile picture if user doesn't have one
+              ...(existingUser.profile_picture ? {} : { profile_picture: picture || null }),
+              // Mark email as verified since Google verified it
+              email_verified: true,
+            } 
+          }
         );
       }
     } else {
