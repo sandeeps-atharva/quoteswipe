@@ -205,10 +205,10 @@ export default function AuthModal({
           className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-2 sm:mb-3 md:mb-4"
         />
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-1 sm:mb-2">
-          {!isLoading && swipeCount >= 10 ? 'Loving the quotes?' : 'Welcome to QuoteSwipe!'}
+          {!isLoading && swipeCount >= 5 ? 'Loving the quotes?' : 'Welcome to QuoteSwipe!'}
         </h2>
         <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 px-2">
-          {!isLoading && swipeCount >= 10
+          {!isLoading && swipeCount >= 5
             ? 'Create an account to continue swiping and save your favorites!'
             : 'Sign in to access all features'}
         </p>
