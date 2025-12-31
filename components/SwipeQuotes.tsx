@@ -21,6 +21,7 @@ import { ModalLoader, AppLoader, NavigationLoader } from './ThematicLoader';
 import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCacheSync } from '@/hooks/useCacheSync';
+import { useBackgroundsSafe } from '@/contexts/BackgroundsContext';
 
 // Constants & Utilities
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage, getRandomBackgroundForQuote } from '@/lib/constants';
@@ -63,6 +64,9 @@ export default function SwipeQuotes() {
   
   // Theme toggle with user sync
   const { theme, toggleTheme, setIsAuthenticated: setThemeAuth } = useTheme();
+  
+  // Backgrounds context for prefetching after login
+  const backgroundsContext = useBackgroundsSafe();
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
@@ -946,10 +950,12 @@ export default function SwipeQuotes() {
     } catch {}
     
     // ✅ Fetch data in BACKGROUND (non-blocking) - don't await
+    // Also prefetch user's custom backgrounds for instant customization
     Promise.all([
       fetchUserData(),
       fetchCategories(),
       fetchAllPreferences(),
+      backgroundsContext?.ensureLoaded(), // Prefetch custom backgrounds
     ]).then(() => {
       // Check if user needs onboarding after data is loaded
       if (data.onboarding_complete === false) {
@@ -998,7 +1004,12 @@ export default function SwipeQuotes() {
     } catch {}
     
     // ✅ Fetch data in BACKGROUND (non-blocking) - don't await
-    Promise.all([fetchUserData(), fetchCategories()])
+    // Also prefetch user's custom backgrounds for instant customization
+    Promise.all([
+      fetchUserData(), 
+      fetchCategories(),
+      backgroundsContext?.ensureLoaded(), // Prefetch custom backgrounds
+    ])
       .then(() => {
         isLoadingPreferences.current = false;
         isLoggingIn.current = false;
@@ -1896,7 +1907,13 @@ export default function SwipeQuotes() {
           } catch {}
           
           // ✅ Fetch data in BACKGROUND (non-blocking)
-          Promise.all([fetchUserData(), fetchAllPreferences(), fetchCategories()])
+          // Also prefetch user's custom backgrounds for instant customization
+          Promise.all([
+            fetchUserData(), 
+            fetchAllPreferences(), 
+            fetchCategories(),
+            backgroundsContext?.ensureLoaded(), // Prefetch custom backgrounds
+          ])
             .catch(console.error);
         }}
         swipeCount={swipeCount}
