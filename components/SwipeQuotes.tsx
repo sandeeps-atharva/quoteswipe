@@ -45,6 +45,7 @@ const CreateQuoteModal = lazy(() => import('./CreateQuoteModal'));
 const CategoryOnboarding = lazy(() => import('./CategoryOnboarding'));
 const SaveQuoteModal = lazy(() => import('./SaveQuoteModal'));
 const ViewUserQuoteModal = lazy(() => import('./ViewUserQuoteModal'));
+const GuestCategoryModal = lazy(() => import('./GuestCategoryModal'));
 
 // Lazy load views for bottom navigation
 const SavedQuotesView = lazy(() => import('./SavedQuotesView'));
@@ -153,6 +154,22 @@ export default function SwipeQuotes() {
   // Category Onboarding for new users
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [allCategoriesForOnboarding, setAllCategoriesForOnboarding] = useState<Category[]>([]);
+  
+  // Guest Category Selection
+  const [showGuestCategoryModal, setShowGuestCategoryModal] = useState(false);
+  const [guestSelectedCategories, setGuestSelectedCategories] = useState<string[]>(() => {
+    // Restore guest categories from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('quoteswipe_guest_categories');
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  const [allCategoriesForGuest, setAllCategoriesForGuest] = useState<Category[]>([]);
   
   // Quote to share (can be either regular quote or user quote)
   const [shareQuote, setShareQuote] = useState<ShareQuote | null>(null);
@@ -353,10 +370,31 @@ export default function SwipeQuotes() {
           
           setPreferencesLoaded(true);
           
-          // Check onboarding
+          // Check onboarding for authenticated users
           if (isUserAuthenticated && !data.onboardingComplete) {
             setAllCategoriesForOnboarding(categoriesData);
             setShowOnboarding(true);
+          }
+          
+          // Check guest category selection for non-authenticated users
+          if (!isUserAuthenticated) {
+            // Check if guest has already selected categories
+            let hasGuestCategories = false;
+            try {
+              const savedGuestCategories = localStorage.getItem('quoteswipe_guest_categories');
+              hasGuestCategories = savedGuestCategories ? JSON.parse(savedGuestCategories).length > 0 : false;
+            } catch {}
+            
+            // If no guest categories selected, show category picker
+            if (!hasGuestCategories) {
+              // Fetch all categories for guest selection
+              const allCatsRes = await fetch('/api/categories?onboarding=true');
+              if (allCatsRes.ok) {
+                const allCatsData = await allCatsRes.json();
+                setAllCategoriesForGuest(allCatsData.categories || []);
+                setShowGuestCategoryModal(true);
+              }
+            }
           }
           
           console.log(`[App] Optimized init: ${(performance.now() - startTime).toFixed(0)}ms`);
@@ -368,16 +406,32 @@ export default function SwipeQuotes() {
             fetch('/api/categories', { credentials: 'include' }),
           ]);
           
+          let isAuthFallback = false;
           if (authResponse.ok) {
             const data = await authResponse.json();
             setIsAuthenticated(true);
             setUser(data.user);
+            isAuthFallback = true;
           }
           
           if (categoriesResponse.ok) {
             const data = await categoriesResponse.json();
             setCategories(data.categories || []);
             setTotalCategories(data.totalCategories || 0);
+            
+            // Show guest category modal if not authenticated
+            if (!isAuthFallback) {
+              let hasGuestCategories = false;
+              try {
+                const savedGuestCategories = localStorage.getItem('quoteswipe_guest_categories');
+                hasGuestCategories = savedGuestCategories ? JSON.parse(savedGuestCategories).length > 0 : false;
+              } catch {}
+              
+              if (!hasGuestCategories) {
+                setAllCategoriesForGuest(data.categories || []);
+                setShowGuestCategoryModal(true);
+              }
+            }
           }
           
           setPreferencesLoaded(true);
@@ -836,6 +890,57 @@ export default function SwipeQuotes() {
     }
   };
 
+  // Handle guest category selection (first-time visitors)
+  const handleGuestCategorySelect = async (selectedCategories: string[]) => {
+    // Save to localStorage
+    try {
+      localStorage.setItem('quoteswipe_guest_categories', JSON.stringify(selectedCategories));
+    } catch (e) {
+      console.error('Failed to save guest categories:', e);
+    }
+    
+    // Update state
+    setGuestSelectedCategories(selectedCategories);
+    setShowGuestCategoryModal(false);
+    
+    // Fetch quotes from selected categories
+    setIsLoadingQuotes(true);
+    try {
+      const categoryParam = selectedCategories.join(',');
+      const response = await fetch(`/api/quotes?categories=${encodeURIComponent(categoryParam)}&limit=20`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.quotes && data.quotes.length > 0) {
+          setQuotes(data.quotes);
+          setCurrentIndex(0);
+          setToCache('swipeQuotes', data.quotes);
+          setToCache('currentQuoteIndex', 0);
+          
+          // Update URL to first quote
+          const firstQuote = data.quotes[0];
+          const quoteUrl = `/quote/${firstQuote.text_id || firstQuote.id}`;
+          window.history.replaceState({ index: 0 }, '', quoteUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch quotes for guest categories:', error);
+      toast.error('Failed to load quotes. Please try again.');
+    } finally {
+      setIsLoadingQuotes(false);
+    }
+  };
+  
+  // Handle guest skip (show all quotes)
+  const handleGuestCategorySkip = () => {
+    // Mark as skipped so we don't show modal again
+    try {
+      localStorage.setItem('quoteswipe_guest_categories', JSON.stringify(['__skipped__']));
+    } catch {}
+    
+    setShowGuestCategoryModal(false);
+    // Quotes will continue with default fetch
+  };
+
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories(prev => {
       if (prev.includes(category)) {
@@ -940,9 +1045,10 @@ export default function SwipeQuotes() {
     // ✅ Show toast IMMEDIATELY (after modal closes)
     toast.success(`Welcome back, ${data.user.name}! 👋`);
     
-    // Clear guest category cache
+    // Clear guest category cache and selections
     try {
       sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
+      localStorage.removeItem('quoteswipe_guest_categories');
     } catch {}
     
     // ✅ Fetch data in BACKGROUND (non-blocking) - don't await
@@ -992,9 +1098,10 @@ export default function SwipeQuotes() {
     // ✅ Show toast IMMEDIATELY (after modal closes)
     toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
     
-    // Clear guest category cache
+    // Clear guest category cache and selections
     try {
       sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
+      localStorage.removeItem('quoteswipe_guest_categories');
     } catch {}
     
     // ✅ Fetch data in BACKGROUND (non-blocking) - don't await
@@ -1201,8 +1308,8 @@ export default function SwipeQuotes() {
       const newCount = swipeCount + 1;
       setSwipeCount(newCount);
 
-      // Show auth modal after 5 swipes
-      if (newCount >= 5) {
+      // Show auth modal after 10 swipes
+      if (newCount >= 10) {
         // Reset drag state before opening modal
         setIsDragging(false);
         setDragOffset({ x: 0, y: 0 });
@@ -1868,6 +1975,17 @@ export default function SwipeQuotes() {
         </Suspense>
       )}
 
+      {/* Guest Category Selection Modal */}
+      {showGuestCategoryModal && allCategoriesForGuest.length > 0 && !isAuthenticated && (
+        <Suspense fallback={<ModalLoader />}>
+          <GuestCategoryModal
+            categories={allCategoriesForGuest}
+            onComplete={handleGuestCategorySelect}
+            onSkip={handleGuestCategorySkip}
+          />
+        </Suspense>
+      )}
+
       {/* Lazy-loaded modals wrapped in Suspense for better performance */}
       {showAuthModal && (
         <Suspense fallback={<ModalLoader />}>
@@ -1890,9 +2008,10 @@ export default function SwipeQuotes() {
           // ✅ Show toast IMMEDIATELY
           toast.success(`Welcome, ${googleUser.name}! 🎉`);
           
-          // Clear guest category cache
+          // Clear guest category cache and selections
           try {
             sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
+            localStorage.removeItem('quoteswipe_guest_categories');
           } catch {}
           
           // ✅ Fetch data in BACKGROUND (non-blocking)

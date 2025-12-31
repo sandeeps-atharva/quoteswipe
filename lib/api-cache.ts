@@ -119,10 +119,26 @@ class SecureAPICache {
     }
   }
 
+  // Check if key exists and is valid (not expired)
+  has(key: string, ttl?: number): boolean {
+    const entry = this.cache.get(key);
+    if (!entry || entry.timestamp === 0) return false; // timestamp 0 means pending promise
+    
+    const maxAge = ttl ?? this.config.maxAge;
+    const isExpired = Date.now() - entry.timestamp > maxAge;
+    
+    if (isExpired) {
+      this.cache.delete(key);
+      return false;
+    }
+    
+    return true;
+  }
+
   // Get cached data with integrity verification
   get<T>(key: string, ttl?: number): T | null {
     const entry = this.cache.get(key) as CacheEntry<T> | undefined;
-    if (!entry) return null;
+    if (!entry || entry.timestamp === 0) return null; // timestamp 0 means pending promise
 
     const maxAge = ttl ?? this.config.maxAge;
     const isExpired = Date.now() - entry.timestamp > maxAge;
@@ -162,10 +178,9 @@ class SecureAPICache {
   ): Promise<T> {
     const { ttl, sensitive = false } = options;
 
-    // Return cached data if valid
-    const cached = this.get<T>(key, ttl);
-    if (cached !== null) {
-      return cached;
+    // Return cached data if valid (including cached null values)
+    if (this.has(key, ttl)) {
+      return this.get<T>(key, ttl) as T;
     }
 
     // Check if there's already a pending request (deduplication)
@@ -188,12 +203,15 @@ class SecureAPICache {
     try {
       const data = await promise;
       
-      // Validate response is not malicious
-      if (data === undefined || data === null) {
+      // Only reject undefined (null is a valid intentional response)
+      // e.g., when checking auth status for unauthenticated users
+      if (data === undefined) {
         this.cache.delete(key);
         throw new Error('Invalid response data');
       }
 
+      // Cache even null values - they're valid responses
+      // (prevents repeated fetches for unauthenticated users)
       this.set(key, data, sensitive);
       return data;
     } catch (error) {
