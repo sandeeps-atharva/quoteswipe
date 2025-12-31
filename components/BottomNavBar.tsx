@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Bookmark, PlusCircle, Sparkles, User } from 'lucide-react';
+import { Home, Bookmark, PlusCircle, Sparkles, User, Loader2 } from 'lucide-react';
 import { memo } from 'react';
 import Image from 'next/image';
 
@@ -17,6 +17,7 @@ interface BottomNavBarProps {
   hidden?: boolean;
   userProfilePicture?: string | null;
   userName?: string;
+  isLoadingUserData?: boolean; // Show loading indicators on badges
 }
 
 function BottomNavBar({
@@ -30,6 +31,7 @@ function BottomNavBar({
   hidden = false,
   userProfilePicture,
   userName,
+  isLoadingUserData = false,
 }: BottomNavBarProps) {
   
   const handleTabClick = (tab: NavTab) => {
@@ -87,7 +89,11 @@ function BottomNavBar({
                 }`} 
                 fill={activeTab === 'saved' ? 'currentColor' : 'none'}
               />
-              {savedCount > 0 && (
+              {isLoadingUserData && isAuthenticated ? (
+                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-yellow-500 text-white rounded-full">
+                  <Loader2 size={10} className="animate-spin" />
+                </span>
+              ) : savedCount > 0 && (
                 <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-yellow-500 text-white text-[9px] font-bold rounded-full">
                   {savedCount > 99 ? '99+' : savedCount}
                 </span>
@@ -127,7 +133,11 @@ function BottomNavBar({
                 }`} 
                 fill={activeTab === 'myquotes' ? 'currentColor' : 'none'}
               />
-              {myQuotesCount > 0 && (
+              {isLoadingUserData && isAuthenticated ? (
+                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-purple-500 text-white rounded-full">
+                  <Loader2 size={10} className="animate-spin" />
+                </span>
+              ) : myQuotesCount > 0 && (
                 <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-purple-500 text-white text-[9px] font-bold rounded-full">
                   {myQuotesCount > 99 ? '99+' : myQuotesCount}
                 </span>

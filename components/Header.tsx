@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, Search, Moon, Sun } from 'lucide-react';
+import { Menu, Search, Moon, Sun, Loader2 } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
 import { Category } from '@/types/quotes';
 
@@ -13,6 +13,7 @@ interface HeaderProps {
   onMenuClick: () => void;
   onSearchClick: () => void;
   onCategoriesClick: () => void;
+  isLoadingUserData?: boolean; // Show syncing indicator
 }
 
 export default function Header({
@@ -24,6 +25,7 @@ export default function Header({
   onMenuClick,
   onSearchClick,
   onCategoriesClick,
+  isLoadingUserData = false,
 }: HeaderProps) {
   return (
     <div className="fixed top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-30 flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
@@ -80,6 +82,7 @@ export default function Header({
           selectedCategories={selectedCategories}
           onClick={onCategoriesClick}
           compact
+          isLoading={isLoadingUserData && isAuthenticated}
         />
       </div>
 
@@ -115,6 +118,7 @@ export default function Header({
             categories={categories}
             selectedCategories={selectedCategories}
             onClick={onCategoriesClick}
+            isLoading={isLoadingUserData && isAuthenticated}
           />
         </div>
       </div>
@@ -127,9 +131,10 @@ interface CategoryButtonProps {
   selectedCategories: string[];
   onClick: () => void;
   compact?: boolean;
+  isLoading?: boolean;
 }
 
-function CategoryButton({ categories, selectedCategories, onClick, compact = false }: CategoryButtonProps) {
+function CategoryButton({ categories, selectedCategories, onClick, compact = false, isLoading = false }: CategoryButtonProps) {
   if (selectedCategories.length > 0) {
     return (
       <button
@@ -141,6 +146,10 @@ function CategoryButton({ categories, selectedCategories, onClick, compact = fal
         } hover:from-blue-500/20 hover:to-pink-500/20 active:scale-95 transition-all`}
         title="Manage categories"
       >
+        {/* Show loader when syncing */}
+        {isLoading && (
+          <Loader2 size={compact ? 12 : 14} className="animate-spin text-blue-500" />
+        )}
         <span className="flex items-center gap-0.5">
           {selectedCategories.slice(0, compact ? 3 : 4).map((catName) => {
             const cat = categories.find((c) => c.name === catName);
@@ -174,6 +183,10 @@ function CategoryButton({ categories, selectedCategories, onClick, compact = fal
       } hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all`}
       title="Select categories"
     >
+      {/* Show loader when syncing */}
+      {isLoading && (
+        <Loader2 size={compact ? 12 : 14} className="animate-spin text-blue-500" />
+      )}
       <span className={compact ? 'text-xs' : 'text-sm'}>📚</span>
       <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-medium text-gray-500 dark:text-gray-400`}>
         {compact ? 'All' : 'All quotes'}

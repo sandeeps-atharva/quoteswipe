@@ -108,6 +108,7 @@ export default function SwipeQuotes() {
   const [isLoadingQuotes, setIsLoadingQuotes] = useState(false);
   const [isChangingCategories, setIsChangingCategories] = useState(false);
   const [isNavigatingToQuote, setIsNavigatingToQuote] = useState(false); // Show loader when navigating from other screens
+  const [isLoadingUserData, setIsLoadingUserData] = useState(false); // Show syncing indicator after login
   const [likedQuotes, setLikedQuotes] = useState<Quote[]>([]);
   const [dislikedQuotes, setDislikedQuotes] = useState<Quote[]>([]);
   const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
@@ -1050,6 +1051,9 @@ export default function SwipeQuotes() {
       sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
     } catch {}
     
+    // ✅ Show syncing indicator while fetching user data
+    setIsLoadingUserData(true);
+    
     // ✅ Fetch data in BACKGROUND (non-blocking) - don't await
     // Also prefetch user's custom backgrounds for instant customization
     Promise.all([
@@ -1058,6 +1062,9 @@ export default function SwipeQuotes() {
       fetchAllPreferences(),
       backgroundsContext?.ensureLoaded(), // Prefetch custom backgrounds
     ]).then(() => {
+      // ✅ Hide syncing indicator when data is loaded
+      setIsLoadingUserData(false);
+      
       // Check if user needs onboarding after data is loaded
       if (data.onboarding_complete === false) {
         fetch('/api/categories?onboarding=true')
@@ -1070,7 +1077,10 @@ export default function SwipeQuotes() {
           })
           .catch(() => {});
       }
-    }).catch(console.error);
+    }).catch((error) => {
+      console.error(error);
+      setIsLoadingUserData(false); // Hide on error too
+    });
   };
 
   const handleRegister = async (name: string, email: string, password: string) => {
@@ -1104,6 +1114,9 @@ export default function SwipeQuotes() {
       sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
     } catch {}
     
+    // ✅ Show syncing indicator while fetching user data
+    setIsLoadingUserData(true);
+    
     // ✅ Fetch data in BACKGROUND (non-blocking) - don't await
     // Also prefetch user's custom backgrounds for instant customization
     Promise.all([
@@ -1114,6 +1127,7 @@ export default function SwipeQuotes() {
       .then(() => {
         isLoadingPreferences.current = false;
         isLoggingIn.current = false;
+        setIsLoadingUserData(false); // ✅ Hide syncing indicator
         
         // Show onboarding for new users
         if (data.onboarding_complete === false) {
@@ -1128,7 +1142,10 @@ export default function SwipeQuotes() {
             .catch(() => {});
         }
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error(error);
+        setIsLoadingUserData(false); // Hide on error too
+      });
   };
 
   const handleLogout = async () => {
@@ -2007,6 +2024,9 @@ export default function SwipeQuotes() {
             sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
           } catch {}
           
+          // ✅ Show syncing indicator while fetching user data
+          setIsLoadingUserData(true);
+          
           // ✅ Fetch data in BACKGROUND (non-blocking)
           // Also prefetch user's custom backgrounds for instant customization
           Promise.all([
@@ -2015,7 +2035,13 @@ export default function SwipeQuotes() {
             fetchCategories(),
             backgroundsContext?.ensureLoaded(), // Prefetch custom backgrounds
           ])
-            .catch(console.error);
+            .then(() => {
+              setIsLoadingUserData(false); // ✅ Hide syncing indicator
+            })
+            .catch((error) => {
+              console.error(error);
+              setIsLoadingUserData(false); // Hide on error too
+            });
         }}
         swipeCount={swipeCount}
       />
@@ -2188,6 +2214,7 @@ export default function SwipeQuotes() {
           onMenuClick={() => setIsSidebarOpen(true)}
           onSearchClick={() => setShowSearchModal(true)}
           onCategoriesClick={() => setIsSidebarOpen(true)}
+          isLoadingUserData={isLoadingUserData}
         />
         {/* Progress Bar */}
         <div className="fixed top-0 left-0 right-0 h-[2px] bg-white/30 backdrop-blur-sm z-50">
@@ -2341,6 +2368,7 @@ export default function SwipeQuotes() {
         }
         userProfilePicture={user?.profile_picture}
         userName={user?.name}
+        isLoadingUserData={isLoadingUserData}
       />
 
       {/* Liked Quotes View - Full Screen */}
