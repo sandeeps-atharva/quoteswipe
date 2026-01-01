@@ -332,24 +332,24 @@ export default function ProfileView({
 
   return (
     <div 
-      className="fixed inset-0 z-30 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 flex flex-col"
+      className="fixed inset-0 z-30 bg-gradient-to-b from-[#FFFBF7] to-[#FFF7ED] dark:from-[#0C0A09] dark:to-[#1C1917] flex flex-col"
       style={{ 
         paddingTop: 'env(safe-area-inset-top, 0px)',
         overscrollBehavior: 'none',
       }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50">
+      <header className="sticky top-0 z-10 bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
         <div className="max-w-2xl mx-auto px-3 sm:px-4 md:px-6 py-2.5 sm:py-3">
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onBack}
-              className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
             >
-              <ArrowLeft size={20} className="sm:w-6 sm:h-6 text-gray-600 dark:text-gray-400" />
+              <ArrowLeft size={20} className="sm:w-6 sm:h-6 text-stone-600 dark:text-stone-400" />
             </button>
             
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-white">
               Profile
             </h1>
           </div>
@@ -369,7 +369,7 @@ export default function ProfileView({
             <div className="flex flex-col items-center justify-center py-20">
               <div className="relative animate-bounce mb-4">
                 <span className="text-5xl">💬</span>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 </div>
               </div>
@@ -378,12 +378,12 @@ export default function ProfileView({
           ) : profileData ? (
             <div className="space-y-4 sm:space-y-6">
               {/* Profile Card */}
-              <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-gray-900 shadow-xl shadow-gray-200/50 dark:shadow-black/20">
+              <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-stone-900 shadow-xl shadow-stone-200/50 dark:shadow-black/20">
                 {/* Animated Gradient Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 h-32 sm:h-40">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 h-32 sm:h-40">
                   <div className="absolute inset-0 opacity-30">
                     <div className="absolute top-0 left-0 w-40 h-40 bg-white/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-                    <div className="absolute bottom-0 right-0 w-32 h-32 bg-pink-400/30 rounded-full blur-2xl translate-x-1/4 translate-y-1/4" />
+                    <div className="absolute bottom-0 right-0 w-32 h-32 bg-rose-400/30 rounded-full blur-2xl translate-x-1/4 translate-y-1/4" />
                   </div>
                 </div>
                 
@@ -401,14 +401,14 @@ export default function ProfileView({
                   {/* Avatar */}
                   <div className="absolute -top-0 left-1/2 -translate-x-1/2 translate-y-8 sm:translate-y-10">
                     <div className="relative">
-                      <button
-                        onClick={() => setShowPictureOptions(true)}
-                        disabled={isUploadingPicture}
-                        className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 p-1 shadow-2xl group relative overflow-hidden"
-                      >
-                        <div className="w-full h-full rounded-xl sm:rounded-2xl bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden relative">
-                          {isUploadingPicture ? (
-                            <Loader2 size={32} className="animate-spin text-purple-500" />
+                        <button
+                          onClick={() => setShowPictureOptions(true)}
+                          disabled={isUploadingPicture}
+                          className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-1 shadow-2xl group relative overflow-hidden"
+                        >
+                          <div className="w-full h-full rounded-xl sm:rounded-2xl bg-white dark:bg-stone-900 flex items-center justify-center overflow-hidden relative">
+                            {isUploadingPicture ? (
+                              <Loader2 size={32} className="animate-spin text-amber-500" />
                           ) : profileData.user.profile_picture ? (
                             <Image
                               src={profileData.user.profile_picture}
@@ -418,7 +418,7 @@ export default function ProfileView({
                               unoptimized={profileData.user.profile_picture.startsWith('data:')}
                             />
                           ) : (
-                            <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-amber-600 via-orange-600 to-rose-600 bg-clip-text text-transparent">
                               {getInitials(profileData.user.name)}
                             </span>
                           )}
@@ -433,7 +433,7 @@ export default function ProfileView({
                       <div className={`absolute -bottom-1 -right-1 w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-lg ${
                         profileData.user.auth_provider === 'google' 
                           ? 'bg-white' 
-                          : 'bg-blue-500'
+                          : 'bg-amber-500'
                       }`}>
                         {profileData.user.auth_provider === 'google' ? (
                           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -456,36 +456,36 @@ export default function ProfileView({
                       onClick={() => setShowPictureOptions(false)}
                     >
                       <div 
-                        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-[280px] sm:w-[320px] overflow-hidden"
+                        className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-[280px] sm:w-[320px] overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-                          <h3 className="text-lg font-semibold text-center text-gray-900 dark:text-white">Profile Picture</h3>
+                        <div className="p-4 border-b border-stone-100 dark:border-stone-800">
+                          <h3 className="text-lg font-semibold text-center text-stone-900 dark:text-white">Profile Picture</h3>
                         </div>
                         <div className="p-2">
                           <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
                           >
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center">
                               <Upload size={18} className="text-white" />
                             </div>
                             <div className="text-left">
-                              <p className="font-medium text-gray-900 dark:text-white">Upload Photo</p>
-                              <p className="text-xs text-gray-500">JPEG, PNG, GIF, WebP (max 5MB)</p>
+                              <p className="font-medium text-stone-900 dark:text-white">Upload Photo</p>
+                              <p className="text-xs text-stone-500">JPEG, PNG, GIF, WebP (max 5MB)</p>
                             </div>
                           </button>
                           
                           <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
                           >
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center">
                               <Camera size={18} className="text-white" />
                             </div>
                             <div className="text-left">
-                              <p className="font-medium text-gray-900 dark:text-white">Take Photo</p>
-                              <p className="text-xs text-gray-500">Use your camera</p>
+                              <p className="font-medium text-stone-900 dark:text-white">Take Photo</p>
+                              <p className="text-xs text-stone-500">Use your camera</p>
                             </div>
                           </button>
                           
@@ -499,15 +499,15 @@ export default function ProfileView({
                               </div>
                               <div className="text-left">
                                 <p className="font-medium text-red-600 dark:text-red-400">Remove Photo</p>
-                                <p className="text-xs text-gray-500">Delete current picture</p>
+                                <p className="text-xs text-stone-500">Delete current picture</p>
                               </div>
                             </button>
                           )}
                         </div>
-                        <div className="p-2 border-t border-gray-100 dark:border-gray-800">
+                        <div className="p-2 border-t border-stone-100 dark:border-stone-800">
                           <button
                             onClick={() => setShowPictureOptions(false)}
-                            className="w-full p-3 text-center font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                            className="w-full p-3 text-center font-medium text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-xl transition-colors"
                           >
                             Cancel
                           </button>
@@ -524,19 +524,19 @@ export default function ProfileView({
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="flex-1 px-4 py-2 text-lg font-bold text-center border-2 border-purple-300 dark:border-purple-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500"
+                          className="flex-1 px-4 py-2 text-lg font-bold text-center border-2 border-amber-300 dark:border-amber-700 rounded-xl bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:outline-none focus:border-amber-500"
                           autoFocus
                         />
                         <button 
                           onClick={handleSaveName} 
                           disabled={isSavingName} 
-                          className="p-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 disabled:opacity-50 shadow-lg"
+                          className="p-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 disabled:opacity-50 shadow-lg"
                         >
                           {isSavingName ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
                         </button>
                         <button 
                           onClick={() => { setIsEditingName(false); setEditName(profileData.user.name); }} 
-                          className="p-2.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600"
+                          className="p-2.5 bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-xl hover:bg-stone-300 dark:hover:bg-stone-600"
                         >
                           <X size={18} />
                         </button>
@@ -546,18 +546,18 @@ export default function ProfileView({
                         onClick={() => setIsEditingName(true)} 
                         className="inline-flex items-center gap-2 group"
                       >
-                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                        <h2 className="text-xl sm:text-2xl font-bold text-stone-900 dark:text-white">
                           {profileData.user.name}
                         </h2>
-                        <Edit2 size={16} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Edit2 size={16} className="text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     )}
-                    <p className="text-sm text-gray-500 mt-1">{profileData.user.email}</p>
+                    <p className="text-sm text-stone-500 mt-1">{profileData.user.email}</p>
                     <div className="flex items-center justify-center gap-2 mt-3">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
                         profileData.user.auth_provider === 'google' 
-                          ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' 
-                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                          ? 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400' 
+                          : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
                       }`}>
                         {profileData.user.auth_provider === 'google' ? (
                           <>
@@ -573,7 +573,7 @@ export default function ProfileView({
                           </>
                         )}
                       </span>
-                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <span className="text-xs text-stone-400 flex items-center gap-1">
                         <Calendar size={12} />
                         Joined {formatDate(profileData.user.created_at)}
                       </span>
@@ -585,10 +585,10 @@ export default function ProfileView({
               {/* Stats Grid */}
               <div className="grid grid-cols-4 gap-2 sm:gap-3">
                 {[
-                  { icon: Heart, count: likedCount, label: 'Liked', color: 'from-pink-500 to-rose-500', bg: 'bg-pink-50 dark:bg-pink-900/20' },
-                  { icon: Bookmark, count: savedCount, label: 'Saved', color: 'from-yellow-500 to-amber-500', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
-                  { icon: Sparkles, count: myQuotesCount, label: 'Created', color: 'from-purple-500 to-violet-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-                  { icon: ThumbsDown, count: skippedCount, label: 'Skipped', color: 'from-gray-400 to-slate-500', bg: 'bg-gray-100 dark:bg-gray-800' },
+                  { icon: Heart, count: likedCount, label: 'Liked', color: 'from-rose-500 to-pink-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
+                  { icon: Bookmark, count: savedCount, label: 'Saved', color: 'from-amber-500 to-yellow-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                  { icon: Sparkles, count: myQuotesCount, label: 'Created', color: 'from-orange-500 to-rose-500', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+                  { icon: ThumbsDown, count: skippedCount, label: 'Skipped', color: 'from-stone-400 to-stone-500', bg: 'bg-stone-100 dark:bg-stone-800' },
                 ].map((stat, idx) => (
                   <div key={idx} className={`${stat.bg} rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center relative overflow-hidden group`}>
                     <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
@@ -602,9 +602,9 @@ export default function ProfileView({
               </div>
 
               {/* Instagram-style Quote Grid */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+              <div className="bg-white dark:bg-stone-900 rounded-2xl sm:rounded-3xl shadow-sm border border-stone-100 dark:border-stone-800 overflow-hidden">
                 {/* Tab Switcher */}
-                <div className="flex border-b border-gray-100 dark:border-gray-800">
+                <div className="flex border-b border-stone-100 dark:border-stone-800">
                   <button
                     onClick={() => setActiveTab('saved')}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 text-sm font-semibold transition-colors relative ${
@@ -626,17 +626,17 @@ export default function ProfileView({
                     onClick={() => setActiveTab('created')}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 text-sm font-semibold transition-colors relative ${
                       activeTab === 'created'
-                        ? 'text-purple-600 dark:text-purple-400'
-                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                        ? 'text-rose-600 dark:text-rose-400'
+                        : 'text-stone-500 hover:text-stone-700 dark:hover:text-stone-300'
                     }`}
                   >
                     <Sparkles size={18} />
                     <span>Created</span>
-                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                    <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
                       {userQuotes.length}
                     </span>
                     {activeTab === 'created' && (
-                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500" />
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500" />
                     )}
                   </button>
                 </div>
@@ -703,11 +703,11 @@ export default function ProfileView({
                         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center">
                           <Bookmark size={28} className="text-amber-500" />
                         </div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">No Saved Quotes Yet</h3>
-                        <p className="text-sm text-gray-500 mb-4">Save quotes you love to see them here</p>
+                        <h3 className="font-semibold text-stone-900 dark:text-white mb-1">No Saved Quotes Yet</h3>
+                        <p className="text-sm text-stone-500 mb-4">Save quotes you love to see them here</p>
                         <button
                           onClick={onBack}
-                          className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
+                          className="px-4 py-2 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
                         >
                           Browse Quotes
                         </button>
@@ -774,14 +774,14 @@ export default function ProfileView({
                     ) : (
                       /* Empty State for Created */
                       <div className="py-12 px-4 text-center">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 flex items-center justify-center">
-                          <Plus size={28} className="text-purple-500" />
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-rose-100 to-orange-100 dark:from-rose-900/30 dark:to-orange-900/30 flex items-center justify-center">
+                          <Plus size={28} className="text-rose-500" />
                         </div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">No Quotes Created Yet</h3>
-                        <p className="text-sm text-gray-500 mb-4">Create your first inspiring quote</p>
+                        <h3 className="font-semibold text-stone-900 dark:text-white mb-1">No Quotes Created Yet</h3>
+                        <p className="text-sm text-stone-500 mb-4">Create your first inspiring quote</p>
                         <button
                           onClick={onCreateQuote}
-                          className="px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-500 text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
+                          className="px-4 py-2 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
                         >
                           Create Quote
                         </button>
@@ -796,8 +796,8 @@ export default function ProfileView({
                 onClick={onCreateQuote}
                 className="w-full relative overflow-hidden rounded-2xl group active:scale-[0.98] transition-transform"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500" />
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 blur-xl opacity-50 group-hover:opacity-70 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 blur-xl opacity-50 group-hover:opacity-70 transition-opacity" />
                 <div className="relative flex items-center gap-4 p-4 sm:p-5">
                   <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
                     <PenLine size={24} className="sm:w-7 sm:h-7 text-white" />
@@ -822,18 +822,18 @@ export default function ProfileView({
               </button>
 
               {/* Settings Section */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Account</h3>
+              <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-100 dark:border-stone-800 overflow-hidden">
+                <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
+                  <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Account</h3>
                 </div>
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                <div className="divide-y divide-stone-100 dark:divide-stone-800">
                   {profileData.user.auth_provider === 'email' && (
                     <MenuItem
                       icon={Lock}
                       title="Change Password"
                       subtitle="Update your password"
                       onClick={() => setShowUpdatePasswordModal(true)}
-                      gradient="bg-gradient-to-br from-blue-500 to-cyan-500"
+                      gradient="bg-gradient-to-br from-amber-500 to-cyan-500"
                     />
                   )}
                   {profileData.user.auth_provider === 'google' && (
@@ -852,11 +852,11 @@ export default function ProfileView({
               </div>
 
               {/* Help & Support Section */}
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Support</h3>
+              <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-sm border border-stone-100 dark:border-stone-800 overflow-hidden">
+                <div className="px-4 py-3 border-b border-stone-100 dark:border-stone-800">
+                  <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Support</h3>
                 </div>
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                <div className="divide-y divide-stone-100 dark:divide-stone-800">
                   <MenuItem
                     icon={MessageSquare}
                     title="Send Feedback"
@@ -876,7 +876,7 @@ export default function ProfileView({
                     title="About"
                     subtitle="Learn more about us"
                     href="/about"
-                    gradient="bg-gradient-to-br from-purple-500 to-indigo-500"
+                    gradient="bg-gradient-to-br from-rose-500 to-orange-500"
                   />
                 </div>
               </div>
@@ -896,20 +896,20 @@ export default function ProfileView({
               </button>
 
               {/* Version Info */}
-              <p className="text-center text-[10px] sm:text-xs text-gray-400 pb-4">
+              <p className="text-center text-[10px] sm:text-xs text-stone-400 pb-4">
                 Quote Swipe v1.0 • Made with ❤️
               </p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center mb-4">
-                <User size={32} className="text-gray-400" />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-stone-200 to-stone-300 dark:from-stone-700 dark:to-stone-800 flex items-center justify-center mb-4">
+                <User size={32} className="text-stone-400" />
               </div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Unable to load profile</h2>
-              <p className="text-sm text-gray-500 mb-4">Please try again later</p>
+              <h2 className="text-lg font-bold text-stone-900 dark:text-white mb-2">Unable to load profile</h2>
+              <p className="text-sm text-stone-500 mb-4">Please try again later</p>
               <button
                 onClick={onBack}
-                className="px-6 py-2.5 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition-colors"
+                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-xl hover:opacity-90 transition-colors"
               >
                 Go Back
               </button>

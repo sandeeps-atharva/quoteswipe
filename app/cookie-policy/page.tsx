@@ -61,7 +61,7 @@ export default function CookiePolicy() {
           <SectionCard key={index}>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 flex-shrink-0">
+                <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-500/10 to-rose-500/10 dark:from-amber-500/20 dark:to-rose-500/20 flex-shrink-0">
                   <div className="w-5 h-5 sm:w-6 sm:h-6 [&>*]:w-full [&>*]:h-full">
                     {cookie.icon}
                   </div>
@@ -72,7 +72,7 @@ export default function CookiePolicy() {
               </div>
               <span className={`self-start sm:self-auto px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap ${
                 cookie.required 
-                  ? 'bg-gradient-to-r from-blue-500/20 to-pink-500/20 text-blue-700 dark:text-blue-300' 
+                  ? 'bg-gradient-to-r from-amber-500/20 to-rose-500/20 text-blue-700 dark:text-blue-300' 
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
               }`}>
                 {cookie.required ? 'Required' : 'Optional'}
@@ -109,7 +109,7 @@ export default function CookiePolicy() {
           <ListItem>Opt-Out Links: Some analytics services provide opt-out mechanisms on their websites.</ListItem>
           <ListItem>Device Settings: Mobile devices often have settings to limit ad tracking and cookies.</ListItem>
         </ul>
-        <div className="mt-4 sm:mt-5 md:mt-6 p-3 sm:p-4 bg-gradient-to-r from-blue-500/5 to-pink-500/5 dark:from-blue-500/10 dark:to-pink-500/10 rounded-lg sm:rounded-xl border border-blue-200/50 dark:border-pink-800/50">
+        <div className="mt-4 sm:mt-5 md:mt-6 p-3 sm:p-4 bg-gradient-to-r from-amber-500/5 to-rose-500/5 dark:from-amber-500/10 dark:to-rose-500/10 rounded-lg sm:rounded-xl border border-blue-200/50 dark:border-pink-800/50">
           <p className="text-[10px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-300">
             <strong>Note:</strong> Blocking essential cookies may affect the functionality of our website. 
             You may not be able to use certain features like saving quotes or maintaining your login session.

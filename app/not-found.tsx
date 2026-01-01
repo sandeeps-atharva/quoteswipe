@@ -25,7 +25,7 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 overflow-hidden">
+    <div className="min-h-screen bg-[#FFFBF7] dark:bg-[#0C0A09] flex items-center justify-center p-4 overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-20 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
@@ -47,10 +47,10 @@ export default function NotFound() {
 
         {/* 404 Text */}
         <div className="relative mb-6">
-          <h1 className="text-8xl sm:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-pink-600 select-none">
+          <h1 className="text-8xl sm:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-500 to-rose-600 select-none">
             404
           </h1>
-          <div className="absolute inset-0 text-8xl sm:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-pink-600 blur-2xl opacity-30 select-none">
+          <div className="absolute inset-0 text-8xl sm:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-500 to-rose-600 blur-2xl opacity-30 select-none">
             404
           </div>
         </div>
@@ -64,8 +64,8 @@ export default function NotFound() {
         </p>
 
         {/* Inspirational Quote Card */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 mb-8 shadow-xl shadow-blue-500/5 border border-white/50 dark:border-gray-700/50 relative overflow-hidden">
-          <Quote className="absolute top-3 left-3 w-8 h-8 text-blue-500/20 dark:text-blue-400/20" />
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 mb-8 shadow-xl shadow-amber-500/5 border border-white/50 dark:border-gray-700/50 relative overflow-hidden">
+          <Quote className="absolute top-3 left-3 w-8 h-8 text-amber-500/20 dark:text-amber-400/20" />
           <p className="text-gray-700 dark:text-gray-300 italic text-base sm:text-lg mb-3 relative z-10 font-serif">
             "{quote.text}"
           </p>
@@ -78,7 +78,7 @@ export default function NotFound() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-pink-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-pink-700 transition-all shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-105 active:scale-95"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-rose-600 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-rose-600 transition-all shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 hover:scale-105 active:scale-95"
           >
             <Home className="w-5 h-5" />
             Go Home

@@ -91,7 +91,7 @@ export default function Feedback() {
 
   if (isSubmitted) {
     return (
-      <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50'}`}>
+      <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0C0A09]' : 'bg-[#FFFBF7]'}`}>
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
           <div className={`rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 text-center ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-xl`}>
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center">
@@ -106,7 +106,7 @@ export default function Feedback() {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
               <Link
                 href="/"
-                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-pink-600 text-white rounded-lg sm:rounded-xl font-medium text-sm sm:text-base hover:opacity-90 transition-all"
+                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-amber-600 to-rose-600 text-white rounded-lg sm:rounded-xl font-medium text-sm sm:text-base hover:opacity-90 transition-all"
               >
                 Back to Quotes
               </Link>
@@ -131,7 +131,7 @@ export default function Feedback() {
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50'}`}>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0C0A09]' : 'bg-[#FFFBF7]'}`}>
       <div className="max-w-2xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {/* Header */}
         <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -175,7 +175,7 @@ export default function Feedback() {
                     theme === 'dark'
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                       : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
+                  } focus:ring-2 focus:ring-amber-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
                   placeholder="John Doe"
                 />
               </div>
@@ -194,7 +194,7 @@ export default function Feedback() {
                     theme === 'dark'
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                       : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
+                  } focus:ring-2 focus:ring-amber-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
                   placeholder="john@example.com"
                 />
               </div>
@@ -217,8 +217,8 @@ export default function Feedback() {
                       className={`p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-all flex flex-col items-center gap-1 sm:gap-2 active:scale-95 ${
                         isSelected
                           ? theme === 'dark'
-                            ? 'border-blue-500 bg-blue-500/20 text-blue-400'
-                            : 'border-blue-500 bg-blue-50 text-blue-600'
+                            ? 'border-amber-500 bg-amber-500/20 text-amber-400'
+                            : 'border-amber-500 bg-amber-50 text-amber-600'
                           : theme === 'dark'
                             ? 'border-gray-700 hover:border-gray-600 text-gray-400'
                             : 'border-gray-200 hover:border-gray-300 text-gray-600'
@@ -247,7 +247,7 @@ export default function Feedback() {
                   theme === 'dark'
                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                     : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                } focus:ring-2 focus:ring-amber-500 focus:border-transparent`}
                 placeholder={
                   formData.category === 'bug'
                     ? 'Please describe the bug you encountered. Include steps to reproduce if possible...'
@@ -271,7 +271,7 @@ export default function Feedback() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 sm:py-4 px-4 sm:px-6 bg-gradient-to-r from-blue-600 to-pink-600 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl hover:opacity-90 transition-all shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
+              className="w-full py-3 sm:py-4 px-4 sm:px-6 bg-gradient-to-r from-amber-600 to-rose-600 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl hover:opacity-90 transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 disabled:opacity-70 active:scale-[0.98]"
             >
               {isSubmitting ? (
                 <>
@@ -291,7 +291,7 @@ export default function Feedback() {
           <div className={`mt-4 sm:mt-6 pt-4 sm:pt-6 border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} text-center`}>
             <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
               Love QuoteSwipe?{' '}
-              <Link href="/review" className="text-blue-500 hover:text-blue-600 font-medium">
+              <Link href="/review" className="text-amber-500 hover:text-amber-600 font-medium">
                 Write a public review →
               </Link>
             </p>

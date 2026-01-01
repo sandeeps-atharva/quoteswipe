@@ -336,16 +336,16 @@ export default function ImageUploader({
     <div className={className}>
       {/* Upload Progress Bar */}
       {uploadProgress && (
-        <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
+        <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+            <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
               Uploading {uploadProgress.completed}/{uploadProgress.total} images...
             </span>
-            <Loader2 size={16} className="animate-spin text-blue-500" />
+            <Loader2 size={16} className="animate-spin text-amber-500" />
           </div>
-          <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+          <div className="w-full bg-amber-200 dark:bg-amber-800 rounded-full h-2">
             <div 
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+              className="bg-amber-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(uploadProgress.completed / uploadProgress.total) * 100}%` }}
             />
           </div>
@@ -359,7 +359,7 @@ export default function ImageUploader({
       {showUploadButtons && !uploadProgress && (
         <div className="flex gap-2 mb-3">
           {/* Single Upload */}
-          <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl cursor-pointer hover:shadow-lg transition-all active:scale-[0.98]">
+          <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-xl cursor-pointer hover:shadow-lg transition-all active:scale-[0.98]">
             <input
               type="file"
               accept="image/*"
@@ -411,8 +411,8 @@ export default function ImageUploader({
           onClick={() => onSelectCustomBackground(null)}
           className={`w-full mb-3 px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
             !selectedCustomBackground
-              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-              : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+              ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+              : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-stone-300'
           }`}
         >
           {clearOptionLabel}
@@ -454,7 +454,7 @@ export default function ImageUploader({
                     />
                     {/* Selection indicator */}
                     {selectedCustomBackground === bg.url && !isDeleting && (
-                      <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
                         <Check size={16} className="text-white drop-shadow" />
                       </div>
                     )}

@@ -43,18 +43,20 @@ export default function ViewUserQuoteModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+      {/* Backdrop with warm gradient */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-md"
         onClick={onClose}
-      />
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
+      </div>
 
       {/* Quote Card Container */}
       <div className="relative w-full max-w-md animate-in zoom-in-95 duration-200">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute -top-12 right-0 flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-sm font-medium transition-all"
+          className="absolute -top-12 right-0 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-sm font-medium transition-all backdrop-blur-sm"
         >
           <span>Close</span>
           <span className="text-lg">×</span>
@@ -64,7 +66,7 @@ export default function ViewUserQuoteModal({
         <div className="absolute -top-12 left-0 flex items-center gap-2">
           <button
             onClick={() => onEdit(quote)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-medium transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-full text-sm font-medium transition-all shadow-lg shadow-amber-500/30"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -84,7 +86,7 @@ export default function ViewUserQuoteModal({
           </button>
           <button
             onClick={() => onShare(quote)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-full text-sm font-medium transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white rounded-full text-sm font-medium transition-all shadow-lg shadow-rose-500/30"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -138,10 +140,10 @@ export default function ViewUserQuoteModal({
         {/* Quote info */}
         <div className="mt-4 text-center">
           <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+            className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
               isQuotePublic(quote.is_public)
-                ? 'bg-green-500/20 text-green-300'
-                : 'bg-gray-500/20 text-gray-300'
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                : 'bg-stone-500/20 text-stone-300 border border-stone-400/30'
             }`}
           >
             {isQuotePublic(quote.is_public) ? (
@@ -188,4 +190,3 @@ export default function ViewUserQuoteModal({
     </div>
   );
 }
-

@@ -490,10 +490,10 @@ export default function Sidebar({
   const renderProfileView = () => (
     <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-200">
       {/* Compact Profile Header */}
-      <div className="p-3 border-b border-gray-100 dark:border-gray-800">
+      <div className="p-3 border-b border-stone-100 dark:border-stone-800">
         <button
           onClick={() => setCurrentView('main')}
-          className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors text-sm"
+          className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200 transition-colors text-sm"
         >
           <ArrowLeft size={16} />
           <span>Back</span>
@@ -504,14 +504,14 @@ export default function Sidebar({
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {isLoadingProfile ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 size={24} className="animate-spin text-blue-500" />
+            <Loader2 size={24} className="animate-spin text-amber-500" />
           </div>
         ) : profileData ? (
           <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
             {/* Compact Avatar Row */}
             <div className="flex items-center gap-3">
-              <div className="relative shrink-0">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-lg sm:text-xl font-bold shadow-lg">
+                <div className="relative shrink-0">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center text-white text-lg sm:text-xl font-bold shadow-lg shadow-orange-500/30">
                   {profileData.user.name.includes(' ') 
                     ? profileData.user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
                     : profileData.user.name.slice(0, 2).toUpperCase()
@@ -519,8 +519,8 @@ export default function Sidebar({
                 </div>
                 <div className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
                   profileData.user.auth_provider === 'google' 
-                    ? 'bg-white dark:bg-gray-800 shadow' 
-                    : 'bg-blue-500 text-white'
+                    ? 'bg-white dark:bg-stone-800 shadow' 
+                    : 'bg-amber-500 text-white'
                 }`}>
                   {profileData.user.auth_provider === 'google' ? (
                     <svg className="w-3 h-3" viewBox="0 0 24 24">
@@ -534,58 +534,58 @@ export default function Sidebar({
               </div>
               
               <div className="flex-1 min-w-0">
-                {isEditingName ? (
+                  {isEditingName ? (
                   <div className="flex items-center gap-1.5">
                     <input
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                       autoFocus
                     />
-                    <button onClick={handleSaveName} disabled={isSavingName} className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50">
+                    <button onClick={handleSaveName} disabled={isSavingName} className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50">
                       {isSavingName ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                     </button>
-                    <button onClick={() => { setIsEditingName(false); setEditName(profileData.user.name); }} className="p-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 rounded-lg">
+                    <button onClick={() => { setIsEditingName(false); setEditName(profileData.user.name); }} className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-600 rounded-lg">
                       <X size={14} />
                     </button>
                   </div>
                 ) : (
                   <button onClick={() => setIsEditingName(true)} className="flex items-center gap-1.5 group">
-                    <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">{profileData.user.name}</span>
-                    <Edit2 size={12} className="text-gray-400 opacity-50 sm:opacity-0 sm:group-hover:opacity-100 shrink-0" />
+                    <span className="text-base sm:text-lg font-bold text-stone-900 dark:text-white truncate">{profileData.user.name}</span>
+                    <Edit2 size={12} className="text-stone-400 opacity-50 sm:opacity-0 sm:group-hover:opacity-100 shrink-0" />
                   </button>
                 )}
-                <p className="text-xs text-gray-500 truncate">{profileData.user.email}</p>
+                <p className="text-xs text-stone-500 truncate">{profileData.user.email}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                    profileData.user.auth_provider === 'google' ? 'bg-gray-100 dark:bg-gray-800 text-gray-500' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                    profileData.user.auth_provider === 'google' ? 'bg-stone-100 dark:bg-stone-800 text-stone-500' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
                   }`}>
                     {profileData.user.auth_provider === 'google' ? 'Google' : 'Email'}
                   </span>
-                  <span className="text-[10px] text-gray-400">Since {formatDate(profileData.user.created_at)}</span>
+                  <span className="text-[10px] text-stone-400">Since {formatDate(profileData.user.created_at)}</span>
                 </div>
               </div>
             </div>
 
             {/* Stats Grid - Compact (Read-only stats, use bottom nav for full views) */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-xl p-2 sm:p-3 text-center">
-                <Heart size={16} className="mx-auto text-pink-500 mb-0.5" fill="currentColor" />
-                <div className="text-lg sm:text-xl font-bold text-pink-600 dark:text-pink-400">{likedCount}</div>
-                <div className="text-[10px] text-pink-600/70 dark:text-pink-400/70">Liked</div>
+              <div className="bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 rounded-xl p-2 sm:p-3 text-center border border-rose-200/50 dark:border-rose-800/30">
+                <Heart size={16} className="mx-auto text-rose-500 mb-0.5" fill="currentColor" />
+                <div className="text-lg sm:text-xl font-bold text-rose-600 dark:text-rose-400">{likedCount}</div>
+                <div className="text-[10px] text-rose-600/70 dark:text-rose-400/70">Liked</div>
               </div>
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/40 dark:to-gray-700/40 rounded-xl p-2 sm:p-3 text-center">
-                <ThumbsDown size={16} className="mx-auto text-gray-400 mb-0.5" />
-                <div className="text-lg sm:text-xl font-bold text-gray-600 dark:text-gray-400">{dislikedCount}</div>
-                <div className="text-[10px] text-gray-500">Skipped</div>
+              <div className="bg-gradient-to-br from-stone-50 to-stone-100 dark:from-stone-800/40 dark:to-stone-700/40 rounded-xl p-2 sm:p-3 text-center border border-stone-200/50 dark:border-stone-700/30">
+                <ThumbsDown size={16} className="mx-auto text-stone-400 mb-0.5" />
+                <div className="text-lg sm:text-xl font-bold text-stone-600 dark:text-stone-400">{dislikedCount}</div>
+                <div className="text-[10px] text-stone-500">Skipped</div>
               </div>
             </div>
 
             {/* Create Your Quote Button */}
             <button
               onClick={() => { onCreateQuoteClick?.(); onClose(); }}
-              className="w-full relative overflow-hidden py-3.5 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+              className="w-full relative overflow-hidden py-3.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               <div className="flex items-center justify-center gap-2">
                 <PenLine size={16} />
@@ -605,15 +605,15 @@ export default function Sidebar({
               {profileData.user.auth_provider === 'email' && (
                 <button
                   onClick={() => setShowUpdatePasswordModal(true)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-sm"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl transition-colors text-sm"
                 >
                   <Lock size={14} />
                   <span className="font-medium">Change Password</span>
                 </button>
               )}
               {profileData.user.auth_provider === 'google' && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-[11px] text-blue-600 dark:text-blue-400 text-center">
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 text-center">
                     🔒 Secured by Google
                   </p>
                 </div>
@@ -621,7 +621,7 @@ export default function Sidebar({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-12 text-stone-400">
             <User size={40} className="mb-3" />
             <p className="text-sm">Unable to load profile</p>
           </div>
@@ -699,56 +699,56 @@ export default function Sidebar({
   const renderLikedView = () => (
     <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-200">
       {/* Header with Search */}
-      <div className="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2">
+      <div className="p-3 border-b border-stone-100 dark:border-stone-800 space-y-2">
         <div className="flex items-center gap-2">
-          <button onClick={() => setCurrentView('profile')} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors shrink-0">
-            <ArrowLeft size={16} className="text-gray-500" />
+          <button onClick={() => setCurrentView('profile')} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors shrink-0">
+            <ArrowLeft size={16} className="text-stone-500" />
           </button>
           <div className="flex-1 relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
               placeholder="Search liked quotes..."
               value={collectionSearch}
               onChange={(e) => setCollectionSearch(e.target.value)}
-              className="w-full pl-8 pr-8 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="w-full pl-8 pr-8 py-1.5 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
             {collectionSearch && (
-              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
                 <X size={12} />
               </button>
             )}
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-pink-50 dark:bg-pink-900/20 rounded-lg shrink-0">
-            <Heart size={14} className="text-pink-500" fill="currentColor" />
-            <span className="text-sm font-semibold text-pink-600 dark:text-pink-400">
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-rose-50 dark:bg-rose-900/20 rounded-lg shrink-0">
+            <Heart size={14} className="text-rose-500" fill="currentColor" />
+            <span className="text-sm font-semibold text-rose-600 dark:text-rose-400">
               {isLoadingLiked ? <Loader2 size={12} className="animate-spin" /> : likedQuotes.length}
             </span>
           </div>
         </div>
         {collectionSearch && (
-          <p className="text-[10px] text-gray-500 pl-9">Found {filteredLikedQuotes.length} of {likedQuotes.length}</p>
+          <p className="text-[10px] text-stone-500 pl-9">Found {filteredLikedQuotes.length} of {likedQuotes.length}</p>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3">
         {isLoadingLiked ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 size={24} className="animate-spin text-pink-500" />
+            <Loader2 size={24} className="animate-spin text-rose-500" />
           </div>
         ) : likedQuotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="w-12 h-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center mb-3">
-              <Heart size={22} className="text-pink-500" />
+            <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-3">
+              <Heart size={22} className="text-rose-500" />
             </div>
-            <p className="font-medium text-gray-900 dark:text-white text-sm mb-1">No liked quotes</p>
-            <p className="text-xs text-gray-500">Swipe right on quotes you love</p>
+            <p className="font-medium text-stone-900 dark:text-white text-sm mb-1">No liked quotes</p>
+            <p className="text-xs text-stone-500">Swipe right on quotes you love</p>
           </div>
         ) : filteredLikedQuotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <Search size={28} className="text-gray-300 mb-2" />
-            <p className="text-xs text-gray-500">No quotes match "{collectionSearch}"</p>
-            <button onClick={() => setCollectionSearch('')} className="text-xs text-pink-500 hover:text-pink-600 mt-2">Clear search</button>
+            <Search size={28} className="text-stone-300 mb-2" />
+            <p className="text-xs text-stone-500">No quotes match "{collectionSearch}"</p>
+            <button onClick={() => setCollectionSearch('')} className="text-xs text-rose-500 hover:text-rose-600 mt-2">Clear search</button>
           </div>
         ) : (
           <div className="space-y-2">
@@ -756,29 +756,29 @@ export default function Sidebar({
               <div 
                 key={quote.id} 
                 onClick={() => handleQuoteClick(quote.id, quote.category)}
-                className={`group relative bg-gradient-to-r from-pink-50/50 to-white dark:from-pink-900/10 dark:to-gray-800 rounded-xl p-3 border border-pink-100 dark:border-pink-900/30 hover:shadow-md hover:border-pink-200 dark:hover:border-pink-800 transition-all cursor-pointer ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
+                className={`group relative bg-gradient-to-r from-rose-50/50 to-white dark:from-rose-900/10 dark:to-stone-800 rounded-xl p-3 border border-rose-100 dark:border-rose-900/30 hover:shadow-md hover:border-rose-200 dark:hover:border-rose-800 transition-all cursor-pointer ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 {navigatingQuoteId === quote.id && (
                   <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <Loader2 size={18} className="animate-spin text-pink-500" />
+                    <Loader2 size={18} className="animate-spin text-rose-500" />
                   </div>
                 )}
                 <button
                   onClick={(e) => handleShareQuote(e, quote)}
-                  className="absolute top-2 right-2 p-1.5 bg-pink-100 dark:bg-pink-900/30 hover:bg-pink-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
+                  className="absolute top-2 right-2 p-1.5 bg-rose-100 dark:bg-rose-900/30 hover:bg-rose-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                   title="Share"
                 >
-                  <Share2 size={14} className="text-pink-500" />
+                  <Share2 size={14} className="text-rose-500" />
                 </button>
                 <div className="flex items-start gap-2">
                   <div className="shrink-0 mt-0.5">
-                    <Heart size={14} className="text-pink-400" fill="currentColor" />
+                    <Heart size={14} className="text-rose-400" fill="currentColor" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white leading-snug line-clamp-2">"{quote.text}"</p>
+                    <p className="text-xs sm:text-sm text-stone-900 dark:text-white leading-snug line-clamp-2">"{quote.text}"</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm">{quote.category_icon}</span>
-                      {quote.author && <p className="text-[10px] sm:text-xs text-gray-500 truncate">— {quote.author}</p>}
+                      {quote.author && <p className="text-[10px] sm:text-xs text-stone-500 truncate">— {quote.author}</p>}
                     </div>
                   </div>
                 </div>
@@ -794,56 +794,56 @@ export default function Sidebar({
   const renderDislikedView = () => (
     <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-4 duration-200">
       {/* Header with Search */}
-      <div className="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2">
+      <div className="p-3 border-b border-stone-100 dark:border-stone-800 space-y-2">
         <div className="flex items-center gap-2">
-          <button onClick={() => setCurrentView('profile')} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors shrink-0">
-            <ArrowLeft size={16} className="text-gray-500" />
+          <button onClick={() => setCurrentView('profile')} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors shrink-0">
+            <ArrowLeft size={16} className="text-stone-500" />
           </button>
           <div className="flex-1 relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
               placeholder="Search skipped quotes..."
               value={collectionSearch}
               onChange={(e) => setCollectionSearch(e.target.value)}
-              className="w-full pl-8 pr-8 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              className="w-full pl-8 pr-8 py-1.5 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
             />
             {collectionSearch && (
-              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
                 <X size={12} />
               </button>
             )}
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg shrink-0">
-            <ThumbsDown size={14} className="text-gray-400" />
-            <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-stone-100 dark:bg-stone-800 rounded-lg shrink-0">
+            <ThumbsDown size={14} className="text-stone-400" />
+            <span className="text-sm font-semibold text-stone-600 dark:text-stone-400">
               {isLoadingDisliked ? <Loader2 size={12} className="animate-spin" /> : dislikedQuotes.length}
             </span>
           </div>
         </div>
         {collectionSearch && (
-          <p className="text-[10px] text-gray-500 pl-9">Found {filteredDislikedQuotes.length} of {dislikedQuotes.length}</p>
+          <p className="text-[10px] text-stone-500 pl-9">Found {filteredDislikedQuotes.length} of {dislikedQuotes.length}</p>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3">
         {isLoadingDisliked ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 size={24} className="animate-spin text-gray-400" />
+            <Loader2 size={24} className="animate-spin text-stone-400" />
           </div>
         ) : dislikedQuotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
-              <ThumbsDown size={22} className="text-gray-400" />
+            <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-3">
+              <ThumbsDown size={22} className="text-stone-400" />
             </div>
-            <p className="font-medium text-gray-900 dark:text-white text-sm mb-1">No skipped quotes</p>
-            <p className="text-xs text-gray-500">Swipe left to skip quotes</p>
+            <p className="font-medium text-stone-900 dark:text-white text-sm mb-1">No skipped quotes</p>
+            <p className="text-xs text-stone-500">Swipe left to skip quotes</p>
           </div>
         ) : filteredDislikedQuotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <Search size={28} className="text-gray-300 mb-2" />
-            <p className="text-xs text-gray-500">No quotes match "{collectionSearch}"</p>
-            <button onClick={() => setCollectionSearch('')} className="text-xs text-gray-500 hover:text-gray-600 mt-2">Clear search</button>
+            <Search size={28} className="text-stone-300 mb-2" />
+            <p className="text-xs text-stone-500">No quotes match "{collectionSearch}"</p>
+            <button onClick={() => setCollectionSearch('')} className="text-xs text-stone-500 hover:text-stone-600 mt-2">Clear search</button>
           </div>
         ) : (
           <div className="space-y-2">
@@ -851,29 +851,29 @@ export default function Sidebar({
               <div 
                 key={quote.id} 
                 onClick={() => handleQuoteClick(quote.id, quote.category)}
-                className={`group relative bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 hover:shadow-sm transition-all cursor-pointer ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
+                className={`group relative bg-stone-50 dark:bg-stone-800/50 rounded-xl p-3 border border-stone-100 dark:border-stone-700 hover:bg-white dark:hover:bg-stone-800 hover:shadow-sm transition-all cursor-pointer ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 {navigatingQuoteId === quote.id && (
                   <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <Loader2 size={18} className="animate-spin text-gray-400" />
+                    <Loader2 size={18} className="animate-spin text-stone-400" />
                   </div>
                 )}
                 <button
                   onClick={(e) => handleShareQuote(e, quote)}
-                  className="absolute top-2 right-2 p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
+                  className="absolute top-2 right-2 p-1.5 bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                   title="Share"
                 >
-                  <Share2 size={14} className="text-gray-500" />
+                  <Share2 size={14} className="text-stone-500" />
                 </button>
                 <div className="flex items-start gap-2">
                   <div className="shrink-0 mt-0.5">
-                    <ThumbsDown size={14} className="text-gray-300 dark:text-gray-600" />
+                    <ThumbsDown size={14} className="text-stone-300 dark:text-stone-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-snug line-clamp-2">"{quote.text}"</p>
+                    <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-snug line-clamp-2">"{quote.text}"</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm opacity-50">{quote.category_icon}</span>
-                      {quote.author && <p className="text-[10px] sm:text-xs text-gray-400 truncate">— {quote.author}</p>}
+                      {quote.author && <p className="text-[10px] sm:text-xs text-stone-400 truncate">— {quote.author}</p>}
                     </div>
                   </div>
                 </div>
@@ -890,24 +890,24 @@ export default function Sidebar({
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header Title - Different for authenticated vs guest */}
       {isAuthenticated ? (
-        <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="p-3 sm:p-4 border-b border-stone-100 dark:border-stone-800">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <h2 className="text-lg font-bold text-stone-900 dark:text-white flex items-center gap-2">
               <span className="text-xl">📚</span>
               Categories
             </h2>
           </div>
-          <p className="text-xs text-gray-500 mb-3">Choose your favorite topics</p>
+          <p className="text-xs text-stone-500 mb-3">Choose your favorite topics</p>
           
           {/* View Mode Toggle */}
           {onViewModeChange && (
-            <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+            <div className="flex items-center gap-2 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
               <button
                 onClick={() => onViewModeChange('swipe')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
                   viewMode === 'swipe'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                    ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm'
+                    : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
                 }`}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -920,8 +920,8 @@ export default function Sidebar({
                 onClick={() => onViewModeChange('feed')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
                   viewMode === 'feed'
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                    ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm'
+                    : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
                 }`}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -936,12 +936,12 @@ export default function Sidebar({
           )}
         </div>
       ) : (
-        <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <div className="p-3 sm:p-4 border-b border-stone-100 dark:border-stone-800">
+          <h2 className="text-lg font-bold text-stone-900 dark:text-white flex items-center gap-2">
             <span className="text-xl">👋</span>
             Welcome
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5">Sign in to unlock all features</p>
+          <p className="text-xs text-stone-500 mt-0.5">Sign in to unlock all features</p>
         </div>
       )}
 
@@ -952,7 +952,7 @@ export default function Sidebar({
             onClick={() => { onCreateQuoteClick?.(); onClose(); }}
             className="w-full relative overflow-hidden group rounded-xl"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 opacity-90 group-hover:opacity-100 transition-opacity rounded-xl" />
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 opacity-90 group-hover:opacity-100 transition-opacity rounded-xl" />
             <div className="relative flex items-center gap-3 p-3 sm:p-4">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg relative">
                 <PenLine size={22} className="text-white" />
@@ -986,17 +986,17 @@ export default function Sidebar({
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-0 border-t border-gray-100 dark:border-gray-800">
+      <div className="flex-1 flex flex-col min-h-0 border-t border-stone-100 dark:border-stone-800">
         {!isAuthenticated ? (
           /* Guest View - No categories, just unlock banner */
           <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-4">
-            <div className="bg-gradient-to-br from-blue-50 to-pink-50 dark:from-gray-800 dark:to-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-center border border-gray-200/50 dark:border-gray-700/50">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <div className="bg-gradient-to-br from-amber-50/50 to-rose-50/50 dark:from-stone-800 dark:to-stone-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-center border border-amber-200/50 dark:border-stone-700/50">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-500/30">
                 <span className="text-2xl sm:text-3xl">🔓</span>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">Unlock Everything</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Access <span className="font-bold text-blue-600 dark:text-blue-400">{totalCategories}+</span> categories & <span className="font-bold text-pink-600 dark:text-pink-400">12K+</span> quotes
+              <h3 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-white mb-2">Unlock Everything</h3>
+              <p className="text-sm text-stone-600 dark:text-stone-400 mb-4">
+                Access <span className="font-bold text-amber-600 dark:text-amber-400">{totalCategories}+</span> categories & <span className="font-bold text-rose-600 dark:text-rose-400">12K+</span> quotes
               </p>
               
               {/* Features Grid */}
@@ -1009,11 +1009,11 @@ export default function Sidebar({
                   { icon: '💾', text: 'Save & Organize', desc: 'Build collections' },
                   { icon: '📤', text: 'Share & Download', desc: 'HD quality' },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-2 p-2.5 bg-white/60 dark:bg-gray-700/50 rounded-lg text-left">
+                  <div key={i} className="flex items-start gap-2 p-2.5 bg-white/60 dark:bg-stone-700/50 rounded-lg text-left">
                     <span className="text-lg shrink-0">{item.icon}</span>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{item.text}</p>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400">{item.desc}</p>
+                      <p className="text-xs font-semibold text-stone-900 dark:text-white truncate">{item.text}</p>
+                      <p className="text-[10px] text-stone-500 dark:text-stone-400">{item.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -1021,99 +1021,99 @@ export default function Sidebar({
               
               <button
                 onClick={() => { onLoginClick(); onClose(); }}
-                className="w-full py-3 bg-gradient-to-r from-blue-500 to-pink-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all text-sm active:scale-[0.98]"
+                className="w-full py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 transition-all text-sm active:scale-[0.98]"
               >
                 Get Started Free
               </button>
               
-              <p className="text-[10px] text-gray-400 mt-3">
+              <p className="text-[10px] text-stone-400 mt-3">
                 Free account • No credit card required
               </p>
             </div>
             
             {/* Quick Links for Guest */}
             <div className="mt-4 space-y-2">
-              <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium px-1 mb-2">
+              <p className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-stone-500 font-medium px-1 mb-2">
                 Explore QuoteSwipe
               </p>
               
               <Link
                 href="/about"
                 onClick={onClose}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                className="flex items-center justify-between p-3 bg-stone-50 dark:bg-stone-800/50 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors group"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg group-hover:scale-110 transition-transform">✨</span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">About & Features</p>
-                    <p className="text-[10px] text-gray-500">Learn about QuoteSwipe</p>
+                    <p className="text-sm font-medium text-stone-900 dark:text-white">About & Features</p>
+                    <p className="text-[10px] text-stone-500">Learn about QuoteSwipe</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
               </Link>
               
               <Link
                 href="/review"
                 onClick={onClose}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                className="flex items-center justify-between p-3 bg-stone-50 dark:bg-stone-800/50 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors group"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg group-hover:scale-110 transition-transform">⭐</span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">User Reviews</p>
-                    <p className="text-[10px] text-gray-500">See what others say</p>
+                    <p className="text-sm font-medium text-stone-900 dark:text-white">User Reviews</p>
+                    <p className="text-[10px] text-stone-500">See what others say</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
               </Link>
               
               <Link
                 href="/feedback"
                 onClick={onClose}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                className="flex items-center justify-between p-3 bg-stone-50 dark:bg-stone-800/50 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors group"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg group-hover:scale-110 transition-transform">💬</span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Send Feedback</p>
-                    <p className="text-[10px] text-gray-500">Help us improve</p>
+                    <p className="text-sm font-medium text-stone-900 dark:text-white">Send Feedback</p>
+                    <p className="text-[10px] text-stone-500">Help us improve</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
               </Link>
               
               <Link
                 href="/contact"
                 onClick={onClose}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                className="flex items-center justify-between p-3 bg-stone-50 dark:bg-stone-800/50 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors group"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg group-hover:scale-110 transition-transform">📧</span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">Contact Us</p>
-                    <p className="text-[10px] text-gray-500">Get in touch</p>
+                    <p className="text-sm font-medium text-stone-900 dark:text-white">Contact Us</p>
+                    <p className="text-[10px] text-stone-500">Get in touch</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
               </Link>
               
               {/* Legal Links */}
-              <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium px-1 mb-2">
+              <div className="pt-3 mt-3 border-t border-stone-200 dark:border-stone-700">
+                <p className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-stone-500 font-medium px-1 mb-2">
                   Legal
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Link
                     href="/privacy"
                     onClick={onClose}
-                    className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                    className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 rounded-lg text-xs text-stone-600 dark:text-stone-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
                   >
                     Privacy Policy
                   </Link>
                   <Link
                     href="/terms"
                     onClick={onClose}
-                    className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                    className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 rounded-lg text-xs text-stone-600 dark:text-stone-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
                   >
                     Terms of Service
                   </Link>
@@ -1129,10 +1129,10 @@ export default function Sidebar({
               {selectedCategories.length > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="flex-1 flex flex-wrap gap-2 min-w-0">
-                    {selectedCategories.slice(0, 3).map((catName) => {
+                      {selectedCategories.slice(0, 3).map((catName) => {
                       const cat = categories.find(c => c.name === catName);
                       return cat && (
-                        <span key={cat.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-[11px] sm:text-xs font-medium rounded-full shadow-sm">
+                        <span key={cat.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white text-[11px] sm:text-xs font-medium rounded-full shadow-sm shadow-orange-500/30">
                           {cat.icon} {cat.name}
                           <button onClick={(e) => { e.stopPropagation(); onCategoryToggle(catName); }} className="hover:bg-white/20 rounded-full p-0.5 -mr-1">
                             <X size={12} />
@@ -1141,14 +1141,14 @@ export default function Sidebar({
                       );
                     })}
                     {selectedCategories.length > 3 && (
-                      <span className="inline-flex items-center px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[11px] sm:text-xs font-medium rounded-full">
+                      <span className="inline-flex items-center px-3 py-1.5 bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-[11px] sm:text-xs font-medium rounded-full">
                         +{selectedCategories.length - 3}
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => selectedCategories.forEach(cat => onCategoryToggle(cat))}
-                    className="text-[10px] sm:text-xs text-blue-500 hover:text-blue-600 whitespace-nowrap shrink-0"
+                    className="text-[10px] sm:text-xs text-amber-500 hover:text-amber-600 whitespace-nowrap shrink-0"
                   >
                     Clear
                   </button>
@@ -1157,16 +1157,16 @@ export default function Sidebar({
 
               {/* Search */}
               <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
                 <input
                   type="text"
                   placeholder="Search categories..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-8 pr-3 py-2 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
                     <X size={12} />
                   </button>
                 )}
@@ -1177,8 +1177,8 @@ export default function Sidebar({
             <div className="flex-1 overflow-y-auto custom-scrollbar px-3 sm:px-4 pb-3 sm:pb-4">
               {groupedCategories.length === 0 || (groupedCategories.length === 1 && groupedCategories[0].categories.length === 0) ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Search size={28} className="text-gray-300 mb-2" />
-                  <p className="text-xs text-gray-500">No categories found</p>
+                  <Search size={28} className="text-stone-300 mb-2" />
+                  <p className="text-xs text-stone-500">No categories found</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1192,38 +1192,38 @@ export default function Sidebar({
                       <button
                         onClick={() => !isSearchResult && handleGroupToggle(group.categories)}
                         disabled={isSearchResult}
-                        className={`w-full flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-gray-900 py-1.5 z-10 rounded-lg transition-all ${
-                          !isSearchResult ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer group' : ''
+                        className={`w-full flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-stone-900 py-1.5 z-10 rounded-lg transition-all ${
+                          !isSearchResult ? 'hover:bg-stone-50 dark:hover:bg-stone-800/50 cursor-pointer group' : ''
                         }`}
                       >
                         {/* Selection indicator */}
                         {!isSearchResult && (
                           <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                             groupState === 'all' 
-                              ? 'bg-gradient-to-r from-blue-500 to-pink-500 border-transparent' 
+                              ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 border-transparent' 
                               : groupState === 'some'
-                                ? 'bg-gradient-to-r from-blue-200 to-pink-200 dark:from-blue-800 dark:to-pink-800 border-blue-300 dark:border-blue-700'
-                                : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400 dark:group-hover:border-blue-500'
+                                ? 'bg-gradient-to-r from-amber-200 to-rose-200 dark:from-amber-800 dark:to-rose-800 border-amber-300 dark:border-amber-700'
+                                : 'border-stone-300 dark:border-stone-600 group-hover:border-amber-400 dark:group-hover:border-amber-500'
                           }`}>
                             {groupState === 'all' && (
                               <Check size={12} className="text-white" />
                             )}
                             {groupState === 'some' && (
-                              <div className="w-2 h-2 rounded-sm bg-gradient-to-r from-blue-500 to-pink-500" />
+                              <div className="w-2 h-2 rounded-sm bg-gradient-to-r from-amber-500 to-rose-500" />
                             )}
                           </div>
                         )}
                         <span className="text-base">{group.icon}</span>
-                        <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                        <h3 className="text-sm font-bold text-stone-800 dark:text-stone-200">
                           {group.label}
                         </h3>
-                        <div className="flex-1 h-px bg-gradient-to-r from-gray-200 dark:from-gray-700 to-transparent" />
+                        <div className="flex-1 h-px bg-gradient-to-r from-stone-200 dark:from-stone-700 to-transparent" />
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
                           groupState === 'all' 
-                            ? 'bg-gradient-to-r from-blue-500 to-pink-500 text-white' 
+                            ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white' 
                             : groupState === 'some'
-                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                              : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+                              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                              : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500'
                         }`}>
                           {groupState !== 'none' && `${group.categories.filter(c => selectedCategories.includes(c.name)).length}/`}{group.categories.length}
                         </span>
@@ -1239,13 +1239,13 @@ export default function Sidebar({
                               onClick={() => { onCategoryToggle(category.name); onClose(); }}
                               className={`flex items-center gap-2.5 px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-xl transition-all ${
                                 isSelected
-                                  ? 'bg-gradient-to-r from-blue-500 to-pink-500 text-white shadow-lg ring-2 ring-blue-300/50'
-                                  : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                                  ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/30 ring-2 ring-amber-300/50'
+                                  : 'bg-stone-50 dark:bg-stone-800/50 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 hover:border-amber-200 dark:hover:border-amber-800'
                               }`}
                             >
                               <span className="text-lg sm:text-xl shrink-0">{category.icon}</span>
                               <span className="flex-1 text-left text-xs sm:text-sm font-medium truncate">{category.name}</span>
-                              <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shrink-0 font-medium ${isSelected ? 'bg-white/25' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                              <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shrink-0 font-medium ${isSelected ? 'bg-white/25' : 'bg-stone-200 dark:bg-stone-700'}`}>
                                 {category.count}
                               </span>
                             </button>
@@ -1266,26 +1266,28 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay with warm gradient */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-40" onClick={onClose}>
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
+        </div>
       )}
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-900 shadow-2xl transform transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-stone-900 shadow-2xl transform transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } w-full sm:w-[420px] md:w-[480px]`}
+        } w-full sm:w-[420px] md:w-[480px] border-r border-stone-200/50 dark:border-stone-700/50`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center justify-between p-4 border-b border-stone-100 dark:border-stone-800">
             <div className="flex items-center gap-2">
               <Image src="/logo.svg" alt="QuoteSwipe" width={40} height={40} />
-              <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">QuoteSwipe</span>
+              <span className="text-lg font-bold bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 bg-clip-text text-transparent">QuoteSwipe</span>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-              <X size={20} className="text-gray-500" />
+            <button onClick={onClose} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors">
+              <X size={20} className="text-stone-500" />
             </button>
           </div>
 
@@ -1296,33 +1298,33 @@ export default function Sidebar({
           {currentView === 'main' && renderMainView()}
 
           {/* Footer - Compact */}
-          <div className="p-3 sm:p-4 border-t border-gray-100 dark:border-gray-800 space-y-2 sm:space-y-3">
+          <div className="p-3 sm:p-4 border-t border-stone-100 dark:border-stone-800 space-y-2 sm:space-y-3 bg-stone-50/50 dark:bg-stone-800/30">
             {/* Quick Links - Compact Row */}
             <div className="flex items-center justify-between gap-1">
               <Link
                 href="/about"
-                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-pink-50 dark:from-blue-900/20 dark:to-pink-900/20 hover:from-blue-100 hover:to-pink-100 dark:hover:from-blue-900/30 dark:hover:to-pink-900/30 text-blue-600 dark:text-blue-400 transition-all text-[10px] sm:text-xs font-medium"
+                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-gradient-to-r from-amber-50 to-rose-50 dark:from-amber-900/20 dark:to-rose-900/20 hover:from-amber-100 hover:to-rose-100 dark:hover:from-amber-900/30 dark:hover:to-rose-900/30 text-amber-600 dark:text-amber-400 transition-all text-[10px] sm:text-xs font-medium"
               >
                 <Info size={12} />
                 <span>Features</span>
               </Link>
               <Link
                 href="/contact"
-                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-green-50 dark:hover:bg-green-900/20 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-all text-[10px] sm:text-xs font-medium"
+                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-stone-500 dark:text-stone-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all text-[10px] sm:text-xs font-medium"
               >
                 <Mail size={12} />
                 <span>Contact</span>
               </Link>
               <Link
                 href="/feedback"
-                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 transition-all text-[10px] sm:text-xs font-medium"
+                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800/50 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-stone-500 dark:text-stone-400 hover:text-rose-600 dark:hover:text-rose-400 transition-all text-[10px] sm:text-xs font-medium"
               >
                 <MessageSquare size={12} />
                 <span>Feedback</span>
               </Link>
               <Link
                 href="/privacy-policy"
-                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-all text-[10px] sm:text-xs font-medium"
+                className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-stone-500 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-400 transition-all text-[10px] sm:text-xs font-medium"
               >
                 <Shield size={12} />
                 <span>Privacy</span>
@@ -1334,7 +1336,7 @@ export default function Sidebar({
               <button
                 onClick={onLogout}
                 disabled={isLoggingOut}
-                className={`w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-blue-500 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all text-sm font-semibold active:scale-[0.98] ${isLoggingOut ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 transition-all text-sm font-semibold active:scale-[0.98] ${isLoggingOut ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {isLoggingOut ? (
                   <>
@@ -1351,7 +1353,7 @@ export default function Sidebar({
             ) : (
               <button
                 onClick={() => { onLoginClick(); onClose(); }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-blue-500 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all text-sm font-semibold active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 transition-all text-sm font-semibold active:scale-[0.98]"
               >
                 <User size={16} />
                 <span>Sign In</span>
@@ -1359,10 +1361,10 @@ export default function Sidebar({
             )}
             
             {/* Legal Links */}
-            <div className="flex items-center justify-center gap-2 text-[9px] sm:text-[10px] text-gray-400 dark:text-gray-500">
-              <Link href="/terms-of-service" className="hover:text-blue-500 transition-colors">Terms</Link>
+            <div className="flex items-center justify-center gap-2 text-[9px] sm:text-[10px] text-stone-400 dark:text-stone-500">
+              <Link href="/terms-of-service" className="hover:text-amber-500 transition-colors">Terms</Link>
               <span>•</span>
-              <Link href="/cookie-policy" className="hover:text-blue-500 transition-colors">Cookies</Link>
+              <Link href="/cookie-policy" className="hover:text-amber-500 transition-colors">Cookies</Link>
               <span>•</span>
               <span>© 2025</span>
             </div>

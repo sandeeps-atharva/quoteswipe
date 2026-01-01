@@ -89,35 +89,35 @@ export default function MyQuotesView({
 
   return (
     <div 
-      className="fixed inset-0 z-30 bg-gray-50 dark:bg-gray-950 flex flex-col"
+      className="fixed inset-0 z-30 bg-[#FFFBF7] dark:bg-[#0C0A09] flex flex-col"
       style={{ 
         paddingTop: 'env(safe-area-inset-top, 0px)',
         overscrollBehavior: 'none',
       }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <header className="sticky top-0 z-10 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onBack}
-              className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
             >
-              <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-stone-600 dark:text-stone-400" />
             </button>
             
             <div className="flex-1 min-w-0">
-              <h1 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
-                <Sparkles size={18} className="sm:w-5 sm:h-5 text-purple-500 shrink-0" />
+              <h1 className="text-base sm:text-lg md:text-xl font-bold text-stone-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
+                <Sparkles size={18} className="sm:w-5 sm:h-5 text-rose-500 shrink-0" />
                 <span className="truncate">My Quotes</span>
               </h1>
-              <p className="text-[10px] sm:text-xs text-gray-500">{quotes.length} quotes created</p>
+              <p className="text-[10px] sm:text-xs text-stone-500">{quotes.length} quotes created</p>
             </div>
 
             {/* Create Button */}
             <button
               onClick={onCreateQuote}
-              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl shadow-sm shadow-orange-500/25 hover:shadow-md transition-all active:scale-95"
             >
               <Plus size={14} className="sm:w-4 sm:h-4" />
               <span className="hidden xs:inline">Create</span>
@@ -126,18 +126,18 @@ export default function MyQuotesView({
 
           {/* Search Bar */}
           <div className="mt-2.5 sm:mt-3 relative">
-            <Search size={14} className="sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
               placeholder="Search your quotes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 sm:pl-9 pr-8 sm:pr-9 py-2 sm:py-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg sm:rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+              className="w-full pl-8 sm:pl-9 pr-8 sm:pr-9 py-2 sm:py-2.5 bg-stone-100 dark:bg-stone-800 rounded-lg sm:rounded-xl text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
               >
                 <X size={14} className="sm:w-4 sm:h-4" />
               </button>
@@ -159,24 +159,24 @@ export default function MyQuotesView({
             <div className="flex flex-col items-center justify-center py-16 sm:py-20">
               <div className="relative animate-bounce mb-3">
                 <span className="text-5xl">💬</span>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 </div>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 font-medium">Loading your quotes...</p>
+              <p className="text-xs sm:text-sm text-stone-500 font-medium">Loading your quotes...</p>
             </div>
           ) : quotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-4 sm:px-6 text-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-3 sm:mb-4">
-                <Sparkles size={28} className="sm:w-9 sm:h-9 text-purple-500" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-3 sm:mb-4">
+                <Sparkles size={28} className="sm:w-9 sm:h-9 text-rose-500" />
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1.5 sm:mb-2">No quotes yet</h2>
-              <p className="text-xs sm:text-sm text-gray-500 max-w-xs mb-4 sm:mb-6">
+              <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-1.5 sm:mb-2">No quotes yet</h2>
+              <p className="text-xs sm:text-sm text-stone-500 max-w-xs mb-4 sm:mb-6">
                 Create your first quote and share your thoughts with the world
               </p>
               <button
                 onClick={onCreateQuote}
-                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm sm:text-base font-semibold rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95"
+                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white text-sm sm:text-base font-semibold rounded-xl shadow-md shadow-orange-500/25 hover:shadow-lg transition-all active:scale-95"
               >
                 <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
                 Create Your First Quote
@@ -184,11 +184,11 @@ export default function MyQuotesView({
             </div>
           ) : filteredQuotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-4 sm:px-6 text-center">
-              <Search size={28} className="sm:w-8 sm:h-8 text-gray-300 mb-3" />
-              <p className="text-xs sm:text-sm text-gray-500">No quotes match "{searchQuery}"</p>
+              <Search size={28} className="sm:w-8 sm:h-8 text-stone-300 mb-3" />
+              <p className="text-xs sm:text-sm text-stone-500">No quotes match "{searchQuery}"</p>
               <button
                 onClick={() => setSearchQuery('')}
-                className="mt-2 text-xs sm:text-sm text-purple-600 hover:text-purple-700 font-medium"
+                className="mt-2 text-xs sm:text-sm text-rose-600 hover:text-rose-700 font-medium"
               >
                 Clear search
               </button>
@@ -209,7 +209,7 @@ export default function MyQuotesView({
                   <div
                     key={quote.id}
                     onClick={() => onViewQuote(quote)}
-                    className="group relative rounded-xl sm:rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-700 transition-all active:scale-[0.98] cursor-pointer"
+                    className="group relative rounded-xl sm:rounded-2xl overflow-hidden shadow-sm border border-stone-200 dark:border-stone-800 hover:border-amber-300 dark:hover:border-amber-700 transition-all active:scale-[0.98] cursor-pointer"
                   >
                     {/* Background - custom, preset, or default */}
                     {hasBackground && backgroundUrl ? (
@@ -220,11 +220,11 @@ export default function MyQuotesView({
                         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
                       </div>
                     ) : (
-                      <div className="absolute inset-0 bg-white dark:bg-gray-900" />
+                      <div className="absolute inset-0 bg-white dark:bg-stone-900" />
                     )}
                     
                     {/* Gradient accent bar */}
-                    <div className="absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-purple-500 to-pink-500 z-10" />
+                    <div className="absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-orange-500 to-rose-500 z-10" />
 
                     {/* Content */}
                     <div className="relative z-10 p-3 sm:p-4 pt-3.5 sm:pt-5">
@@ -235,7 +235,7 @@ export default function MyQuotesView({
                           <p className={`text-xs sm:text-sm leading-relaxed line-clamp-3 ${
                             hasBackground 
                               ? 'text-white drop-shadow-md' 
-                              : 'text-gray-800 dark:text-gray-200'
+                              : 'text-stone-800 dark:text-stone-200'
                           }`}>
                             "{quote.text}"
                           </p>
@@ -243,7 +243,7 @@ export default function MyQuotesView({
                             <p className={`text-[10px] sm:text-xs mt-1.5 sm:mt-2 ${
                               hasBackground 
                                 ? 'text-white/80 drop-shadow' 
-                                : 'text-gray-500'
+                                : 'text-stone-500'
                             }`}>— {quote.author}</p>
                           )}
                         </div>
@@ -253,7 +253,7 @@ export default function MyQuotesView({
                       <div className={`flex items-center justify-between mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t ${
                         hasBackground 
                           ? 'border-white/20' 
-                          : 'border-gray-100 dark:border-gray-800'
+                          : 'border-stone-100 dark:border-stone-800'
                       }`}>
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                           {/* Visibility Badge */}
@@ -264,7 +264,7 @@ export default function MyQuotesView({
                                 : 'bg-white/20 text-white/80'
                               : isPublic
                                 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
                           }`}>
                             {isPublic ? <Globe size={9} className="sm:w-[10px] sm:h-[10px]" /> : <Lock size={9} className="sm:w-[10px] sm:h-[10px]" />}
                             {isPublic ? 'Public' : 'Private'}
@@ -273,7 +273,7 @@ export default function MyQuotesView({
                           {/* Date */}
                           {quote.created_at && (
                             <span className={`text-[9px] sm:text-[10px] ${
-                              hasBackground ? 'text-white/60' : 'text-gray-400'
+                              hasBackground ? 'text-white/60' : 'text-stone-400'
                             }`}>
                               {formatDate(quote.created_at)}
                             </span>
@@ -289,7 +289,7 @@ export default function MyQuotesView({
                             className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
                               hasBackground
                                 ? 'bg-white/20 hover:bg-white/30 text-white'
-                                : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
+                                : 'bg-stone-50 dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-400'
                             }`}
                           >
                             <Edit3 size={14} className="sm:w-4 sm:h-4" />
@@ -301,8 +301,8 @@ export default function MyQuotesView({
                             }}
                             className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
                               hasBackground
-                                ? 'bg-blue-500/30 hover:bg-blue-500/40 text-blue-200'
-                                : 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-blue-600'
+                                ? 'bg-orange-500/30 hover:bg-orange-500/40 text-orange-200'
+                                : 'bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 text-orange-600'
                             }`}
                           >
                             <Share2 size={14} className="sm:w-4 sm:h-4" />
@@ -340,7 +340,7 @@ export default function MyQuotesView({
       {quotes.length > 0 && (
         <button
           onClick={onCreateQuote}
-          className="fixed right-3 sm:right-4 md:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all active:scale-95 z-20"
+          className="fixed right-3 sm:right-4 md:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 text-white rounded-full shadow-lg shadow-orange-500/30 flex items-center justify-center hover:shadow-xl transition-all active:scale-95 z-20"
           style={{
             bottom: 'calc(76px + env(safe-area-inset-bottom, 0px))',
           }}

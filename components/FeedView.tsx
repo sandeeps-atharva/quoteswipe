@@ -274,7 +274,7 @@ export default function FeedView({
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 top-16 bottom-16 overflow-y-auto overscroll-contain bg-black"
+      className="fixed inset-0 top-16 bottom-16 overflow-y-auto overscroll-contain bg-[#FFFBF7] dark:bg-[#0C0A09]"
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
       {/* Feed Container */}
@@ -294,31 +294,31 @@ export default function FeedView({
           return (
             <article
               key={`${quote.id}-${index}`}
-              className={`bg-black border-b border-gray-800 ${isTargetQuote ? 'ring-1 ring-blue-500/30' : ''}`}
+              className={`bg-[#FFFBF7] dark:bg-[#0C0A09] border-b border-stone-200 dark:border-stone-800 ${isTargetQuote ? 'ring-1 ring-amber-500/30' : ''}`}
             >
               {/* Post Header - Instagram Style */}
               <div className="flex items-center justify-between px-3 py-2.5">
                 <div className="flex items-center gap-3">
                   {/* Avatar with gradient ring */}
                   <div className="relative">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
-                      <div className="w-full h-full rounded-full bg-black flex items-center justify-center text-lg">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-rose-600 p-[2px]">
+                      <div className="w-full h-full rounded-full bg-white dark:bg-stone-900 flex items-center justify-center text-lg">
                         {quote.category_icon || '💭'}
                       </div>
                     </div>
                   </div>
                   {/* Username & Location */}
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-white leading-tight">
+                    <span className="text-sm font-semibold text-stone-900 dark:text-white leading-tight">
                       {quote.category.toLowerCase().replace(/\s+/g, '_')}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-stone-500 dark:text-stone-400">
                       {quote.author}
                     </span>
                   </div>
                 </div>
                 {/* More Options */}
-                <button className="p-2 -mr-2 text-white hover:text-gray-300 transition-colors">
+                <button className="p-2 -mr-2 text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300 transition-colors">
                   <MoreHorizontal size={20} />
                 </button>
               </div>
@@ -348,7 +348,7 @@ export default function FeedView({
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                     <Heart
                       size={100}
-                      className="text-white fill-white drop-shadow-2xl"
+                      className="text-rose-500 fill-rose-500 drop-shadow-2xl"
                       style={{
                         animation: 'heartBurst 0.8s ease-out forwards',
                       }}
@@ -371,8 +371,8 @@ export default function FeedView({
                         size={26}
                         className={`transition-all duration-200 ${
                           isLiked 
-                            ? 'text-red-500 fill-red-500' 
-                            : 'text-white hover:text-gray-300'
+                            ? 'text-rose-500 fill-rose-500' 
+                            : 'text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300'
                         } ${showLikeAnimation ? 'scale-125' : 'scale-100'}`}
                       />
                     </button>
@@ -386,8 +386,8 @@ export default function FeedView({
                         size={24}
                         className={`transition-colors ${
                           isDisliked 
-                            ? 'text-blue-500 fill-blue-500' 
-                            : 'text-white hover:text-gray-300'
+                            ? 'text-stone-400 fill-stone-400' 
+                            : 'text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300'
                         }`}
                       />
                     </button>
@@ -400,7 +400,7 @@ export default function FeedView({
                       {isCopied ? (
                         <Check size={24} className="text-green-500" />
                       ) : (
-                        <Copy size={24} className="text-white hover:text-gray-300 transition-colors" />
+                        <Copy size={24} className="text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300 transition-colors" />
                       )}
                     </button>
 
@@ -412,7 +412,7 @@ export default function FeedView({
                       }}
                       className="p-1 transition-transform active:scale-75"
                     >
-                      <Send size={24} className="text-white hover:text-gray-300 transition-colors -rotate-12" />
+                      <Send size={24} className="text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300 transition-colors -rotate-12" />
                     </button>
                   </div>
 
@@ -425,8 +425,8 @@ export default function FeedView({
                       size={26}
                       className={`transition-colors ${
                         isSaved 
-                          ? 'text-white fill-white' 
-                          : 'text-white hover:text-gray-300'
+                          ? 'text-amber-500 fill-amber-500' 
+                          : 'text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300'
                       }`}
                     />
                   </button>
@@ -435,7 +435,7 @@ export default function FeedView({
                 {/* Likes Count */}
                 {likesCount > 0 && (
                   <div className="mt-2">
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-sm font-semibold text-stone-900 dark:text-white">
                       {formatCount(likesCount)} {likesCount === 1 ? 'like' : 'likes'}
                     </span>
                   </div>
@@ -443,11 +443,11 @@ export default function FeedView({
 
                 {/* Caption - Author */}
                 <div className="mt-1.5 pb-2">
-                  <p className="text-sm text-white">
+                  <p className="text-sm text-stone-900 dark:text-white">
                     <span className="font-semibold mr-1.5">
                       {quote.category.toLowerCase().replace(/\s+/g, '_')}
                     </span>
-                    <span className="text-gray-300">
+                    <span className="text-stone-700 dark:text-stone-300">
                       {isExpanded || quote.text.length <= 100 
                         ? `— ${quote.author}` 
                         : `— ${quote.author.substring(0, 50)}...`}
@@ -455,7 +455,7 @@ export default function FeedView({
                     {quote.text.length > 100 && !isExpanded && (
                       <button 
                         onClick={() => toggleExpand(quote.id)}
-                        className="text-gray-500 ml-1"
+                        className="text-stone-500 ml-1"
                       >
                         more
                       </button>
@@ -463,7 +463,7 @@ export default function FeedView({
                   </p>
                   
                   {/* Timestamp */}
-                  <p className="text-[11px] text-gray-500 mt-1.5 uppercase tracking-wide">
+                  <p className="text-[11px] text-stone-500 mt-1.5 uppercase tracking-wide">
                     {getTimeAgo(index)}
                   </p>
                 </div>
@@ -475,21 +475,21 @@ export default function FeedView({
         {/* Load More */}
         {visibleCount < uniqueQuotes.length && (
           <div ref={loadMoreRef} className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-gray-600 border-t-white rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-stone-600 border-t-amber-500 rounded-full animate-spin" />
           </div>
         )}
 
         {/* End of Feed */}
         {visibleCount >= uniqueQuotes.length && uniqueQuotes.length > 0 && (
-          <div className="text-center py-12 border-t border-gray-800">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full border-2 border-gray-700 flex items-center justify-center">
-              <Check size={32} className="text-gray-600" />
+          <div className="text-center py-12 border-t border-stone-800">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full border-2 border-stone-700 flex items-center justify-center">
+              <Check size={32} className="text-stone-600" />
             </div>
-            <p className="text-white font-medium">You're All Caught Up</p>
-            <p className="text-gray-500 text-sm mt-1">You've seen all new quotes</p>
+            <p className="text-stone-900 dark:text-white font-medium">You're All Caught Up</p>
+            <p className="text-stone-500 text-sm mt-1">You've seen all new quotes</p>
             <button
               onClick={scrollToTop}
-              className="mt-4 text-blue-500 hover:text-blue-400 text-sm font-medium"
+              className="mt-4 text-amber-500 hover:text-amber-400 text-sm font-medium"
             >
               Back to top
             </button>
@@ -501,7 +501,7 @@ export default function FeedView({
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-20 right-4 p-3 bg-gray-800 text-white rounded-full shadow-lg hover:bg-gray-700 transition-all z-50 border border-gray-700"
+          className="fixed bottom-20 right-4 p-3 bg-stone-800 text-white rounded-full shadow-lg hover:bg-stone-700 transition-all z-50 border border-stone-700"
         >
           <ChevronUp size={24} />
         </button>

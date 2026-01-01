@@ -259,12 +259,12 @@ export default function About() {
       >
         {/* Mission Statement */}
         <SectionCard className="mb-6 sm:mb-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 bg-gradient-to-br from-blue-500/10 to-pink-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 bg-gradient-to-br from-pink-500/10 to-blue-500/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 bg-gradient-to-br from-amber-500/10 to-rose-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 bg-gradient-to-br from-rose-500/10 to-amber-500/10 rounded-full translate-y-1/2 -translate-x-1/2" />
           
           <div className="relative">
             <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-              <Target className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <Target className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-amber-600 dark:text-amber-400 flex-shrink-0" />
               <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Our Mission</h3>
             </div>
             <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -282,10 +282,10 @@ export default function About() {
           {statsDisplay.map((stat, index) => (
             <div 
               key={index}
-              className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 text-center shadow-md sm:shadow-lg shadow-blue-500/5 dark:shadow-pink-500/5 border border-white/50 dark:border-gray-700/50"
+              className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 text-center shadow-md sm:shadow-lg shadow-amber-500/5 dark:shadow-rose-500/5 border border-white/50 dark:border-gray-700/50"
             >
               <div className="flex justify-center mb-2 text-blue-500">{stat.icon}</div>
-              <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
+              <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent">
                 {stat.value}
               </p>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">{stat.label}</p>
@@ -338,7 +338,7 @@ export default function About() {
                         key={idx}
                         className="flex items-start gap-2 p-2 sm:p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
                       >
-                        <div className="text-blue-500 dark:text-blue-400 mt-0.5 shrink-0">
+                        <div className="text-amber-500 dark:text-amber-400 mt-0.5 shrink-0">
                           {feature.icon}
                         </div>
                         <div className="min-w-0">
@@ -368,11 +368,11 @@ export default function About() {
           
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             {[
-              { icon: <PenLine size={24} />, title: "Create Quotes", desc: "Write & customize", gradient: "from-purple-500 to-pink-500" },
-              { icon: <Camera size={24} />, title: "Photo Backgrounds", desc: "Camera or upload", gradient: "from-blue-500 to-cyan-500" },
+              { icon: <PenLine size={24} />, title: "Create Quotes", desc: "Write & customize", gradient: "from-orange-500 to-rose-500" },
+              { icon: <Camera size={24} />, title: "Photo Backgrounds", desc: "Camera or upload", gradient: "from-amber-500 to-orange-500" },
               { icon: <Palette size={24} />, title: "60+ Themes", desc: "Beautiful styles", gradient: "from-pink-500 to-orange-500" },
               { icon: <Type size={24} />, title: "75+ Fonts", desc: "Unique typography", gradient: "from-green-500 to-teal-500" },
-              { icon: <Download size={24} />, title: "Download & Share", desc: "High quality", gradient: "from-indigo-500 to-purple-500" },
+              { icon: <Download size={24} />, title: "Download & Share", desc: "High quality", gradient: "from-rose-500 to-red-500" },
               { icon: <Grid3X3 size={24} />, title: "210+ Categories", desc: "Every mood", gradient: "from-orange-500 to-red-500" },
             ].map((item, idx) => (
               <div key={idx} className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50 text-center group hover:shadow-lg transition-all">
@@ -387,7 +387,7 @@ export default function About() {
         </div>
 
         {/* Quote Banner */}
-        <div className="bg-gradient-to-r from-blue-500 to-pink-500 rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 text-white text-center mb-6 sm:mb-8 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-500 to-rose-500 rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 lg:p-10 text-white text-center mb-6 sm:mb-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30" />
           <Quote className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-auto mb-3 sm:mb-4 opacity-50" />
           <blockquote className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-display italic mb-2 sm:mb-3 md:mb-4 relative px-2">
@@ -436,7 +436,7 @@ export default function About() {
         {/* Values */}
         <SectionCard className="mb-6 sm:mb-8">
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <Users className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+            <Users className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-amber-600 dark:text-amber-400 flex-shrink-0" />
             <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Our Values</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 md:gap-6 mt-4 sm:mt-5 md:mt-6">
@@ -465,7 +465,7 @@ export default function About() {
             <button
               onClick={handleStartSwiping}
               disabled={isLoading}
-              className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-pink-600 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-pink-700 transition-all shadow-lg shadow-blue-500/25 dark:shadow-pink-500/20 disabled:opacity-70"
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-amber-600 to-rose-600 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl hover:from-amber-600 hover:to-rose-600 transition-all shadow-lg shadow-amber-500/25 dark:shadow-rose-500/20 disabled:opacity-70"
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               {isLoading ? 'Loading...' : 'Start Swiping'}

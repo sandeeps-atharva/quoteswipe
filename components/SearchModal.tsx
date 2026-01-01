@@ -359,7 +359,7 @@ export default function SearchModal({
     return parts.map((part, i) => {
       const isMatch = terms.some(term => part.toLowerCase() === term);
       return isMatch ? (
-        <mark key={i} className="bg-yellow-200 dark:bg-yellow-800 text-gray-900 dark:text-white rounded px-0.5">
+        <mark key={i} className="bg-amber-200 dark:bg-amber-800 text-stone-900 dark:text-white rounded px-0.5">
           {part}
         </mark>
       ) : part;
@@ -376,24 +376,30 @@ export default function SearchModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[5vh] sm:pt-[10vh] px-4">
-      {/* Backdrop */}
+      {/* Backdrop with warm gradient */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        className="absolute inset-0 bg-black/50 backdrop-blur-md"
         onClick={onClose}
-      />
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
+      </div>
       
       {/* Modal */}
-      <div className="relative w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-gray-200 dark:border-gray-800">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-stone-900 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-stone-200/50 dark:border-stone-700/50">
+        {/* Decorative gradient orbs */}
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none" />
+        
         {/* Search Input */}
-        <div className="relative border-b border-gray-200 dark:border-gray-800">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <div className="relative border-b border-stone-200 dark:border-stone-700">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => handleInputChange(e.target.value)}
             placeholder="Search quotes, authors, categories..."
-            className="w-full pl-12 pr-24 py-4 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none text-base"
+            className="w-full pl-12 pr-24 py-4 bg-transparent text-stone-900 dark:text-white placeholder-stone-400 focus:outline-none text-base"
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
             {query && (
@@ -405,7 +411,7 @@ export default function SearchModal({
                   setSelectedIndex(-1);
                   inputRef.current?.focus();
                 }}
-                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="p-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
               >
                 <X size={16} />
               </button>
@@ -414,8 +420,8 @@ export default function SearchModal({
               onClick={() => setShowFilters(!showFilters)}
               className={`p-1.5 rounded-lg transition-colors ${
                 showFilters || activeFilter !== 'all' || selectedCategory
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
+                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                  : 'hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400'
               }`}
             >
               <Filter size={16} />
@@ -425,10 +431,10 @@ export default function SearchModal({
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 space-y-3">
+          <div className="px-4 py-3 bg-stone-50 dark:bg-stone-800/50 border-b border-stone-200 dark:border-stone-700 space-y-3">
             {/* Filter Tabs */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">Filter:</span>
+              <span className="text-xs text-stone-500 dark:text-stone-400 mr-1">Filter:</span>
               {[
                 { key: 'all', label: 'All', icon: Sparkles },
                 { key: 'liked', label: 'Liked', icon: Heart },
@@ -439,8 +445,8 @@ export default function SearchModal({
                   onClick={() => handleFilterChange(key as 'all' | 'liked' | 'saved')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                     activeFilter === key
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                      : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600'
                   }`}
                 >
                   <Icon size={12} />
@@ -449,10 +455,10 @@ export default function SearchModal({
               ))}
               
               <div className="ml-auto flex items-center gap-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Sort:</span>
+                <span className="text-xs text-stone-500 dark:text-stone-400">Sort:</span>
                 <button
                   onClick={handleSortChange}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors"
                 >
                   {sortBy === 'relevance' ? <Zap size={12} /> : <TrendingUp size={12} />}
                   {sortBy === 'relevance' ? 'Relevance' : 'Popular'}
@@ -470,8 +476,8 @@ export default function SearchModal({
                     onClick={() => handleCategoryClick(cat)}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
                       selectedCategory === cat
-                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white'
+                        : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600'
                     }`}
                   >
                     <span>{icon}</span>
@@ -484,19 +490,19 @@ export default function SearchModal({
         )}
 
         {/* Results */}
-        <div className="max-h-[55vh] overflow-y-auto">
+        <div className="max-h-[55vh] overflow-y-auto custom-scrollbar">
           {/* Loading Skeleton */}
           {isLoading && (
             <div className="py-2">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="px-4 py-3 flex items-start gap-3 animate-pulse">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700" />
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-stone-200 dark:bg-stone-700" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/5" />
+                    <div className="h-4 bg-stone-200 dark:bg-stone-700 rounded w-full" />
+                    <div className="h-4 bg-stone-200 dark:bg-stone-700 rounded w-4/5" />
                     <div className="flex items-center gap-2 mt-1">
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20" />
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-16" />
+                      <div className="h-3 bg-stone-200 dark:bg-stone-700 rounded w-20" />
+                      <div className="h-3 bg-stone-200 dark:bg-stone-700 rounded w-16" />
                     </div>
                   </div>
                 </div>
@@ -507,11 +513,11 @@ export default function SearchModal({
           {/* No Results */}
           {!isLoading && hasSearched && results.length === 0 && (
             <div className="py-12 text-center">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
-                <Search className="w-7 h-7 text-gray-400" />
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-100 to-rose-100 dark:from-amber-900/30 dark:to-rose-900/30 flex items-center justify-center">
+                <Search className="w-7 h-7 text-amber-500" />
               </div>
-              <p className="text-gray-600 dark:text-gray-300 font-medium">No quotes found</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Try different keywords or filters</p>
+              <p className="text-stone-600 dark:text-stone-300 font-medium">No quotes found</p>
+              <p className="text-sm text-stone-400 dark:text-stone-500 mt-1">Try different keywords or filters</p>
               {(activeFilter !== 'all' || selectedCategory) && (
                 <button
                   onClick={() => {
@@ -522,7 +528,7 @@ export default function SearchModal({
                       setResults(newResults);
                     }
                   }}
-                  className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  className="mt-3 text-sm text-amber-600 dark:text-amber-400 hover:underline"
                 >
                   Clear filters
                 </button>
@@ -534,13 +540,13 @@ export default function SearchModal({
           {!isLoading && results.length > 0 && (
             <>
               {/* Results Count */}
-              <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/30 flex items-center justify-between">
+              <div className="px-4 py-2 text-xs text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-stone-800/30 flex items-center justify-between">
                 <span>
                   {results.length === 50 ? '50+' : results.length} result{results.length !== 1 ? 's' : ''}
                   {selectedCategory && ` in "${selectedCategory}"`}
                 </span>
                 {query && (
-                  <span className="text-gray-400 dark:text-gray-500">
+                  <span className="text-stone-400 dark:text-stone-500">
                     Press ↵ to select
                   </span>
                 )}
@@ -553,58 +559,58 @@ export default function SearchModal({
                     onClick={() => handleSelect(quote)}
                     className={`w-full px-4 py-3 flex items-start gap-3 transition-colors text-left group ${
                       index === selectedIndex
-                        ? 'bg-blue-50 dark:bg-blue-900/20'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                        ? 'bg-amber-50 dark:bg-amber-900/20'
+                        : 'hover:bg-stone-50 dark:hover:bg-stone-800/50'
                     }`}
                   >
                     {/* Quote Icon */}
                     <div className={`flex-shrink-0 mt-0.5 p-2 rounded-lg ${
                       likedQuotes.has(quote.id)
-                        ? 'bg-gradient-to-br from-pink-100 to-red-100 dark:from-pink-900/30 dark:to-red-900/30'
+                        ? 'bg-gradient-to-br from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30'
                         : savedQuotes.has(quote.id)
-                        ? 'bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30'
-                        : 'bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30'
+                        ? 'bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30'
+                        : 'bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30'
                     }`}>
                       <Quote className={`w-4 h-4 ${
                         likedQuotes.has(quote.id)
-                          ? 'text-pink-600 dark:text-pink-400'
+                          ? 'text-rose-600 dark:text-rose-400'
                           : savedQuotes.has(quote.id)
-                          ? 'text-purple-600 dark:text-purple-400'
-                          : 'text-blue-600 dark:text-blue-400'
+                          ? 'text-orange-600 dark:text-orange-400'
+                          : 'text-amber-600 dark:text-amber-400'
                       }`} />
                     </div>
                     
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900 dark:text-white leading-relaxed">
+                      <p className="text-sm text-stone-900 dark:text-white leading-relaxed">
                         "{highlightText(quote.text)}"
                       </p>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         <div className="flex items-center gap-1">
-                          <User className="w-3 h-3 text-gray-400" />
-                          <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">
+                          <User className="w-3 h-3 text-stone-400" />
+                          <span className="text-xs text-stone-600 dark:text-stone-300 font-medium">
                             {highlightText(quote.author, 30)}
                           </span>
                         </div>
-                        <span className="text-gray-300 dark:text-gray-600">•</span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                        <span className="text-stone-300 dark:text-stone-600">•</span>
+                        <span className="text-xs text-stone-400 dark:text-stone-500">
                           {quote.category_icon} {quote.category}
                         </span>
                         {quote.likes_count && quote.likes_count > 0 && (
                           <>
-                            <span className="text-gray-300 dark:text-gray-600">•</span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-0.5">
+                            <span className="text-stone-300 dark:text-stone-600">•</span>
+                            <span className="text-xs text-stone-400 dark:text-stone-500 flex items-center gap-0.5">
                               <Heart size={10} className="fill-current" /> {quote.likes_count}
                             </span>
                           </>
                         )}
                         {likedQuotes.has(quote.id) && (
-                          <span className="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded">
+                          <span className="text-xs bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded">
                             Liked
                           </span>
                         )}
                         {savedQuotes.has(quote.id) && (
-                          <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded">
+                          <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">
                             Saved
                           </span>
                         )}
@@ -614,8 +620,8 @@ export default function SearchModal({
                     {/* Arrow */}
                     <ArrowRight className={`flex-shrink-0 w-4 h-4 transition-colors mt-1 ${
                       index === selectedIndex
-                        ? 'text-blue-500'
-                        : 'text-gray-300 dark:text-gray-600 group-hover:text-blue-500'
+                        ? 'text-amber-500'
+                        : 'text-stone-300 dark:text-stone-600 group-hover:text-amber-500'
                     }`} />
                   </button>
                 ))}
@@ -630,13 +636,13 @@ export default function SearchModal({
               {recentSearches.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="flex items-center gap-2 text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
                       <Clock size={12} />
                       Recent Searches
                     </div>
                     <button
                       onClick={clearRecentSearches}
-                      className="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                      className="text-xs text-stone-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
                     >
                       Clear
                     </button>
@@ -646,9 +652,9 @@ export default function SearchModal({
                       <button
                         key={term}
                         onClick={() => handleQuickSearch(term)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-sm hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
                       >
-                        <Clock size={12} className="text-gray-400" />
+                        <Clock size={12} className="text-stone-400" />
                         {term}
                       </button>
                     ))}
@@ -658,7 +664,7 @@ export default function SearchModal({
               
               {/* Popular Searches */}
               <div>
-                <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <div className="flex items-center gap-2 text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">
                   <TrendingUp size={12} />
                   Popular Searches
                 </div>
@@ -667,9 +673,9 @@ export default function SearchModal({
                     <button
                       key={term}
                       onClick={() => handleQuickSearch(term)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 text-gray-700 dark:text-gray-300 text-sm hover:from-blue-100 hover:to-purple-100 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 transition-colors border border-blue-100 dark:border-blue-800/30"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-50 to-rose-50 dark:from-amber-900/20 dark:to-rose-900/20 text-stone-700 dark:text-stone-300 text-sm hover:from-amber-100 hover:to-rose-100 dark:hover:from-amber-900/30 dark:hover:to-rose-900/30 transition-colors border border-amber-200/50 dark:border-amber-800/30"
                     >
-                      <Hash size={12} className="text-blue-500" />
+                      <Hash size={12} className="text-amber-500" />
                       {term}
                     </button>
                   ))}
@@ -679,7 +685,7 @@ export default function SearchModal({
               {/* Quick Category Access */}
               {categories.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                  <div className="flex items-center gap-2 text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">
                     <Sparkles size={12} />
                     Browse Categories
                   </div>
@@ -688,7 +694,7 @@ export default function SearchModal({
                       <button
                         key={cat}
                         onClick={() => handleCategoryClick(cat)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-sm hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
                       >
                         <span>{icon}</span>
                         {cat}
@@ -699,9 +705,9 @@ export default function SearchModal({
               )}
 
               {/* Search Tips */}
-              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
-                <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-2">
-                  <Sparkles size={12} />
+              <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
+                <p className="text-xs text-stone-400 dark:text-stone-500 flex items-center gap-2">
+                  <Sparkles size={12} className="text-amber-400" />
                   Tip: Search by author name for better results (e.g., &quot;Einstein&quot;, &quot;Rumi&quot;)
                 </p>
               </div>
@@ -710,8 +716,8 @@ export default function SearchModal({
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800">
-          <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
+        <div className="px-4 py-2.5 bg-stone-50 dark:bg-stone-800/50 border-t border-stone-200 dark:border-stone-700">
+          <div className="flex items-center justify-between text-xs text-stone-400 dark:text-stone-500">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1">
                 <ArrowUp size={12} />
@@ -723,7 +729,7 @@ export default function SearchModal({
                 Select
               </span>
             </div>
-            <kbd className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-700 font-mono text-[10px]">ESC</kbd>
+            <kbd className="px-2 py-0.5 rounded bg-stone-200 dark:bg-stone-700 font-mono text-[10px]">ESC</kbd>
           </div>
         </div>
       </div>

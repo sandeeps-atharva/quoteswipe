@@ -162,56 +162,62 @@ export default function CreateQuoteModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
+      {/* Backdrop with warm gradient */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-md"
         onClick={onClose}
-      />
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
+      </div>
       
       {/* Modal */}
-      <div className="relative w-full sm:max-w-lg mx-0 sm:mx-4 bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="relative w-full sm:max-w-lg mx-0 sm:mx-4 bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col border border-stone-200/50 dark:border-stone-700/50">
+        {/* Decorative gradient orbs */}
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none" />
+        
         {/* Gradient top bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
         
         {/* Handle bar (mobile) */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-8 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
+          <div className="w-8 h-1 bg-stone-300 dark:bg-stone-700 rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="px-5 pt-2 pb-3 sm:px-6 sm:pt-5 sm:pb-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+        <div className="px-5 pt-2 pb-3 sm:px-6 sm:pt-5 sm:pb-4 border-b border-stone-100 dark:border-stone-800 shrink-0 relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <PenLine size={18} className="sm:w-5 sm:h-5 text-white" />
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                <PenLine size={20} className="text-white" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+                <h2 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-white tracking-tight">
                   {isEditing ? 'Edit Quote' : 'Create Quote'}
                 </h2>
-                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
                   {isEditing ? 'Update your quote' : 'Write your own inspiration ✨'}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200"
+              className="w-9 h-9 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-700 transition-all duration-200"
             >
-              <X size={16} className="sm:w-[18px] sm:h-[18px] text-gray-500" />
+              <X size={18} className="text-stone-500" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5 space-y-4 custom-scrollbar relative">
            {/* Visibility Toggle */}
            <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <label className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
               {isPublic ? (
-                <Globe size={14} className="text-green-500" />
+                <Globe size={14} className="text-emerald-500" />
               ) : (
-                <Lock size={14} className="text-gray-400" />
+                <Lock size={14} className="text-stone-400" />
               )}
               Visibility
             </label>
@@ -220,8 +226,8 @@ export default function CreateQuoteModal({
                 onClick={() => setIsPublic(false)}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${
                   !isPublic
-                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
-                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
+                    : 'border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
                 }`}
               >
                 <Lock size={14} />
@@ -231,8 +237,8 @@ export default function CreateQuoteModal({
                 onClick={() => setIsPublic(true)}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all ${
                   isPublic
-                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
+                    : 'border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
                 }`}
               >
                 <Globe size={14} />
@@ -242,8 +248,8 @@ export default function CreateQuoteModal({
           </div>
           {/* Quote Text */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              <Sparkles size={14} className="text-purple-500" />
+            <label className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
+              <Sparkles size={14} className="text-amber-500" />
               Your Quote
             </label>
             <div className="relative">
@@ -251,7 +257,7 @@ export default function CreateQuoteModal({
                 value={text}
                 onChange={(e) => handleTextChange(e.target.value)}
                 placeholder="Write something inspiring..."
-                className="w-full h-28 sm:h-32 px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all text-sm sm:text-base"
+                className="w-full h-28 sm:h-32 px-4 py-3 bg-stone-50 dark:bg-stone-800 border-2 border-stone-200 dark:border-stone-700 rounded-2xl text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-stone-500 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all text-sm sm:text-base"
                 style={{
                   fontFamily: selectedFont.fontFamily,
                   fontWeight: selectedFont.fontWeight,
@@ -264,7 +270,7 @@ export default function CreateQuoteModal({
                     ? 'text-red-500' 
                     : charCount > maxChars - 50 
                       ? 'text-orange-500' 
-                      : 'text-gray-400'
+                      : 'text-stone-400'
                 }`}>
                   {charCount}/{maxChars}
                 </span>
@@ -279,16 +285,16 @@ export default function CreateQuoteModal({
 
           {/* Author */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              <User size={14} className="text-blue-500" />
-              Author <span className="text-gray-400 font-normal">(optional)</span>
+            <label className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
+              <User size={14} className="text-orange-500" />
+              Author <span className="text-stone-400 font-normal">(optional)</span>
             </label>
             <input
               type="text"
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
               placeholder="Author name (optional)"
-              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm"
+              className="w-full px-4 py-2.5 bg-stone-50 dark:bg-stone-800 border-2 border-stone-200 dark:border-stone-700 rounded-xl text-stone-900 dark:text-white placeholder-stone-400 dark:placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all text-sm"
               maxLength={100}
             />
           </div>
@@ -296,10 +302,10 @@ export default function CreateQuoteModal({
           {/* Customization Toggle */}
           <button
             onClick={() => setShowCustomization(!showCustomization)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800 rounded-xl text-purple-700 dark:text-purple-300 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 transition-all"
+            className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-50 to-rose-50 dark:from-amber-900/20 dark:to-rose-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300 hover:from-amber-100 hover:to-rose-100 dark:hover:from-amber-900/30 dark:hover:to-rose-900/30 transition-all"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center">
                 <ImageIcon size={16} className="text-white" />
               </div>
               <div className="text-left">
@@ -312,15 +318,15 @@ export default function CreateQuoteModal({
 
           {/* Customization Section */}
           {showCustomization && (
-            <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+            <div className="space-y-4 p-4 bg-stone-50 dark:bg-stone-800/50 rounded-2xl border border-stone-200 dark:border-stone-700">
               {/* Preview */}
               {(previewBackground || text) && (
                 <div className="mb-4">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Preview</p>
+                  <p className="text-xs font-medium text-stone-500 mb-2">Preview</p>
                   <div 
                     className="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-lg"
                     style={{
-                      background: previewBackground ? undefined : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: previewBackground ? undefined : 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #e11d48 100%)',
                     }}
                   >
                     {previewBackground && previewBackground.length > 0 && (
@@ -364,8 +370,8 @@ export default function CreateQuoteModal({
 
               {/* Font Selection */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <Type size={14} className="text-blue-500" />
+                <label className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
+                  <Type size={14} className="text-amber-500" />
                   Font Style
                 </label>
                 <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
@@ -375,17 +381,17 @@ export default function CreateQuoteModal({
                       onClick={() => setSelectedFontId(font.id)}
                       className={`shrink-0 px-3 py-2 rounded-lg border-2 transition-all ${
                         selectedFontId === font.id
-                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30'
+                          : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
                       }`}
                     >
                       <span 
-                        className="text-lg text-gray-800 dark:text-gray-200"
+                        className="text-lg text-stone-800 dark:text-stone-200"
                         style={{ fontFamily: font.fontFamily, fontWeight: font.fontWeight }}
                       >
                         {font.sample}
                       </span>
-                      <p className="text-[9px] text-gray-500 mt-0.5 whitespace-nowrap">{font.name}</p>
+                      <p className="text-[9px] text-stone-500 mt-0.5 whitespace-nowrap">{font.name}</p>
                     </button>
                   ))}
                 </div>
@@ -393,8 +399,8 @@ export default function CreateQuoteModal({
 
               {/* Background Selection */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <ImageIcon size={14} className="text-green-500" />
+                <label className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
+                  <ImageIcon size={14} className="text-rose-500" />
                   Background
                 </label>
                 
@@ -412,7 +418,7 @@ export default function CreateQuoteModal({
 
                 {/* Preset backgrounds */}
                 <div>
-                  <p className="text-xs text-gray-500 mb-2">Presets ({BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).length})</p>
+                  <p className="text-xs text-stone-500 mb-2">Presets ({BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).length})</p>
                   <div className="grid grid-cols-3 gap-2.5 sm:gap-3 max-h-64 sm:max-h-72 overflow-y-auto">
                     {BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).map((bg) => (
                       <button
@@ -423,8 +429,8 @@ export default function CreateQuoteModal({
                         }}
                         className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
                           selectedBackgroundId === bg.id
-                            ? 'border-purple-500 ring-2 ring-purple-500/30'
-                            : 'border-transparent hover:border-gray-300'
+                            ? 'border-amber-500 ring-2 ring-amber-500/30'
+                            : 'border-transparent hover:border-stone-300'
                         }`}
                       >
                         <Image
@@ -435,7 +441,7 @@ export default function CreateQuoteModal({
                           unoptimized
                         />
                         {selectedBackgroundId === bg.id && (
-                          <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
                             <Check size={16} className="text-white drop-shadow" />
                           </div>
                         )}
@@ -449,17 +455,17 @@ export default function CreateQuoteModal({
 
           {/* Category */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              <Tag size={14} className="text-green-500" />
-              Category <span className="text-gray-400 font-normal">(optional)</span>
+            <label className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
+              <Tag size={14} className="text-rose-500" />
+              Category <span className="text-stone-400 font-normal">(optional)</span>
             </label>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setCategoryId(null)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   categoryId === null
-                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white'
+                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                 }`}
               >
                 None
@@ -470,8 +476,8 @@ export default function CreateQuoteModal({
                   onClick={() => setCategoryId(cat.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
                     categoryId === cat.id
-                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white'
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <span>{cat.icon}</span>
@@ -492,18 +498,18 @@ export default function CreateQuoteModal({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 sm:px-6 sm:py-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
+        <div className="px-5 py-4 sm:px-6 sm:py-5 border-t border-stone-100 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/50 shrink-0 relative">
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-all active:scale-[0.98]"
+              className="flex-1 px-4 py-2.5 bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl font-semibold text-sm hover:bg-stone-300 dark:hover:bg-stone-600 transition-all active:scale-[0.98]"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={isLoading || text.trim().length < minChars}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-purple-500/30 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-orange-500/30 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
             >
               {isLoading ? (
                 <>

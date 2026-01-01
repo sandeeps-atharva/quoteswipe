@@ -146,7 +146,7 @@ export default function Testimonials() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8 sm:py-12">
-        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-blue-500" />
+        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-amber-500" />
       </div>
     );
   }
@@ -177,7 +177,7 @@ export default function Testimonials() {
             <div key={review.id} className="px-2 sm:px-3">
               <div className="h-full bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-md hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700 relative overflow-hidden">
                 {/* Gradient Border Top */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-pink-500" />
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-rose-500" />
                 
                 {/* Featured Badge */}
                 {review.is_featured && (
@@ -188,7 +188,7 @@ export default function Testimonials() {
                 
                 {/* Quote Icon - Hidden on very small screens */}
                 <div className="absolute top-2 right-2 sm:top-4 sm:right-4 opacity-5">
-                  <Quote size={40} className="sm:w-16 sm:h-16 md:w-20 md:h-20 text-blue-500" />
+                  <Quote size={40} className="sm:w-16 sm:h-16 md:w-20 md:h-20 text-amber-500" />
                 </div>
 
                 {/* Content */}
@@ -222,7 +222,7 @@ export default function Testimonials() {
 
                   {/* Author */}
                   <div className="flex items-center gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center text-white font-bold text-[10px] sm:text-xs md:text-sm shadow-md flex-shrink-0">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white font-bold text-[10px] sm:text-xs md:text-sm shadow-md flex-shrink-0">
                       {getInitials(review.name)}
                     </div>
                     <div className="min-w-0">
@@ -244,19 +244,19 @@ export default function Testimonials() {
       {/* Stats Section */}
       {/* <div className="flex flex-wrap justify-center gap-4 sm:gap-6 md:gap-8 lg:gap-12 mt-4 sm:mt-6 md:mt-8 px-4">
         <div className="text-center min-w-[80px] sm:min-w-[100px]">
-          <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
+          <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent">
             {stats.users}
           </p>
           <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">Happy Users</p>
         </div>
         <div className="text-center min-w-[80px] sm:min-w-[100px]">
-          <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
+          <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent">
             {stats.avgRating}
           </p>
           <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">Average Rating</p>
         </div>
         <div className="text-center min-w-[80px] sm:min-w-[100px]">
-          <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
+          <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent">
             {stats.saved}
           </p>
           <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1">Quotes Saved</p>

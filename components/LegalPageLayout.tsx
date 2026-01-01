@@ -24,7 +24,7 @@ export default function LegalPageLayout({
   const { theme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-pink-950">
+    <div className="min-h-screen bg-[#FFFBF7] dark:bg-[#0C0A09]">
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-4">
@@ -36,7 +36,7 @@ export default function LegalPageLayout({
           </Link>
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Image src="/logo.svg" alt="QuoteSwipe" width={32} height={32} className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
-            <h1 className="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent truncate">
+            <h1 className="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent truncate">
               {title}
             </h1>
           </div>
@@ -47,7 +47,7 @@ export default function LegalPageLayout({
       <main className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12">
         {/* Hero Section */}
         <div className="text-center mb-8 sm:mb-10 md:mb-12">
-          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500 to-pink-500 shadow-lg sm:shadow-xl shadow-blue-500/25 dark:shadow-pink-500/20 mb-4 sm:mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500 to-rose-500 shadow-lg sm:shadow-xl shadow-amber-500/25 dark:shadow-rose-500/20 mb-4 sm:mb-6">
             <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 flex items-center justify-center [&>*]:w-full [&>*]:h-full">
               {icon}
             </div>
@@ -72,13 +72,13 @@ export default function LegalPageLayout({
       {/* Footer */}
       <footer className="border-t border-gray-200/50 dark:border-gray-800/50 mt-10 sm:mt-12 md:mt-16 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8">
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-            <Link href="/about" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">About</Link>
-            <Link href="/privacy-policy" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Privacy</Link>
-            <Link href="/terms-of-service" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Terms</Link>
-            <Link href="/cookie-policy" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Cookies</Link>
-            <Link href="/contact" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Contact</Link>
-            <Link href="/feedback" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Feedback</Link>
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-6 text-xs sm:text-sm text-stone-600 dark:text-stone-400">
+            <Link href="/about" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">About</Link>
+            <Link href="/privacy-policy" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Privacy</Link>
+            <Link href="/terms-of-service" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Terms</Link>
+            <Link href="/cookie-policy" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Cookies</Link>
+            <Link href="/contact" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Contact</Link>
+            <Link href="/feedback" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Feedback</Link>
           </div>
           <p className="text-center text-xs sm:text-sm text-gray-500 dark:text-gray-600 mt-3 sm:mt-4">
             © {new Date().getFullYear()} QuoteSwipe. All rights reserved.
@@ -106,7 +106,7 @@ export function SectionCard({
       {(icon || title) && (
         <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
           {icon && (
-            <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 flex-shrink-0">
+            <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-500/10 to-rose-500/10 dark:from-amber-500/20 dark:to-rose-500/20 flex-shrink-0">
               <div className="w-5 h-5 sm:w-6 sm:h-6 [&>*]:w-full [&>*]:h-full">
                 {icon}
               </div>
@@ -134,7 +134,7 @@ export function GradientButton({
   href?: string;
   className?: string;
 }) {
-  const buttonClasses = `inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-pink-600 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-pink-700 transition-all shadow-lg shadow-blue-500/25 dark:shadow-pink-500/20 ${className}`;
+  const buttonClasses = `inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-amber-600 to-rose-600 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl hover:from-amber-600 hover:to-rose-600 transition-all shadow-lg shadow-amber-500/25 dark:shadow-rose-500/20 ${className}`;
   
   if (href) {
     return (
@@ -154,7 +154,7 @@ export function GradientButton({
 // Contact CTA section
 export function ContactCTA() {
   return (
-    <div className="mt-8 sm:mt-10 md:mt-12 text-center p-4 sm:p-6 md:p-8 bg-gradient-to-r from-blue-500/5 to-pink-500/5 dark:from-blue-500/10 dark:to-pink-500/10 rounded-xl sm:rounded-2xl border border-blue-200/50 dark:border-pink-800/50 backdrop-blur-sm">
+    <div className="mt-8 sm:mt-10 md:mt-12 text-center p-4 sm:p-6 md:p-8 bg-gradient-to-r from-amber-500/5 to-rose-500/5 dark:from-amber-500/10 dark:to-rose-500/10 rounded-xl sm:rounded-2xl border border-amber-200/50 dark:border-rose-800/50 backdrop-blur-sm">
       <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2">
         Have Questions?
       </h3>
@@ -172,7 +172,7 @@ export function ContactCTA() {
 export function ListItem({ children }: { children: ReactNode }) {
   return (
     <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base text-gray-600 dark:text-gray-400">
-      <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-pink-500 mt-1.5 sm:mt-2 flex-shrink-0" />
+      <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 mt-1.5 sm:mt-2 flex-shrink-0" />
       {children}
     </li>
   );

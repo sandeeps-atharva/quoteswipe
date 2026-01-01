@@ -96,46 +96,46 @@ export default function SavedQuotesView({
 
   return (
     <div 
-      className="fixed inset-0 z-30 bg-gray-50 dark:bg-gray-950 flex flex-col"
+      className="fixed inset-0 z-30 bg-[#FFFBF7] dark:bg-[#0C0A09] flex flex-col"
       style={{ 
         paddingTop: 'env(safe-area-inset-top, 0px)',
         overscrollBehavior: 'none',
       }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+      <header className="sticky top-0 z-10 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800">
         <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onBack}
-              className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
             >
-              <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400" />
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-stone-600 dark:text-stone-400" />
             </button>
             
             <div className="flex-1 min-w-0">
-              <h1 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
-                <Bookmark size={18} className="sm:w-5 sm:h-5 text-yellow-500 shrink-0" fill="currentColor" />
+              <h1 className="text-base sm:text-lg md:text-xl font-bold text-stone-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
+                <Bookmark size={18} className="sm:w-5 sm:h-5 text-amber-500 shrink-0" fill="currentColor" />
                 <span className="truncate">Saved Quotes</span>
               </h1>
-              <p className="text-[10px] sm:text-xs text-gray-500">{quotes.length} quotes saved</p>
+              <p className="text-[10px] sm:text-xs text-stone-500">{quotes.length} quotes saved</p>
             </div>
           </div>
 
           {/* Search Bar */}
           <div className="mt-2.5 sm:mt-3 relative">
-            <Search size={14} className="sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={14} className="sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
               placeholder="Search saved quotes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 sm:pl-9 pr-8 sm:pr-9 py-2 sm:py-2.5 bg-gray-100 dark:bg-gray-800 rounded-lg sm:rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all"
+              className="w-full pl-8 sm:pl-9 pr-8 sm:pr-9 py-2 sm:py-2.5 bg-stone-100 dark:bg-stone-800 rounded-lg sm:rounded-xl text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
               >
                 <X size={14} className="sm:w-4 sm:h-4" />
               </button>
@@ -157,29 +157,29 @@ export default function SavedQuotesView({
             <div className="flex flex-col items-center justify-center py-16 sm:py-20">
               <div className="relative animate-bounce mb-3">
                 <span className="text-5xl">💬</span>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-full flex items-center justify-center shadow-lg">
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 </div>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 font-medium">Loading saved quotes...</p>
+              <p className="text-xs sm:text-sm text-stone-500 font-medium">Loading saved quotes...</p>
             </div>
           ) : quotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-4 sm:px-6 text-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mb-3 sm:mb-4">
-                <Bookmark size={28} className="sm:w-9 sm:h-9 text-yellow-500" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-3 sm:mb-4">
+                <Bookmark size={28} className="sm:w-9 sm:h-9 text-amber-500" />
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1.5 sm:mb-2">No saved quotes yet</h2>
-              <p className="text-xs sm:text-sm text-gray-500 max-w-xs">
+              <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-1.5 sm:mb-2">No saved quotes yet</h2>
+              <p className="text-xs sm:text-sm text-stone-500 max-w-xs">
                 Swipe right or tap the bookmark icon on quotes you love to save them here
               </p>
             </div>
           ) : filteredQuotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-4 sm:px-6 text-center">
-              <Search size={28} className="sm:w-8 sm:h-8 text-gray-300 mb-3" />
-              <p className="text-xs sm:text-sm text-gray-500">No quotes match "{searchQuery}"</p>
+              <Search size={28} className="sm:w-8 sm:h-8 text-stone-300 mb-3" />
+              <p className="text-xs sm:text-sm text-stone-500">No quotes match "{searchQuery}"</p>
               <button
                 onClick={() => setSearchQuery('')}
-                className="mt-2 text-xs sm:text-sm text-yellow-600 hover:text-yellow-700 font-medium"
+                className="mt-2 text-xs sm:text-sm text-amber-600 hover:text-amber-700 font-medium"
               >
                 Clear search
               </button>
@@ -192,8 +192,8 @@ export default function SavedQuotesView({
                   onClick={() => onQuoteClick(quote.id, quote.category, quote.custom_background)}
                   className={`group relative rounded-xl sm:rounded-2xl overflow-hidden shadow-sm border transition-all active:scale-[0.98] cursor-pointer ${
                     quote.custom_background
-                      ? 'border-yellow-300 dark:border-yellow-700 min-h-[120px] sm:min-h-[140px]'
-                      : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-yellow-300 dark:hover:border-yellow-700'
+                      ? 'border-amber-300 dark:border-amber-700 min-h-[120px] sm:min-h-[140px]'
+                      : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-amber-300 dark:hover:border-amber-700'
                   }`}
                 >
                   {/* Background Image Layer */}
@@ -219,7 +219,7 @@ export default function SavedQuotesView({
                         <p className={`text-xs sm:text-sm leading-relaxed line-clamp-3 ${
                           quote.custom_background 
                             ? 'text-white drop-shadow-md' 
-                            : 'text-gray-800 dark:text-gray-200'
+                            : 'text-stone-800 dark:text-stone-200'
                         }`}>
                           "{quote.text}"
                         </p>
@@ -227,7 +227,7 @@ export default function SavedQuotesView({
                           <p className={`text-[10px] sm:text-xs mt-1.5 sm:mt-2 ${
                             quote.custom_background 
                               ? 'text-white/80 drop-shadow' 
-                              : 'text-gray-500'
+                              : 'text-stone-500'
                           }`}>
                             — {quote.author}
                           </p>
@@ -239,14 +239,14 @@ export default function SavedQuotesView({
                     <div className={`flex items-center justify-between mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 ${
                       quote.custom_background 
                         ? 'border-t border-white/20' 
-                        : 'border-t border-gray-100 dark:border-gray-800'
+                        : 'border-t border-stone-100 dark:border-stone-800'
                     }`}>
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                         {quote.custom_background && (
                           <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 sm:gap-1 ${
                             quote.custom_background 
                               ? 'bg-white/20 text-white' 
-                              : 'bg-yellow-100 text-yellow-700'
+                              : 'bg-amber-100 text-amber-700'
                           }`}>
                             <ImageIcon size={9} className="sm:w-[10px] sm:h-[10px]" />
                             Custom BG
@@ -255,7 +255,7 @@ export default function SavedQuotesView({
                         <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full truncate max-w-[80px] sm:max-w-[100px] ${
                           quote.custom_background 
                             ? 'bg-white/20 text-white' 
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
                         }`}>
                           {quote.category}
                         </span>
@@ -267,7 +267,7 @@ export default function SavedQuotesView({
                           className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
                             quote.custom_background
                               ? 'bg-white/20 hover:bg-white/30 text-white'
-                              : 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-blue-600'
+                              : 'bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 text-orange-600'
                           }`}
                         >
                           <Share2 size={14} className="sm:w-4 sm:h-4" />

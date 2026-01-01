@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Lock, KeyRound, ArrowRight } from 'lucide-react';
 import Modal from './Modal';
 
 interface UpdatePasswordModalProps {
@@ -85,51 +85,52 @@ export default function UpdatePasswordModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} onClose={onClose} size="md" variant="gradient">
       {/* Header */}
-      <div className="text-center mb-4 sm:mb-6 md:mb-8">
-        <Image 
-          src="/logo.svg" 
-          alt="QuoteSwipe" 
-          width={80}
-          height={80}
-          className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-2 sm:mb-3 md:mb-4"
-        />
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-1 sm:mb-2">
+      <div className="text-center mb-6">
+        <div className="relative inline-block">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-rose-500 rounded-2xl blur-xl opacity-30 scale-110" />
+          <div className="relative w-16 h-16 mx-auto bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+            <KeyRound size={28} className="text-white" />
+          </div>
+        </div>
+        
+        <h2 className="mt-4 text-2xl font-bold text-stone-800 dark:text-stone-100">
           Update Password
         </h2>
-        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 px-2">
+        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
           Enter your current password and choose a new one
         </p>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg sm:rounded-xl text-red-600 dark:text-red-400 text-xs sm:text-sm">
-          {error}
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl">
+          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
         </div>
       )}
 
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg sm:rounded-xl text-green-600 dark:text-green-400 text-xs sm:text-sm">
-          {successMessage}
+        <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl">
+          <p className="text-emerald-600 dark:text-emerald-400 text-sm">{successMessage}</p>
         </div>
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+          <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
             Current Password
           </label>
           <div className="relative">
+            <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type={showCurrentPassword ? 'text' : 'password'}
               name="currentPassword"
               value={formData.currentPassword}
               onChange={handleInputChange}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 rounded-lg sm:rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 text-sm sm:text-base focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all"
+              className="w-full pl-11 pr-12 py-3 rounded-xl border-2 border-stone-200 dark:border-stone-700 bg-white/50 dark:bg-stone-800/50 text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-800 outline-none transition-all"
               placeholder="••••••••"
               required
               disabled={isLoading}
@@ -137,7 +138,7 @@ export default function UpdatePasswordModal({
             <button
               type="button"
               onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
               tabIndex={-1}
             >
               {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -145,16 +146,17 @@ export default function UpdatePasswordModal({
           </div>
         </div>
         <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+          <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
             New Password
           </label>
           <div className="relative">
+            <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type={showNewPassword ? 'text' : 'password'}
               name="newPassword"
               value={formData.newPassword}
               onChange={handleInputChange}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 rounded-lg sm:rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 text-sm sm:text-base focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all"
+              className="w-full pl-11 pr-12 py-3 rounded-xl border-2 border-stone-200 dark:border-stone-700 bg-white/50 dark:bg-stone-800/50 text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-800 outline-none transition-all"
               placeholder="••••••••"
               required
               disabled={isLoading}
@@ -163,7 +165,7 @@ export default function UpdatePasswordModal({
             <button
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
               tabIndex={-1}
             >
               {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -171,16 +173,17 @@ export default function UpdatePasswordModal({
           </div>
         </div>
         <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+          <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
             Confirm New Password
           </label>
           <div className="relative">
+            <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type={showConfirmPassword ? 'text' : 'password'}
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 rounded-lg sm:rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 text-sm sm:text-base focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none transition-all"
+              className="w-full pl-11 pr-12 py-3 rounded-xl border-2 border-stone-200 dark:border-stone-700 bg-white/50 dark:bg-stone-800/50 text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-800 outline-none transition-all"
               placeholder="••••••••"
               required
               disabled={isLoading}
@@ -189,7 +192,7 @@ export default function UpdatePasswordModal({
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
               tabIndex={-1}
             >
               {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -199,9 +202,21 @@ export default function UpdatePasswordModal({
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+          className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 
+            hover:from-amber-600 hover:via-orange-600 hover:to-rose-600
+            text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25
+            hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5
+            transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+            flex items-center justify-center gap-2 group"
         >
-          {isLoading ? 'Updating...' : 'Update Password'}
+          {isLoading ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <>
+              Update Password
+              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            </>
+          )}
         </button>
       </form>
     </Modal>

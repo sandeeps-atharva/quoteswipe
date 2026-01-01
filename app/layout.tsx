@@ -448,15 +448,15 @@ export const metadata: Metadata = {
     // bing: "your-bing-verification-code",
   },
   other: {
-    "msapplication-TileColor": "#3B82F6",
-    "theme-color": "#3B82F6",
+    "msapplication-TileColor": "#F97316",
+    "theme-color": "#F97316",
   },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F8FAFC" },
-    { media: "(prefers-color-scheme: dark)", color: "#0F172A" },
+    { media: "(prefers-color-scheme: light)", color: "#FFFBF7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0C0A09" },
   ],
   width: "device-width",
   initialScale: 1,

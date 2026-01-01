@@ -50,7 +50,7 @@ function BottomNavBar({
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       {/* Solid background */}
-      <div className="bg-white dark:bg-gray-900 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] border-t border-gray-100 dark:border-gray-800">
+      <div className="bg-white dark:bg-stone-900 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.3)] border-t border-stone-100 dark:border-stone-800">
         {/* Navigation Items - 5 tabs */}
         <div className="flex items-center justify-around h-14 sm:h-16 px-2 max-w-2xl mx-auto">
           {/* Feed Tab */}
@@ -62,15 +62,15 @@ function BottomNavBar({
             <Home 
               size={22} 
               className={`sm:w-6 sm:h-6 ${activeTab === 'feed' 
-                ? 'text-blue-500' 
-                : 'text-gray-400 dark:text-gray-500'
+                ? 'text-amber-500' 
+                : 'text-stone-400 dark:text-stone-500'
               }`} 
               fill={activeTab === 'feed' ? 'currentColor' : 'none'}
             />
             <span className={`text-[10px] sm:text-xs font-medium ${
               activeTab === 'feed' 
-                ? 'text-blue-500' 
-                : 'text-gray-400 dark:text-gray-500'
+                ? 'text-amber-500' 
+                : 'text-stone-400 dark:text-stone-500'
             }`}>Feed</span>
           </button>
 
@@ -84,25 +84,25 @@ function BottomNavBar({
               <Bookmark 
                 size={22} 
                 className={`sm:w-6 sm:h-6 ${activeTab === 'saved' 
-                  ? 'text-yellow-500' 
-                  : 'text-gray-400 dark:text-gray-500'
+                  ? 'text-orange-500' 
+                  : 'text-stone-400 dark:text-stone-500'
                 }`} 
                 fill={activeTab === 'saved' ? 'currentColor' : 'none'}
               />
               {isLoadingUserData && isAuthenticated ? (
-                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-yellow-500 text-white rounded-full">
+                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-orange-500 text-white rounded-full">
                   <Loader2 size={10} className="animate-spin" />
                 </span>
               ) : savedCount > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-yellow-500 text-white text-[9px] font-bold rounded-full">
+                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-orange-500 text-white text-[9px] font-bold rounded-full">
                   {savedCount > 99 ? '99+' : savedCount}
                 </span>
               )}
             </div>
             <span className={`text-[10px] sm:text-xs font-medium ${
               activeTab === 'saved' 
-                ? 'text-yellow-500' 
-                : 'text-gray-400 dark:text-gray-500'
+                ? 'text-orange-500' 
+                : 'text-stone-400 dark:text-stone-500'
             }`}>Saved</span>
           </button>
 
@@ -112,10 +112,10 @@ function BottomNavBar({
             className="flex flex-col items-center justify-center flex-1 h-full"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <div className="w-12 h-12 sm:w-14 sm:h-14 -mt-4 sm:-mt-5 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform bg-gradient-to-br from-blue-500 to-purple-600">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 -mt-4 sm:-mt-5 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30 active:scale-95 transition-transform bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500">
               <PlusCircle size={22} className="sm:w-6 sm:h-6 text-white" strokeWidth={2} />
             </div>
-            <span className="text-[10px] sm:text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5">Create</span>
+            <span className="text-[10px] sm:text-xs font-medium text-stone-400 dark:text-stone-500 mt-0.5">Create</span>
           </button>
 
           {/* My Quotes Tab */}
@@ -128,25 +128,25 @@ function BottomNavBar({
               <Sparkles 
                 size={22} 
                 className={`sm:w-6 sm:h-6 ${activeTab === 'myquotes' 
-                  ? 'text-purple-500' 
-                  : 'text-gray-400 dark:text-gray-500'
+                  ? 'text-rose-500' 
+                  : 'text-stone-400 dark:text-stone-500'
                 }`} 
                 fill={activeTab === 'myquotes' ? 'currentColor' : 'none'}
               />
               {isLoadingUserData && isAuthenticated ? (
-                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-purple-500 text-white rounded-full">
+                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-rose-500 text-white rounded-full">
                   <Loader2 size={10} className="animate-spin" />
                 </span>
               ) : myQuotesCount > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-purple-500 text-white text-[9px] font-bold rounded-full">
+                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-rose-500 text-white text-[9px] font-bold rounded-full">
                   {myQuotesCount > 99 ? '99+' : myQuotesCount}
                 </span>
               )}
             </div>
             <span className={`text-[10px] sm:text-xs font-medium ${
               activeTab === 'myquotes' 
-                ? 'text-purple-500' 
-                : 'text-gray-400 dark:text-gray-500'
+                ? 'text-rose-500' 
+                : 'text-stone-400 dark:text-stone-500'
             }`}>My Quotes</span>
           </button>
 
@@ -157,7 +157,7 @@ function BottomNavBar({
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             {isAuthenticated && userProfilePicture ? (
-              <div className="relative w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-gray-700">
+              <div className="relative w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full overflow-hidden ring-2 ring-stone-200 dark:ring-stone-700">
                 <Image
                   src={userProfilePicture}
                   alt={userName || 'Profile'}
@@ -167,13 +167,13 @@ function BottomNavBar({
                 />
               </div>
             ) : isAuthenticated && userName ? (
-              <div className="w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold ring-2 ring-gray-200 dark:ring-gray-700">
+              <div className="w-[26px] h-[26px] sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center text-white text-xs sm:text-sm font-bold ring-2 ring-stone-200 dark:ring-stone-700">
                 {userName.charAt(0).toUpperCase()}
               </div>
             ) : (
-              <User size={22} className="sm:w-6 sm:h-6 text-gray-400 dark:text-gray-500" />
+              <User size={22} className="sm:w-6 sm:h-6 text-stone-400 dark:text-stone-500" />
             )}
-            <span className="text-[10px] sm:text-xs font-medium text-gray-400 dark:text-gray-500">
+            <span className="text-[10px] sm:text-xs font-medium text-stone-400 dark:text-stone-500">
               {isAuthenticated ? 'Menu' : 'Login'}
             </span>
           </button>

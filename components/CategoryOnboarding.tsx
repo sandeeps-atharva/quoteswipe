@@ -113,7 +113,7 @@ export default function CategoryOnboarding({
       <div className="relative w-full sm:max-w-lg max-h-[92vh] sm:max-h-[85vh] bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         
         {/* Header - Compact on mobile */}
-        <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 px-4 py-3 sm:p-6 text-white flex-shrink-0">
+        <div className="relative bg-gradient-to-r from-amber-600 via-purple-600 to-rose-600 px-4 py-3 sm:p-6 text-white flex-shrink-0">
           <div className="absolute inset-0 bg-black/10" />
           <div className="relative pr-8">
             <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-2">
@@ -147,7 +147,7 @@ export default function CategoryOnboarding({
           {popularCategories.length > 0 && (
             <div>
               <h3 className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 sm:mb-3 flex items-center gap-1.5 sm:gap-2">
-                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full"></span>
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-amber-500 rounded-full"></span>
                 Popular
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
@@ -155,7 +155,7 @@ export default function CategoryOnboarding({
                   <CategoryButton 
                     key={category.id} 
                     category={category} 
-                    gradient="bg-gradient-to-r from-blue-500 to-purple-500" 
+                    gradient="bg-gradient-to-r from-amber-500 to-rose-500" 
                   />
                 ))}
               </div>
@@ -211,7 +211,7 @@ export default function CategoryOnboarding({
           <div className="flex items-center justify-between gap-3 sm:gap-4">
             {/* Selection count */}
             <div className="text-[11px] sm:text-sm text-gray-600 dark:text-gray-400 min-w-0">
-              <span className={`font-bold ${canContinue ? 'text-green-500' : 'text-blue-500'}`}>
+              <span className={`font-bold ${canContinue ? 'text-green-500' : 'text-amber-500'}`}>
                 {selectedCategories.length}
               </span>
               <span className="hidden sm:inline"> / {MIN_CATEGORIES} selected</span>
@@ -229,8 +229,8 @@ export default function CategoryOnboarding({
               disabled={!canContinue}
               className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 flex-shrink-0 ${
                 canContinue
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl active:scale-[0.98]'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                  ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/25 hover:shadow-xl active:scale-[0.98]'
+                  : 'bg-stone-200 dark:bg-stone-700 text-stone-400 cursor-not-allowed'
               }`}
             >
               <span>Continue</span>

@@ -9,8 +9,9 @@ interface ModalProps {
   children: ReactNode;
   title?: string;
   showCloseButton?: boolean;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   className?: string;
+  variant?: 'default' | 'glass' | 'gradient';
 }
 
 export default function Modal({
@@ -21,6 +22,7 @@ export default function Modal({
   showCloseButton = true,
   size = 'md',
   className = '',
+  variant = 'default',
 }: ModalProps) {
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -52,43 +54,75 @@ export default function Modal({
     md: 'max-w-md',
     lg: 'max-w-lg',
     xl: 'max-w-xl',
+    full: 'max-w-4xl',
+  };
+
+  const variantClasses = {
+    default: 'bg-white dark:bg-stone-900 border border-stone-200/50 dark:border-stone-700/50',
+    glass: 'bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border border-white/20 dark:border-stone-700/30',
+    gradient: 'bg-gradient-to-br from-white via-amber-50/30 to-rose-50/30 dark:from-stone-900 dark:via-stone-800 dark:to-stone-900 border border-amber-200/30 dark:border-amber-900/30',
   };
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
       onClick={(e) => {
-        // Close when clicking backdrop
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
     >
+      {/* Backdrop with warm gradient overlay */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-md">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-rose-500/5" />
+      </div>
+      
+      {/* Modal Container */}
       <div
-        className={`bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl ${sizeClasses[size]} w-full p-4 sm:p-6 md:p-8 relative animate-scale-in max-h-[90vh] overflow-y-auto ${className}`}
+        className={`
+          relative ${variantClasses[variant]} rounded-2xl sm:rounded-3xl 
+          shadow-2xl shadow-stone-900/20 dark:shadow-black/40
+          ${sizeClasses[size]} w-full 
+          p-5 sm:p-6 md:p-8 
+          max-h-[90vh] overflow-y-auto overflow-x-hidden scrollbar-hide
+          animate-scale-in
+          ${className}
+        `}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Decorative gradient orbs - contained within bounds */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none translate-y-1/2 -translate-x-1/2" />
+        
+        {/* Close button */}
         {showCloseButton && (
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors z-10"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 sm:p-2.5 
+              bg-stone-100/80 dark:bg-stone-800/80 hover:bg-stone-200 dark:hover:bg-stone-700 
+              rounded-xl transition-all duration-200 z-10 group
+              hover:scale-105 active:scale-95"
             aria-label="Close modal"
           >
-            <X size={20} className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700 dark:text-gray-300" />
+            <X size={18} className="text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 transition-colors" />
           </button>
         )}
 
+        {/* Title */}
         {title && (
-          <div className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200">
+          <div className="mb-5 sm:mb-6 pr-10">
+            <h2 className="text-xl sm:text-2xl font-bold text-stone-800 dark:text-stone-100">
               {title}
             </h2>
+            <div className="mt-2 h-1 w-12 bg-gradient-to-r from-amber-500 to-rose-500 rounded-full" />
           </div>
         )}
 
-        {children}
+        {/* Content */}
+        <div className="relative z-10">
+          {children}
+        </div>
       </div>
     </div>
   );
 }
-

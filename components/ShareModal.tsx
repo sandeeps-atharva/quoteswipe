@@ -288,7 +288,7 @@ function ShareButton({ onClick, disabled, gradient, iconBg, shadowColor, icon, l
       <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${iconBg} flex items-center justify-center shadow-lg ${shadowColor} transition-shadow`}>
         {icon}
       </div>
-      <span className="text-[10px] sm:text-xs font-semibold text-gray-700 dark:text-gray-300">
+      <span className="text-[10px] sm:text-xs font-semibold text-stone-700 dark:text-stone-300">
         {label}
       </span>
     </button>
@@ -523,13 +523,48 @@ function AuthorSection({ author, colors, hasBackgroundImage }: AuthorSectionProp
         ) : <div />}
         
         <div className="flex items-center gap-1.5" style={{ opacity: colors.isDark ? 0.7 : 0.6 }}>
-          <Image 
-            src="/logo.svg" 
-            alt="QuoteSwipe" 
-            width={20}
-            height={20}
-            style={{ filter: colors.isDark ? 'brightness(1.5)' : 'none' }}
-          />
+          {/* Inline SVG Logo - Blue/Purple/Pink Theme for downloads */}
+          <svg 
+            width="20" 
+            height="20" 
+            viewBox="0 0 200 200" 
+            fill="none"
+            style={{ filter: colors.isDark ? 'brightness(1.3)' : 'none' }}
+          >
+            {/* Outer ring */}
+            <circle cx="100" cy="100" r="96" fill="none" stroke="#A78BFA" strokeWidth="2" opacity="0.3"/>
+            {/* Main circle - Purple (blue-purple-pink theme) */}
+            <circle cx="100" cy="100" r="92" fill="#8B5CF6"/>
+            {/* Inner ring */}
+            <circle cx="100" cy="100" r="85" fill="none" stroke="white" strokeWidth="1" opacity="0.15"/>
+            {/* Card 3 - Back */}
+            <g transform="rotate(-15 100 105)">
+              <rect x="52" y="50" width="80" height="100" rx="12" fill="white" opacity="0.15"/>
+            </g>
+            {/* Card 2 - Middle */}
+            <g transform="rotate(-8 100 105)">
+              <rect x="55" y="48" width="80" height="100" rx="12" fill="white" opacity="0.35"/>
+            </g>
+            {/* Card 1 - Front */}
+            <g>
+              <rect x="58" y="46" width="80" height="100" rx="12" fill="white"/>
+              {/* Quote mark */}
+              <text x="68" y="82" fontFamily="Georgia, serif" fontSize="36" fontWeight="bold" fill="#8B5CF6">"</text>
+              {/* Text lines */}
+              <rect x="96" y="62" width="32" height="4" rx="2" fill="#8B5CF6"/>
+              <rect x="96" y="72" width="26" height="4" rx="2" fill="#A78BFA" opacity="0.7"/>
+              {/* Author lines */}
+              <rect x="72" y="110" width="52" height="3" rx="1.5" fill="#9CA3AF"/>
+              <rect x="72" y="118" width="36" height="3" rx="1.5" fill="#D1D5DB"/>
+              {/* Heart icon - Pink */}
+              <g transform="translate(114, 126)">
+                <path d="M8 3 C8 1.5 9.5 0 11.5 0 C13.5 0 15 1.5 15 3.5 C15 7 8 12 8 12 C8 12 1 7 1 3.5 C1 1.5 2.5 0 4.5 0 C6.5 0 8 1.5 8 3Z" fill="#EC4899"/>
+              </g>
+            </g>
+            {/* Sparkles */}
+            <circle cx="45" cy="55" r="3" fill="white" opacity="0.6"/>
+            <circle cx="160" cy="140" r="2" fill="white" opacity="0.5"/>
+          </svg>
           <span className="text-[9px] font-medium tracking-wide" style={textStyle}>
             QuoteSwipe
           </span>
@@ -550,15 +585,15 @@ interface FormatSelectorProps {
 
 function FormatSelector({ selectedFormat, onChange }: FormatSelectorProps) {
   return (
-    <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+    <div className="flex items-center gap-1.5 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
       {SHARE_FORMATS.map((format) => (
         <button
           key={format.id}
           onClick={() => onChange(format)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             selectedFormat === format.id
-              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              ? 'bg-white dark:bg-stone-700 text-amber-600 dark:text-amber-400 shadow-sm'
+              : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
           }`}
         >
           {format.icon}
@@ -592,16 +627,16 @@ function TextPositionControl({
   const formatValue = (v: number) => v > 0 ? `+${v}` : String(v);
 
   return (
-    <div className="mt-3 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-800/50">
+    <div className="mt-3 p-3 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border border-amber-200/50 dark:border-amber-800/50">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
+        <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
           <Move size={12} />
           Text Position
         </span>
         <button
           onClick={onReset}
-          className="text-[9px] px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+          className="text-[9px] px-2 py-0.5 bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-md hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors flex items-center gap-1"
         >
           <RotateCcw size={10} />
           Center
@@ -617,9 +652,9 @@ function TextPositionControl({
           <button
             onClick={() => onVerticalChange(Math.max(POSITION_MIN, verticalOffset - POSITION_STEP))}
             disabled={verticalOffset <= POSITION_MIN}
-            className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+            className="w-10 h-10 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
           >
-            <ChevronUp size={18} className="text-blue-600 dark:text-blue-400" />
+            <ChevronUp size={18} className="text-amber-600 dark:text-amber-400" />
           </button>
           {/* Empty */}
           <div />
@@ -628,13 +663,13 @@ function TextPositionControl({
           <button
             onClick={() => onHorizontalChange(Math.max(HORIZONTAL_MIN, horizontalOffset - POSITION_STEP))}
             disabled={horizontalOffset <= HORIZONTAL_MIN}
-            className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+            className="w-10 h-10 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
           >
-            <ChevronUp size={18} className="text-blue-600 dark:text-blue-400 -rotate-90" />
+            <ChevronUp size={18} className="text-amber-600 dark:text-amber-400 -rotate-90" />
           </button>
           {/* Center indicator */}
-          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-            <span className="text-[8px] font-mono text-blue-600 dark:text-blue-400">
+          <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+            <span className="text-[8px] font-mono text-amber-600 dark:text-amber-400">
               {horizontalOffset},{verticalOffset}
             </span>
           </div>
@@ -642,9 +677,9 @@ function TextPositionControl({
           <button
             onClick={() => onHorizontalChange(Math.min(HORIZONTAL_MAX, horizontalOffset + POSITION_STEP))}
             disabled={horizontalOffset >= HORIZONTAL_MAX}
-            className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+            className="w-10 h-10 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
           >
-            <ChevronUp size={18} className="text-blue-600 dark:text-blue-400 rotate-90" />
+            <ChevronUp size={18} className="text-amber-600 dark:text-amber-400 rotate-90" />
           </button>
           
           {/* Empty */}
@@ -653,9 +688,9 @@ function TextPositionControl({
           <button
             onClick={() => onVerticalChange(Math.min(POSITION_MAX, verticalOffset + POSITION_STEP))}
             disabled={verticalOffset >= POSITION_MAX}
-            className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+            className="w-10 h-10 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
           >
-            <ChevronDown size={18} className="text-blue-600 dark:text-blue-400" />
+            <ChevronDown size={18} className="text-amber-600 dark:text-amber-400" />
           </button>
           {/* Empty */}
           <div />
@@ -667,8 +702,8 @@ function TextPositionControl({
         {/* Horizontal Slider - Limited range */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[9px] text-gray-500 dark:text-gray-400">← → Left/Right</span>
-            <span className="text-[9px] font-mono text-blue-600 dark:text-blue-400">{formatValue(horizontalOffset)}</span>
+            <span className="text-[9px] text-stone-500 dark:text-stone-400">← → Left/Right</span>
+            <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400">{formatValue(horizontalOffset)}</span>
           </div>
           <input
             type="range"
@@ -677,15 +712,15 @@ function TextPositionControl({
             step={1}
             value={horizontalOffset}
             onChange={(e) => onHorizontalChange(Number(e.target.value))}
-            className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
           />
         </div>
         
         {/* Vertical Slider */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[9px] text-gray-500 dark:text-gray-400">↑ ↓ Up/Down</span>
-            <span className="text-[9px] font-mono text-blue-600 dark:text-blue-400">{formatValue(verticalOffset)}</span>
+            <span className="text-[9px] text-stone-500 dark:text-stone-400">↑ ↓ Up/Down</span>
+            <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400">{formatValue(verticalOffset)}</span>
           </div>
           <input
             type="range"
@@ -694,7 +729,7 @@ function TextPositionControl({
             step={1}
             value={verticalOffset}
             onChange={(e) => onVerticalChange(Number(e.target.value))}
-            className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
           />
         </div>
       </div>
@@ -720,8 +755,8 @@ function TextPositionControl({
             }}
             className={`w-7 h-7 rounded-lg text-[11px] font-medium transition-colors ${
               Math.abs(verticalOffset - preset.v) < 10 && Math.abs(horizontalOffset - preset.h) < 8
-                ? 'bg-blue-500 text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                ? 'bg-amber-500 text-white'
+                : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-600'
             }`}
           >
             {preset.label}
@@ -752,10 +787,10 @@ function TextAlignmentControl({ value, onChange }: TextAlignmentControlProps) {
   ];
 
   return (
-    <div className="mt-3 p-3 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-xl border border-violet-200/50 dark:border-violet-800/50">
+    <div className="mt-3 p-3 bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-900/20 dark:to-orange-900/20 rounded-xl border border-rose-200/50 dark:border-rose-800/50">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-semibold text-violet-700 dark:text-violet-400 flex items-center gap-1.5">
+        <span className="text-[10px] font-semibold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
           <AlignCenter size={12} />
           Text Alignment
         </span>
@@ -769,8 +804,8 @@ function TextAlignmentControl({ value, onChange }: TextAlignmentControlProps) {
             onClick={() => onChange(alignment.id)}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-medium transition-all ${
               value === alignment.id
-                ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/30'
-                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-violet-100 dark:hover:bg-gray-600'
+                ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
+                : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-rose-100 dark:hover:bg-stone-600'
             }`}
           >
             {alignment.icon}
@@ -827,27 +862,27 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
   ];
 
   return (
-    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+    <div className="mt-3 p-3 bg-stone-50 dark:bg-stone-800/50 rounded-xl">
       <div className="flex items-center gap-3">
         {/* Decrease Button */}
         <button
           onClick={handleDecrease}
           disabled={!isAuto && value <= FONT_SIZE_PX_MIN}
-          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           title="Smaller"
         >
-          <Minus size={16} className="text-gray-600 dark:text-gray-300" />
+          <Minus size={16} className="text-stone-600 dark:text-stone-300" />
         </button>
         
         {/* Size Display & Input */}
         <div className="flex-1">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+            <span className="text-[10px] font-medium text-stone-500 dark:text-stone-400 flex items-center gap-1">
               <Type size={10} />
               Font Size
             </span>
             {isAuto && (
-              <span className="text-[9px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded">
+              <span className="text-[9px] px-1.5 py-0.5 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded">
                 Auto
               </span>
             )}
@@ -862,9 +897,9 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
               value={isAuto ? '' : value}
               placeholder={`${Math.round(autoSize)}`}
               onChange={handleInputChange}
-              className="w-20 px-2.5 py-1.5 text-sm font-mono text-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+              className="w-20 px-2.5 py-1.5 text-sm font-mono text-center bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
             />
-            <span className="text-xs text-gray-500 dark:text-gray-400">px</span>
+            <span className="text-xs text-stone-500 dark:text-stone-400">px</span>
             
             {/* Slider */}
             <input
@@ -873,16 +908,16 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
               max={FONT_SIZE_PX_MAX}
               value={displayValue}
               onChange={(e) => onChange(Number(e.target.value))}
-              className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              className="flex-1 h-2 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
           </div>
           
           <div className="flex justify-between mt-1.5 px-1">
-            <span className="text-[9px] text-gray-400">{FONT_SIZE_PX_MIN}px</span>
-            <span className="text-[9px] text-gray-400 font-medium">
+            <span className="text-[9px] text-stone-400">{FONT_SIZE_PX_MIN}px</span>
+            <span className="text-[9px] text-stone-400 font-medium">
               Current: {displayValue}px
             </span>
-            <span className="text-[9px] text-gray-400">{FONT_SIZE_PX_MAX}px</span>
+            <span className="text-[9px] text-stone-400">{FONT_SIZE_PX_MAX}px</span>
           </div>
         </div>
         
@@ -890,10 +925,10 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
         <button
           onClick={handleIncrease}
           disabled={!isAuto && value >= FONT_SIZE_PX_MAX}
-          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           title="Larger"
         >
-          <Plus size={16} className="text-gray-600 dark:text-gray-300" />
+          <Plus size={16} className="text-stone-600 dark:text-stone-300" />
         </button>
       </div>
       
@@ -905,8 +940,8 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
             onClick={() => onChange(preset.value)}
             className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${
               value === preset.value
-                ? 'bg-purple-500 text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                ? 'bg-rose-500 text-white'
+                : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-600'
             }`}
           >
             {preset.value === 0 ? preset.label : `${preset.label}px`}
@@ -968,7 +1003,7 @@ function BackgroundZoomControl({
         </span>
         <button
           onClick={onReset}
-          className="text-[9px] px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+          className="text-[9px] px-2 py-0.5 bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-md hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors flex items-center gap-1"
         >
           <RotateCcw size={10} />
           Reset
@@ -980,7 +1015,7 @@ function BackgroundZoomControl({
         <button
           onClick={handleZoomOut}
           disabled={zoom <= BG_ZOOM_MIN}
-          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           title="Zoom Out"
         >
           <ZoomOut size={14} className="text-emerald-600 dark:text-emerald-400" />
@@ -988,7 +1023,7 @@ function BackgroundZoomControl({
         
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[9px] text-gray-500 dark:text-gray-400">Zoom</span>
+            <span className="text-[9px] text-stone-500 dark:text-stone-400">Zoom</span>
             <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400">{zoom.toFixed(1)}x</span>
           </div>
           <input
@@ -1005,7 +1040,7 @@ function BackgroundZoomControl({
         <button
           onClick={handleZoomIn}
           disabled={zoom >= BG_ZOOM_MAX}
-          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           title="Zoom In"
         >
           <ZoomIn size={14} className="text-emerald-600 dark:text-emerald-400" />
@@ -1021,7 +1056,7 @@ function BackgroundZoomControl({
             className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${
               Math.abs(zoom - preset.value) < 0.05
                 ? 'bg-emerald-500 text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-600'
             }`}
           >
             {preset.label}
@@ -1034,12 +1069,12 @@ function BackgroundZoomControl({
         <div className="pt-3 border-t border-emerald-200/50 dark:border-emerald-700/50">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-1.5">
-              <Move size={10} className="text-gray-500" />
-              <span className="text-[9px] text-gray-500 dark:text-gray-400">Move Background</span>
+              <Move size={10} className="text-stone-500" />
+              <span className="text-[9px] text-stone-500 dark:text-stone-400">Move Background</span>
             </div>
             <button
               onClick={() => { onPanXChange(0); onPanYChange(0); }}
-              className="text-[8px] px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-500 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+              className="text-[8px] px-1.5 py-0.5 bg-stone-200 dark:bg-stone-700 text-stone-500 rounded hover:bg-stone-300 dark:hover:bg-stone-600"
             >
               Center
             </button>
@@ -1054,9 +1089,9 @@ function BackgroundZoomControl({
               <button
                 onClick={() => onPanYChange(Math.min(BG_PAN_MAX, panY + BG_PAN_STEP))}
                 disabled={panY >= BG_PAN_MAX}
-                className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+                className="w-9 h-9 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
               >
-                <ChevronUp size={16} className="text-gray-600 dark:text-gray-300" />
+                <ChevronUp size={16} className="text-stone-600 dark:text-stone-300" />
               </button>
               {/* Empty */}
               <div />
@@ -1065,9 +1100,9 @@ function BackgroundZoomControl({
               <button
                 onClick={() => onPanXChange(Math.max(BG_PAN_MIN, panX - BG_PAN_STEP))}
                 disabled={panX <= BG_PAN_MIN}
-                className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+                className="w-9 h-9 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
               >
-                <ChevronUp size={16} className="text-gray-600 dark:text-gray-300 -rotate-90" />
+                <ChevronUp size={16} className="text-stone-600 dark:text-stone-300 -rotate-90" />
               </button>
               {/* Center indicator */}
               <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
@@ -1079,9 +1114,9 @@ function BackgroundZoomControl({
               <button
                 onClick={() => onPanXChange(Math.min(BG_PAN_MAX, panX + BG_PAN_STEP))}
                 disabled={panX >= BG_PAN_MAX}
-                className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+                className="w-9 h-9 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
               >
-                <ChevronUp size={16} className="text-gray-600 dark:text-gray-300 rotate-90" />
+                <ChevronUp size={16} className="text-stone-600 dark:text-stone-300 rotate-90" />
               </button>
               
               {/* Empty */}
@@ -1090,9 +1125,9 @@ function BackgroundZoomControl({
               <button
                 onClick={() => onPanYChange(Math.max(BG_PAN_MIN, panY - BG_PAN_STEP))}
                 disabled={panY <= BG_PAN_MIN}
-                className="w-9 h-9 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors disabled:opacity-40"
+                className="w-9 h-9 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
               >
-                <ChevronDown size={16} className="text-gray-600 dark:text-gray-300" />
+                <ChevronDown size={16} className="text-stone-600 dark:text-stone-300" />
               </button>
               {/* Empty */}
               <div />
@@ -1104,7 +1139,7 @@ function BackgroundZoomControl({
             {/* Horizontal Pan */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] text-gray-400">← → Horizontal</span>
+                <span className="text-[9px] text-stone-400">← → Horizontal</span>
                 <span className="text-[9px] font-mono text-emerald-600">{panX > 0 ? '+' : ''}{panX}</span>
               </div>
               <input
@@ -1114,14 +1149,14 @@ function BackgroundZoomControl({
                 step={1}
                 value={panX}
                 onChange={(e) => onPanXChange(Number(e.target.value))}
-                className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
               />
             </div>
             
             {/* Vertical Pan */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] text-gray-400">↑ ↓ Vertical</span>
+                <span className="text-[9px] text-stone-400">↑ ↓ Vertical</span>
                 <span className="text-[9px] font-mono text-emerald-600">{panY > 0 ? '+' : ''}{panY}</span>
               </div>
               <input
@@ -1131,7 +1166,7 @@ function BackgroundZoomControl({
                 step={1}
                 value={panY}
                 onChange={(e) => onPanYChange(Number(e.target.value))}
-                className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
               />
             </div>
           </div>
@@ -1191,7 +1226,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
         {isEdited && (
           <button
             onClick={onReset}
-            className="text-[9px] px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+            className="text-[9px] px-2 py-0.5 bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-md hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors flex items-center gap-1"
           >
             <Undo2 size={10} />
             Reset
@@ -1200,7 +1235,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
               </div>
       
       {/* Instructions */}
-      <p className="text-[9px] text-gray-500 dark:text-gray-400 mb-2">
+      <p className="text-[9px] text-stone-500 dark:text-stone-400 mb-2">
         Click where you want to add a line break, then press Enter or use the button below.
       </p>
       
@@ -1209,7 +1244,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
         ref={textareaRef}
         value={editedText}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full p-3 text-sm bg-white dark:bg-gray-800 border border-orange-200 dark:border-orange-700 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all min-h-[80px] max-h-[200px]"
+        className="w-full p-3 text-sm bg-white dark:bg-stone-800 border border-orange-200 dark:border-orange-700 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all min-h-[80px] max-h-[200px]"
         placeholder="Edit your quote text..."
         style={{ fontFamily: 'inherit' }}
       />
@@ -1233,7 +1268,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
       </div>
       
       {/* Preview hint */}
-      <p className="text-[8px] text-gray-400 mt-2">
+      <p className="text-[8px] text-stone-400 mt-2">
         Tip: Press Enter key to add line breaks. The preview above will update in real-time.
       </p>
     </div>
@@ -1277,7 +1312,7 @@ function FontStyleSelector({ selectedFont, onFontChange }: FontStyleSelectorProp
           <Type size={12} />
           Font Style
         </span>
-        <span className="text-[9px] text-gray-500 dark:text-gray-400">
+        <span className="text-[9px] text-stone-500 dark:text-stone-400">
           {SHARE_FONT_OPTIONS.length} fonts
         </span>
       </div>
@@ -1290,8 +1325,8 @@ function FontStyleSelector({ selectedFont, onFontChange }: FontStyleSelectorProp
             onClick={() => onFontChange(font)}
             className={`p-2 rounded-lg text-center transition-all ${
               selectedFont.id === font.id
-                ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30 ring-2 ring-pink-300'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-pink-100 dark:hover:bg-gray-600'
+                ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 ring-2 ring-rose-300'
+                : 'bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-300 hover:bg-rose-100 dark:hover:bg-stone-600'
             }`}
           >
             <span 
@@ -1300,7 +1335,7 @@ function FontStyleSelector({ selectedFont, onFontChange }: FontStyleSelectorProp
             >
               Aa
             </span>
-            <span className={`text-[8px] ${selectedFont.id === font.id ? 'text-pink-100' : 'text-gray-500 dark:text-gray-400'}`}>
+            <span className={`text-[8px] ${selectedFont.id === font.id ? 'text-rose-100' : 'text-stone-500 dark:text-stone-400'}`}>
               {font.name.length > 12 ? font.name.substring(0, 12) + '...' : font.name}
             </span>
           </button>
@@ -1364,7 +1399,7 @@ function TextColorPicker({ value, defaultColor, onChange }: TextColorPickerProps
         {value && (
           <button
             onClick={() => onChange(null)}
-            className="text-[9px] px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+            className="text-[9px] px-2 py-0.5 bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-md hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors flex items-center gap-1"
           >
             <RotateCcw size={10} />
             Auto
@@ -1381,13 +1416,13 @@ function TextColorPicker({ value, defaultColor, onChange }: TextColorPickerProps
             className={`w-full aspect-square rounded-lg border-2 transition-all ${
               value === preset.color
                 ? 'border-cyan-500 ring-2 ring-cyan-300 scale-105'
-                : 'border-gray-200 dark:border-gray-600 hover:border-cyan-300'
+                : 'border-stone-200 dark:border-stone-600 hover:border-cyan-300'
             }`}
             style={{ backgroundColor: preset.color }}
             title={preset.name}
           >
             {value === preset.color && (
-              <Check size={12} className={preset.dark ? 'text-white mx-auto' : 'text-gray-800 mx-auto'} />
+              <Check size={12} className={preset.dark ? 'text-white mx-auto' : 'text-stone-800 mx-auto'} />
             )}
           </button>
         ))}
@@ -1396,12 +1431,12 @@ function TextColorPicker({ value, defaultColor, onChange }: TextColorPickerProps
       {/* Custom Color Picker */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <label className="text-[9px] text-gray-500 dark:text-gray-400">Custom:</label>
+          <label className="text-[9px] text-stone-500 dark:text-stone-400">Custom:</label>
           <input
             type="color"
             value={value || defaultColor}
             onChange={(e) => onChange(e.target.value)}
-            className="w-8 h-8 rounded-lg cursor-pointer border border-gray-200 dark:border-gray-600"
+            className="w-8 h-8 rounded-lg cursor-pointer border border-stone-200 dark:border-stone-600"
           />
         </div>
         <div className="flex-1 flex items-center gap-2">
@@ -1415,18 +1450,18 @@ function TextColorPicker({ value, defaultColor, onChange }: TextColorPickerProps
                 onChange(val || null);
               }
             }}
-            className="flex-1 px-2 py-1.5 text-[10px] font-mono bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none"
+            className="flex-1 px-2 py-1.5 text-[10px] font-mono bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none"
           />
         </div>
       </div>
       
       {/* Current color indicator */}
       <div className="flex items-center justify-between mt-2 pt-2 border-t border-cyan-200/50 dark:border-cyan-700/50">
-        <span className="text-[9px] text-gray-500 dark:text-gray-400">
+        <span className="text-[9px] text-stone-500 dark:text-stone-400">
           {value ? 'Custom color' : 'Auto (based on background)'}
         </span>
         <div 
-          className="w-6 h-6 rounded-md border border-gray-300 dark:border-gray-600"
+          className="w-6 h-6 rounded-md border border-stone-300 dark:border-stone-600"
           style={{ backgroundColor: value || defaultColor }}
         />
       </div>
@@ -1471,7 +1506,7 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
         {!isAuto && (
           <button
             onClick={() => onChange(0)}
-            className="text-[9px] px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+            className="text-[9px] px-2 py-0.5 bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-md hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors flex items-center gap-1"
           >
             <RotateCcw size={10} />
             Auto
@@ -1486,7 +1521,7 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
             const current = isAuto ? autoValue : value;
             onChange(Math.max(LINE_HEIGHT_MIN, current - LINE_HEIGHT_STEP));
           }}
-          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+          className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors"
         >
           <Minus size={14} className="text-amber-600 dark:text-amber-400" />
         </button>
@@ -1502,11 +1537,11 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
             className="w-full h-2 bg-amber-200 dark:bg-amber-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
           />
           <div className="flex justify-between mt-1">
-            <span className="text-[8px] text-gray-400">Tight</span>
+            <span className="text-[8px] text-stone-400">Tight</span>
             <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400">
               {isAuto ? `Auto (${autoValue.toFixed(2)})` : displayValue.toFixed(2)}
             </span>
-            <span className="text-[8px] text-gray-400">Loose</span>
+            <span className="text-[8px] text-stone-400">Loose</span>
           </div>
         </div>
         
@@ -1515,7 +1550,7 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
             const current = isAuto ? autoValue : value;
             onChange(Math.min(LINE_HEIGHT_MAX, current + LINE_HEIGHT_STEP));
           }}
-          className="p-1.5 rounded-lg bg-white dark:bg-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+          className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors"
         >
           <Plus size={14} className="text-amber-600 dark:text-amber-400" />
         </button>
@@ -1530,7 +1565,7 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
             className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${
               (preset.value === 0 && isAuto) || (preset.value !== 0 && Math.abs(value - preset.value) < 0.05)
                 ? 'bg-amber-500 text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-amber-100 dark:hover:bg-gray-600'
+                : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-amber-100 dark:hover:bg-stone-600'
             }`}
           >
             {preset.label}
@@ -1539,8 +1574,8 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
       </div>
       
       {/* Visual Preview */}
-      <div className="mt-3 p-2 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700">
-        <p className="text-[10px] text-gray-600 dark:text-gray-400" style={{ lineHeight: displayValue }}>
+      <div className="mt-3 p-2 bg-white dark:bg-stone-800 rounded-lg border border-amber-200 dark:border-amber-700">
+        <p className="text-[10px] text-stone-600 dark:text-stone-400" style={{ lineHeight: displayValue }}>
           The quick brown fox jumps over the lazy dog. This preview shows the current line height setting.
         </p>
       </div>
@@ -1572,10 +1607,10 @@ function TextFormatControl({
   const hasAnyFormat = isBold || isItalic || isUnderline;
   
   return (
-    <div className="mt-3 p-3 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl border border-indigo-200/50 dark:border-indigo-800/50">
+    <div className="mt-3 p-3 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl border border-orange-200/50 dark:border-orange-800/50">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
+        <span className="text-[10px] font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
           <Type size={12} />
           Text Format
         </span>
@@ -1586,7 +1621,7 @@ function TextFormatControl({
               onItalicChange(false);
               onUnderlineChange(false);
             }}
-            className="text-[9px] px-2 py-0.5 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+            className="text-[9px] px-2 py-0.5 bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-md hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors flex items-center gap-1"
           >
             <RotateCcw size={10} />
             Reset
@@ -1601,8 +1636,8 @@ function TextFormatControl({
           onClick={() => onBoldChange(!isBold)}
           className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl transition-all ${
             isBold
-              ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-300'
-              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-gray-600'
+              ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 ring-2 ring-orange-300'
+              : 'bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-300 hover:bg-orange-100 dark:hover:bg-stone-600'
           }`}
         >
           <Bold size={20} strokeWidth={isBold ? 3 : 2} />
@@ -1614,8 +1649,8 @@ function TextFormatControl({
           onClick={() => onItalicChange(!isItalic)}
           className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl transition-all ${
             isItalic
-              ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-300'
-              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-gray-600'
+              ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 ring-2 ring-orange-300'
+              : 'bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-300 hover:bg-orange-100 dark:hover:bg-stone-600'
           }`}
         >
           <Italic size={20} />
@@ -1627,8 +1662,8 @@ function TextFormatControl({
           onClick={() => onUnderlineChange(!isUnderline)}
           className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl transition-all ${
             isUnderline
-              ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-300'
-              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-gray-600'
+              ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 ring-2 ring-orange-300'
+              : 'bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-300 hover:bg-orange-100 dark:hover:bg-stone-600'
           }`}
         >
           <Underline size={20} />
@@ -1637,9 +1672,9 @@ function TextFormatControl({
       </div>
       
       {/* Preview */}
-      <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-indigo-200 dark:border-indigo-700">
+      <div className="mt-3 p-3 bg-white dark:bg-stone-800 rounded-lg border border-orange-200 dark:border-orange-700">
         <p 
-          className="text-sm text-center text-gray-700 dark:text-gray-300"
+          className="text-sm text-center text-stone-700 dark:text-stone-300"
           style={{
             fontWeight: isBold ? '700' : '400',
             fontStyle: isItalic ? 'italic' : 'normal',
@@ -1653,19 +1688,19 @@ function TextFormatControl({
       {/* Active formats indicator */}
       {hasAnyFormat && (
         <div className="mt-2 flex items-center justify-center gap-2">
-          <span className="text-[9px] text-gray-500 dark:text-gray-400">Active:</span>
+          <span className="text-[9px] text-stone-500 dark:text-stone-400">Active:</span>
           {isBold && (
-            <span className="text-[9px] px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded font-bold">
+            <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded font-bold">
               B
             </span>
           )}
           {isItalic && (
-            <span className="text-[9px] px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded italic">
+            <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded italic">
               I
             </span>
           )}
           {isUnderline && (
-            <span className="text-[9px] px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded underline">
+            <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded underline">
               U
             </span>
           )}
@@ -1688,9 +1723,9 @@ interface CopyLinkSectionProps {
 function CopyLinkSection({ url, copied, onCopy }: CopyLinkSectionProps) {
   return (
     <div className="mb-4 sm:mb-5">
-      <div className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl">
-        <Link2 size={14} className="flex-shrink-0 text-gray-400" />
-        <span className="flex-1 text-xs sm:text-sm text-gray-600 dark:text-gray-300 truncate font-mono">
+      <div className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-stone-100 dark:bg-stone-800 rounded-xl">
+        <Link2 size={14} className="flex-shrink-0 text-stone-400" />
+        <span className="flex-1 text-xs sm:text-sm text-stone-600 dark:text-stone-300 truncate font-mono">
           {url}
         </span>
         <button
@@ -1698,7 +1733,7 @@ function CopyLinkSection({ url, copied, onCopy }: CopyLinkSectionProps) {
           className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all active:scale-95 ${
             copied 
                     ? 'bg-green-500 text-white' 
-              : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
+              : 'bg-stone-900 dark:bg-white text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-100'
                 }`}
               >
           {copied ? (
@@ -1753,16 +1788,16 @@ function CaptionSection({ quote, copied, onCopy }: CaptionSectionProps) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-lg">📝</span>
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Caption & Hashtags</span>
+          <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Caption & Hashtags</span>
         </div>
-        <span className="text-[10px] text-gray-400">Tap to copy</span>
+        <span className="text-[10px] text-stone-400">Tap to copy</span>
       </div>
       
       <div 
         onClick={onCopy}
-        className="relative p-3 sm:p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl border border-purple-100 dark:border-purple-800/50 cursor-pointer hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-950/50 dark:hover:to-pink-950/50 transition-all group"
+        className="relative p-3 sm:p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-xl border border-amber-100 dark:border-amber-800/50 cursor-pointer hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-950/50 dark:hover:to-orange-950/50 transition-all group"
       >
-        <pre className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">
+        <pre className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 whitespace-pre-wrap font-sans leading-relaxed">
           {caption}
         </pre>
         
@@ -1770,7 +1805,7 @@ function CaptionSection({ quote, copied, onCopy }: CaptionSectionProps) {
         <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
           copied 
             ? 'bg-green-500 text-white' 
-            : 'bg-white/80 dark:bg-gray-800/80 text-gray-500 dark:text-gray-400 group-hover:bg-purple-500 group-hover:text-white'
+            : 'bg-white/80 dark:bg-stone-800/80 text-stone-500 dark:text-stone-400 group-hover:bg-amber-500 group-hover:text-white'
         }`}>
           {copied ? (
             <>
@@ -1786,7 +1821,7 @@ function CaptionSection({ quote, copied, onCopy }: CaptionSectionProps) {
         </div>
       </div>
       
-      <p className="mt-2 text-[10px] text-gray-400 dark:text-gray-500 text-center">
+      <p className="mt-2 text-[10px] text-stone-400 dark:text-stone-500 text-center">
         Paste this caption when you post on Instagram/Reels 🚀
       </p>
     </div>
@@ -1823,9 +1858,9 @@ function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, o
       <ShareButton
         onClick={onDownload}
         disabled={isGenerating}
-        gradient="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/50 dark:to-cyan-950/50"
-        iconBg="bg-gradient-to-br from-blue-500 to-cyan-500"
-        shadowColor="shadow-blue-500/20 group-hover:shadow-blue-500/40"
+        gradient="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50"
+        iconBg="bg-gradient-to-br from-amber-500 to-orange-500"
+        shadowColor="shadow-amber-500/20 group-hover:shadow-amber-500/40"
         icon={isGenerating 
           ? <Sparkles size={18} className="sm:w-6 sm:h-6 text-white animate-pulse" />
           : <Download size={18} className="sm:w-6 sm:h-6 text-white" />
@@ -2195,26 +2230,26 @@ export default function ShareModal({
       />
       
       {/* Modal */}
-      <div className="relative w-full sm:max-w-xl mx-0 sm:mx-4 bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[95vh] overflow-hidden animate-in slide-in-from-bottom duration-300">
+      <div className="relative w-full sm:max-w-xl mx-0 sm:mx-4 bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[95vh] overflow-hidden animate-in slide-in-from-bottom duration-300">
         {/* Header */}
-        <div className="relative px-4 pt-4 pb-3 sm:px-6 sm:pt-5 sm:pb-4 border-b border-gray-100 dark:border-gray-800">
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-300 dark:bg-gray-700 rounded-full sm:hidden" />
+        <div className="relative px-4 pt-4 pb-3 sm:px-6 sm:pt-5 sm:pb-4 border-b border-stone-100 dark:border-stone-800">
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-stone-300 dark:bg-stone-700 rounded-full sm:hidden" />
           
           <div className="flex items-center justify-between mt-2 sm:mt-0">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center">
                 <Share2 size={16} className="sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Share Quote</h2>
-                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Adjust position & download</p>
+                <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white">Share Quote</h2>
+                <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400">Adjust position & download</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
             >
-              <X size={16} className="sm:w-[18px] sm:h-[18px] text-gray-500" />
+              <X size={16} className="sm:w-[18px] sm:h-[18px] text-stone-500" />
             </button>
           </div>
         </div>
@@ -2225,8 +2260,8 @@ export default function ShareModal({
           <div className="mb-4 sm:mb-5">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
-                <ImageIcon size={14} className="text-gray-400" />
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Preview</span>
+                <ImageIcon size={14} className="text-stone-400" />
+                <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Preview</span>
               </div>
               
               {/* Format Selector */}
@@ -2239,7 +2274,7 @@ export default function ShareModal({
             {/* Preview Card Container */}
             <div 
               ref={previewRef}
-              className="flex justify-center items-center p-4 sm:p-6 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-gray-800 dark:via-gray-850 dark:to-gray-900 rounded-2xl transition-all duration-300"
+              className="flex justify-center items-center p-4 sm:p-6 bg-gradient-to-br from-stone-100 via-stone-50 to-stone-200 dark:from-stone-800 dark:via-stone-850 dark:to-stone-900 rounded-2xl transition-all duration-300"
               style={{ minHeight: `${selectedFormat.height * PREVIEW_SCALE + 48}px` }}
             >
               <div 
@@ -2301,8 +2336,8 @@ export default function ShareModal({
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showPositionControl 
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' 
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <MoveVertical size={12} />
@@ -2326,8 +2361,8 @@ export default function ShareModal({
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showFontSizeControl 
-                      ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' 
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <Type size={12} />
@@ -2351,8 +2386,8 @@ export default function ShareModal({
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showAlignmentControl 
-                      ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' 
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   {textAlign === 'left' && <AlignLeft size={12} />}
@@ -2383,7 +2418,7 @@ export default function ShareModal({
                     className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                       showZoomControl 
                         ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' 
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                     }`}
                   >
                     <ZoomIn size={12} />
@@ -2412,7 +2447,7 @@ export default function ShareModal({
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showTextEditor 
                       ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <WrapText size={12} />
@@ -2439,8 +2474,8 @@ export default function ShareModal({
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showFontStyleControl 
-                      ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' 
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <Type size={12} />
@@ -2465,7 +2500,7 @@ export default function ShareModal({
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showTextColorControl 
                       ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <Palette size={12} />
@@ -2496,7 +2531,7 @@ export default function ShareModal({
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showLineHeightControl 
                       ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <LineChart size={12} />
@@ -2521,7 +2556,7 @@ export default function ShareModal({
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
                     showTextFormatControl 
                       ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <Bold size={12} />
@@ -2537,7 +2572,7 @@ export default function ShareModal({
           </div>
               
               {/* Output size indicator */}
-              <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
+              <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">
                 {selectedFormat.id === 'story' && '1080×1920'}
                 {selectedFormat.id === 'post' && '1920×2400'}
                 {selectedFormat.id === 'square' && '1080×1080'}
@@ -2662,10 +2697,10 @@ export default function ShareModal({
           <button
             onClick={handleGenericShare}
             disabled={isGenerating}
-            className="w-full mt-3 sm:mt-4 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 rounded-xl sm:rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-[0.98] disabled:opacity-50"
+            className="w-full mt-3 sm:mt-4 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-stone-100 dark:bg-stone-800 rounded-xl sm:rounded-2xl hover:bg-stone-200 dark:hover:bg-stone-700 transition-all active:scale-[0.98] disabled:opacity-50"
           >
-            <Share2 size={14} className="sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
-            <span className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">More sharing options</span>
+            <Share2 size={14} className="sm:w-4 sm:h-4 text-stone-600 dark:text-stone-400" />
+            <span className="text-xs sm:text-sm font-semibold text-stone-700 dark:text-stone-300">More sharing options</span>
           </button>
           </div>
         </div>

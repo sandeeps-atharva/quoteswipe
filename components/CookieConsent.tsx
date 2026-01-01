@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { X } from 'lucide-react';
+import { X, Cookie } from 'lucide-react';
 
 const COOKIE_CONSENT_KEY = 'qs_cookie_consent';
 
@@ -26,30 +26,35 @@ export default function CookieConsent() {
 
   return (
     <div className={`fixed bottom-0 left-0 right-0 z-[100] transition-transform duration-300 ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}>
-      <div className="bg-gray-900 dark:bg-gray-950 border-t border-gray-800 px-4 py-3">
+      <div className="bg-stone-900 dark:bg-stone-950 border-t border-stone-800 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Message */}
-          <p className="text-sm text-gray-300 flex-1">
-            🍪 We use cookies to enhance your experience.{' '}
-            <Link 
-              href="/cookie-policy" 
-              className="text-blue-400 hover:text-blue-300 hover:underline"
-            >
-              Learn more
-            </Link>
-          </p>
+          <div className="flex items-center gap-3 flex-1">
+            <div className="hidden sm:flex w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 items-center justify-center shrink-0">
+              <Cookie size={16} className="text-white" />
+            </div>
+            <p className="text-sm text-stone-300">
+              🍪 We use cookies to enhance your experience.{' '}
+              <Link 
+                href="/cookie-policy" 
+                className="text-amber-400 hover:text-amber-300 hover:underline"
+              >
+                Learn more
+              </Link>
+            </p>
+          </div>
 
           {/* Buttons */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleAccept}
-              className="px-4 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+              className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-medium transition-colors shadow-lg shadow-amber-500/20"
             >
               Accept
             </button>
             <button
               onClick={handleAccept}
-              className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
+              className="p-1.5 rounded-lg hover:bg-stone-800 text-stone-400 hover:text-white transition-colors"
               aria-label="Close"
             >
               <X size={18} />

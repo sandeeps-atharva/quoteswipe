@@ -51,7 +51,7 @@ export default function ThematicLoader({
       <div className="relative animate-bounce">
         <span className={s.emoji}>💬</span>
         <div
-          className={`absolute -bottom-1 -right-1 ${s.spinnerContainer} bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg`}
+          className={`absolute -bottom-1 -right-1 ${s.spinnerContainer} bg-gradient-to-br from-amber-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg`}
         >
           <div
             className={`${s.spinner} border-white border-t-transparent rounded-full animate-spin`}
@@ -68,7 +68,7 @@ export default function ThematicLoader({
 
   if (fullScreen) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-pink-950 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 flex items-center justify-center">
         {loaderContent}
       </div>
     );
@@ -110,19 +110,19 @@ export function NavigationLoader() {
  */
 export function AppLoader() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-pink-950 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 flex items-center justify-center">
       <div className="bg-white dark:bg-gray-900 rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
         {/* Quote Bubble with spinning indicator */}
         <div className="relative animate-bounce">
           <span className="text-6xl">💬</span>
-          <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+          <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-gradient-to-br from-amber-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
 
         {/* App name */}
         <div className="text-center">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent">
             QuoteSwipe
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">

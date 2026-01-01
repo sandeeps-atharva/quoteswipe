@@ -29,7 +29,7 @@ export default function ControlButtons({
         className={`group relative w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all duration-300 ${
           swipeDirection === 'left' && isAnimating
             ? 'bg-gradient-to-br from-red-500 to-orange-500 text-white scale-110 shadow-lg shadow-red-500/40 rotate-[-8deg]'
-            : 'bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 hover:scale-105 active:scale-95 shadow-md sm:shadow-lg border border-gray-200/50 dark:border-gray-700/50'
+            : 'bg-white/90 dark:bg-stone-800/90 backdrop-blur-sm text-stone-400 dark:text-stone-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 hover:scale-105 active:scale-95 shadow-md sm:shadow-lg border border-stone-200/50 dark:border-stone-700/50'
         }`}
         aria-label="Skip"
       >
@@ -45,7 +45,7 @@ export default function ControlButtons({
       {/* Save Button */}
       <button
         onClick={onSave}
-        className="group relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/50 hover:scale-105 active:scale-95 transition-all duration-300 shadow-md sm:shadow-lg border border-gray-200/50 dark:border-gray-700/50"
+        className="group relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center bg-white/90 dark:bg-stone-800/90 backdrop-blur-sm text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/50 hover:scale-105 active:scale-95 transition-all duration-300 shadow-md sm:shadow-lg border border-stone-200/50 dark:border-stone-700/50"
         aria-label="Save"
       >
         <Bookmark 
@@ -88,7 +88,7 @@ export default function ControlButtons({
       {/* Share Button */}
       <button
         onClick={onShare}
-        className="group relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:scale-105 active:scale-95 transition-all duration-300 shadow-md sm:shadow-lg border border-gray-200/50 dark:border-gray-700/50"
+        className="group relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center bg-white/90 dark:bg-stone-800/90 backdrop-blur-sm text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/50 hover:scale-105 active:scale-95 transition-all duration-300 shadow-md sm:shadow-lg border border-stone-200/50 dark:border-stone-700/50"
         aria-label="Share"
       >
         <Share2 
@@ -120,8 +120,8 @@ export function ActionButtons({
         onClick={onDislike}
         className={`group relative flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all duration-300 min-w-[85px] sm:min-w-[110px] justify-center font-semibold overflow-hidden ${
           swipeDirection === 'left' && isAnimating
-            ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-white scale-105 shadow-lg'
-            : 'bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-600 dark:text-gray-300 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] border border-gray-200/50 dark:border-gray-700/50'
+            ? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white scale-105 shadow-lg'
+            : 'bg-white/90 dark:bg-stone-800/90 backdrop-blur-sm text-stone-600 dark:text-stone-300 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] border border-stone-200/50 dark:border-stone-700/50'
         }`}
         aria-label="Skip"
       >
@@ -130,7 +130,7 @@ export function ActionButtons({
           className={`sm:w-[18px] sm:h-[18px] transition-all duration-300 ${
             swipeDirection === 'left' && isAnimating 
               ? 'text-white' 
-              : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 group-hover:rotate-90'
+              : 'text-stone-400 dark:text-stone-500 group-hover:text-stone-600 dark:group-hover:text-stone-300 group-hover:rotate-90'
           }`}
           strokeWidth={2.5}
         />

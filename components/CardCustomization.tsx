@@ -457,11 +457,13 @@ function CardCustomization({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
+      {/* Backdrop with warm gradient */}
       <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-md"
         onClick={handleCancel}
-      />
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
+      </div>
       
       {/* Hidden file input for gallery */}
       <input
@@ -483,34 +485,38 @@ function CardCustomization({
       />
       
       {/* Modal - Full width on mobile, centered on desktop */}
-      <div className="relative w-full sm:w-auto sm:max-w-lg sm:mx-4 bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+      <div className="relative w-full sm:w-auto sm:max-w-lg sm:mx-4 bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in max-h-[90vh] sm:max-h-[85vh] flex flex-col border border-stone-200/50 dark:border-stone-700/50">
+        {/* Decorative gradient orbs */}
+        <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none" />
+        
         {/* Header */}
-        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 shrink-0">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-stone-200 dark:border-stone-700 shrink-0 relative">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-500 to-pink-500 flex items-center justify-center">
-              <Palette className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <Palette className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Customize Card</h2>
-              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Personalize your quote cards</p>
+              <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white">Customize Card</h2>
+              <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400">Personalize your quote cards</p>
             </div>
           </div>
           <button
             onClick={handleCancel}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
           >
-            <X size={18} className="text-gray-500" />
+            <X size={18} className="text-stone-500" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700 shrink-0">
+        <div className="flex border-b border-stone-200 dark:border-stone-700 shrink-0 relative">
           <button
             onClick={() => handleTabChange('themes')}
             className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-colors relative ${
               activeTab === 'themes'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500'
+                : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
             }`}
           >
             <Sparkles size={14} />
@@ -518,15 +524,15 @@ function CardCustomization({
             <span className="xs:hidden">Color</span>
             {/* Active indicator - shows when theme is being used (no image selected) */}
             {selectedBackground.id === 'none' && (
-              <span className="ml-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="ml-1 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             )}
           </button>
           <button
             onClick={() => handleTabChange('images')}
             className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-colors relative ${
               activeTab === 'images'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500'
+                : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
             }`}
           >
             <ImageIcon size={14} />
@@ -534,15 +540,15 @@ function CardCustomization({
             <span className="xs:hidden">Image</span>
             {/* Active indicator - shows when an image is selected */}
             {selectedBackground.id !== 'none' && (
-              <span className="ml-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="ml-1 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             )}
           </button>
           <button
             onClick={() => handleTabChange('fonts')}
             className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-colors ${
               activeTab === 'fonts'
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                ? 'text-amber-600 dark:text-amber-400 border-b-2 border-amber-500'
+                : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
             }`}
           >
             <Type size={14} />
@@ -551,17 +557,17 @@ function CardCustomization({
         </div>
 
         {/* Content - Scrollable */}
-        <div className="p-3 sm:p-4 overflow-y-auto flex-1 custom-scrollbar">
+        <div className="p-3 sm:p-4 overflow-y-auto flex-1 custom-scrollbar relative">
           {activeTab === 'themes' && (
             <div className="space-y-3 sm:space-y-4">
               {/* Light/Dark Toggle */}
-              <div className="flex items-center justify-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-full">
+              <div className="flex items-center justify-center gap-1 p-1 bg-stone-100 dark:bg-stone-800 rounded-full">
                 <button
                   onClick={() => handleToggleLightThemes(true)}
                   className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                     showLightThemes
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400'
+                      ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm'
+                      : 'text-stone-500 dark:text-stone-400'
                   }`}
                 >
                   <Sun size={12} className="sm:w-3.5 sm:h-3.5" />
@@ -571,8 +577,8 @@ function CardCustomization({
                   onClick={() => handleToggleLightThemes(false)}
                   className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                     !showLightThemes
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400'
+                      ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm'
+                      : 'text-stone-500 dark:text-stone-400'
                   }`}
                 >
                   <Moon size={12} className="sm:w-3.5 sm:h-3.5" />
@@ -598,7 +604,7 @@ function CardCustomization({
             <div className="space-y-3">
               {/* Custom Images Section */}
               <div className="space-y-2">
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
+                <p className="text-[10px] text-stone-500 dark:text-stone-400 uppercase tracking-wider font-medium">
                   Your Photos {isAuthenticated ? `(${userBackgroundsCount}/100)` : `(${customImages.length}/${MAX_CUSTOM_IMAGES})`}
                 </p>
                 
@@ -636,7 +642,7 @@ function CardCustomization({
                       <button
                         onClick={triggerFileInput}
                         disabled={isUploading || isCapturing || customImages.length >= MAX_CUSTOM_IMAGES}
-                        className="flex items-center justify-center gap-1 h-7 px-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center justify-center gap-1 h-7 px-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Upload from gallery"
                       >
                         {isUploading ? (
@@ -650,8 +656,8 @@ function CardCustomization({
                     
                     {isLoadingImages ? (
                       <div className="flex items-center justify-center py-4">
-                        <Loader2 size={20} className="animate-spin text-purple-500" />
-                        <span className="ml-2 text-xs text-gray-500">Loading...</span>
+                        <Loader2 size={20} className="animate-spin text-amber-500" />
+                        <span className="ml-2 text-xs text-stone-500">Loading...</span>
                       </div>
                     ) : customImages.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
@@ -667,7 +673,7 @@ function CardCustomization({
                         ))}
                       </div>
                     ) : (
-                      <p className="text-[10px] text-gray-400 text-center py-3">
+                      <p className="text-[10px] text-stone-400 text-center py-3">
                         No photos yet. Tap Capture or Upload to add.
                       </p>
                     )}
@@ -686,8 +692,8 @@ function CardCustomization({
                   }}
                   className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg ${
                     selectedBackground.id === 'none'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white ring-2 ring-purple-300 dark:ring-purple-700'
-                      : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                      ? 'bg-gradient-to-r from-orange-500 to-rose-500 text-white ring-2 ring-orange-300 dark:ring-orange-700'
+                      : 'bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white'
                   }`}
                 >
                   <Sparkles size={16} />
@@ -700,7 +706,7 @@ function CardCustomization({
 
               {/* Preset Images Section - always visible */}
               <div className="space-y-2">
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider font-medium">
+                <p className="text-[10px] text-stone-500 dark:text-stone-400 uppercase tracking-wider font-medium">
                   Preset Backgrounds ({BACKGROUND_IMAGES.length - 1})
                 </p>
                 <div className="max-h-64 sm:max-h-72 overflow-y-auto">
@@ -734,8 +740,8 @@ function CardCustomization({
         </div>
 
         {/* Preview */}
-        <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 shrink-0">
-          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 text-center mb-2 sm:mb-3">Preview</p>
+        <div className="p-3 sm:p-4 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50 shrink-0 relative">
+          <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 text-center mb-2 sm:mb-3">Preview</p>
           <div
             className="mx-auto w-32 sm:w-40 aspect-[4/5] rounded-lg sm:rounded-xl shadow-lg flex flex-col items-center justify-center p-3 sm:p-4 relative overflow-hidden"
             style={{ background: selectedTheme.background }}
@@ -780,17 +786,17 @@ function CardCustomization({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border-t border-stone-200 dark:border-stone-700 shrink-0 relative">
           <button
             onClick={handleCancel}
-            className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg sm:rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="flex-1 py-2.5 px-4 rounded-xl border-2 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 text-sm font-medium hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-600 to-pink-600 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5 sm:gap-2"
+            className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-orange-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isSaving ? (
               <>
@@ -809,7 +815,7 @@ function CardCustomization({
 
         {!isAuthenticated && (
           <div className="px-3 sm:px-4 pb-3 sm:pb-4 shrink-0">
-            <p className="text-[10px] sm:text-xs text-center text-gray-500 dark:text-gray-400">
+            <p className="text-[10px] sm:text-xs text-center text-stone-500 dark:text-stone-400">
               💡 Login to save preferences permanently
             </p>
           </div>
@@ -834,14 +840,14 @@ const ThemeButton = memo(function ThemeButton({ theme, isSelected, onClick }: Th
   return (
     <button
       onClick={handleClick}
-      className={`relative p-1.5 sm:p-2 rounded-lg sm:rounded-xl border-2 transition-all active:scale-95 ${
+      className={`relative p-1.5 sm:p-2 rounded-xl border-2 transition-all active:scale-95 ${
         isSelected
-          ? 'border-blue-500 ring-1 sm:ring-2 ring-blue-200 dark:ring-blue-800'
-          : 'border-gray-200 dark:border-gray-700'
+          ? 'border-amber-500 ring-2 ring-amber-200 dark:ring-amber-800'
+          : 'border-stone-200 dark:border-stone-700 hover:border-amber-300 dark:hover:border-amber-700'
       }`}
     >
       <div
-        className="w-full aspect-[4/5] rounded-md sm:rounded-lg mb-1 sm:mb-2 flex items-center justify-center overflow-hidden"
+        className="w-full aspect-[4/5] rounded-lg mb-1 sm:mb-2 flex items-center justify-center overflow-hidden"
         style={{ background: theme.background }}
       >
         <span
@@ -851,12 +857,12 @@ const ThemeButton = memo(function ThemeButton({ theme, isSelected, onClick }: Th
           Aa
         </span>
       </div>
-      <span className="text-[9px] sm:text-xs font-medium text-gray-700 dark:text-gray-300 block text-center truncate">
+      <span className="text-[9px] sm:text-xs font-medium text-stone-700 dark:text-stone-300 block text-center truncate">
         {theme.name}
       </span>
       {isSelected && (
-        <div className="absolute -top-0.5 -right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 rounded-full flex items-center justify-center">
-          <Check size={10} className="text-white sm:w-3 sm:h-3" />
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+          <Check size={12} className="text-white" />
         </div>
       )}
     </button>
@@ -888,15 +894,15 @@ const CustomImageButton = memo(function CustomImageButton({ background, isSelect
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-      className={`relative p-1.5 sm:p-2 rounded-lg sm:rounded-xl border-2 transition-all group cursor-pointer ${
+      className={`relative p-1.5 sm:p-2 rounded-xl border-2 transition-all group cursor-pointer ${
         isDeleting ? 'opacity-60 pointer-events-none' : 'active:scale-95'
       } ${
         isSelected
-          ? 'border-blue-500 ring-1 sm:ring-2 ring-blue-200 dark:ring-blue-800'
-          : 'border-purple-400 dark:border-purple-600'
+          ? 'border-amber-500 ring-2 ring-amber-200 dark:ring-amber-800'
+          : 'border-rose-300 dark:border-rose-700 hover:border-rose-400 dark:hover:border-rose-600'
       }`}
     >
-      <div className="w-full aspect-[4/5] rounded-md sm:rounded-lg mb-1 sm:mb-2 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative">
+      <div className="w-full aspect-[4/5] rounded-lg mb-1 sm:mb-2 overflow-hidden bg-stone-100 dark:bg-stone-800 flex items-center justify-center relative">
         {background.url && (
           <Image
             src={background.url}
@@ -923,16 +929,16 @@ const CustomImageButton = memo(function CustomImageButton({ background, isSelect
           </button>
         )}
       </div>
-      <span className="text-[9px] sm:text-xs font-medium text-purple-600 dark:text-purple-400 block text-center truncate">
+      <span className="text-[9px] sm:text-xs font-medium text-rose-600 dark:text-rose-400 block text-center truncate">
         {isDeleting ? 'Deleting...' : background.name}
       </span>
       {isSelected && !isDeleting && (
-        <div className="absolute -top-0.5 -right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 rounded-full flex items-center justify-center">
-          <Check size={10} className="text-white sm:w-3 sm:h-3" />
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+          <Check size={12} className="text-white" />
         </div>
       )}
       {!isSelected && !isDeleting && (
-        <div className="absolute -top-0.5 -right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-purple-500 rounded-full flex items-center justify-center">
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-rose-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
           <span className="text-[8px] text-white">✨</span>
         </div>
       )}
@@ -955,15 +961,15 @@ const ImageButton = memo(function ImageButton({ background, isSelected, onClick 
   return (
     <button
       onClick={handleClick}
-      className={`relative p-1.5 sm:p-2 rounded-lg sm:rounded-xl border-2 transition-all active:scale-95 ${
+      className={`relative p-1.5 sm:p-2 rounded-xl border-2 transition-all active:scale-95 ${
         isSelected
-          ? 'border-blue-500 ring-1 sm:ring-2 ring-blue-200 dark:ring-blue-800'
-          : 'border-gray-200 dark:border-gray-700'
+          ? 'border-amber-500 ring-2 ring-amber-200 dark:ring-amber-800'
+          : 'border-stone-200 dark:border-stone-700 hover:border-amber-300 dark:hover:border-amber-700'
       }`}
     >
-      <div className="w-full aspect-[4/5] rounded-md sm:rounded-lg mb-1 sm:mb-2 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+      <div className="w-full aspect-[4/5] rounded-lg mb-1 sm:mb-2 overflow-hidden bg-stone-100 dark:bg-stone-800 flex items-center justify-center">
         {background.id === 'none' ? (
-          <div className="flex flex-col items-center justify-center text-gray-400">
+          <div className="flex flex-col items-center justify-center text-stone-400">
             <X size={16} />
             <span className="text-[8px] mt-0.5">None</span>
           </div>
@@ -977,15 +983,15 @@ const ImageButton = memo(function ImageButton({ background, isSelected, onClick 
             unoptimized
           />
         ) : (
-          <ImageIcon size={16} className="text-gray-400" />
+          <ImageIcon size={16} className="text-stone-400" />
         )}
       </div>
-      <span className="text-[9px] sm:text-xs font-medium text-gray-700 dark:text-gray-300 block text-center truncate">
+      <span className="text-[9px] sm:text-xs font-medium text-stone-700 dark:text-stone-300 block text-center truncate">
         {background.name}
       </span>
       {isSelected && (
-        <div className="absolute -top-0.5 -right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 rounded-full flex items-center justify-center">
-          <Check size={10} className="text-white sm:w-3 sm:h-3" />
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+          <Check size={12} className="text-white" />
         </div>
       )}
     </button>
@@ -1007,24 +1013,24 @@ const FontButton = memo(function FontButton({ font, isSelected, onClick }: FontB
   return (
     <button
       onClick={handleClick}
-      className={`relative p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-all active:scale-95 ${
+      className={`relative p-2 sm:p-3 rounded-xl border-2 transition-all active:scale-95 ${
         isSelected
-          ? 'border-blue-500 ring-1 sm:ring-2 ring-blue-200 dark:ring-blue-800'
-          : 'border-gray-200 dark:border-gray-700'
+          ? 'border-amber-500 ring-2 ring-amber-200 dark:ring-amber-800 bg-amber-50 dark:bg-amber-900/20'
+          : 'border-stone-200 dark:border-stone-700 hover:border-amber-300 dark:hover:border-amber-700'
       }`}
     >
       <div
-        className="text-xl sm:text-2xl mb-1 text-gray-900 dark:text-white text-center"
+        className="text-xl sm:text-2xl mb-1 text-stone-900 dark:text-white text-center"
         style={{ fontFamily: font.fontFamily, fontWeight: font.fontWeight }}
       >
         {font.sample}
       </div>
-      <span className="text-[9px] sm:text-xs font-medium text-gray-700 dark:text-gray-300 block text-center truncate">
+      <span className="text-[9px] sm:text-xs font-medium text-stone-700 dark:text-stone-300 block text-center truncate">
         {font.name}
       </span>
       {isSelected && (
-        <div className="absolute -top-0.5 -right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 bg-blue-500 rounded-full flex items-center justify-center">
-          <Check size={10} className="text-white sm:w-3 sm:h-3" />
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+          <Check size={12} className="text-white" />
         </div>
       )}
     </button>

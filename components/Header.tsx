@@ -28,25 +28,25 @@ export default function Header({
   isLoadingUserData = false,
 }: HeaderProps) {
   return (
-    <div className="fixed top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-30 flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+    <div className="fixed top-2 left-2 right-2 sm:top-3 sm:left-3 sm:right-3 z-30 flex items-center justify-between px-2 py-1.5 sm:px-3 sm:py-2 bg-white/95 dark:bg-stone-800/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-lg border border-stone-200/50 dark:border-stone-700/50">
       {/* Left Group - All icons on desktop, Menu & Search on mobile */}
       <div className="flex items-center gap-1 sm:gap-2">
         <button
           onClick={onMenuClick}
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-stone-100 dark:bg-stone-700 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-600 active:scale-95 transition-all"
           title="Menu"
         >
-          <Menu size={16} className="sm:w-[18px] sm:h-[18px] text-gray-700 dark:text-gray-300" />
+          <Menu size={16} className="sm:w-[18px] sm:h-[18px] text-stone-700 dark:text-stone-300" />
         </button>
 
         {/* Search - Only show when logged in */}
         {isAuthenticated && (
           <button
             onClick={onSearchClick}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-stone-100 dark:bg-stone-700 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-600 active:scale-95 transition-all"
             title="Search"
           >
-            <Search size={14} className="sm:w-4 sm:h-4 text-gray-700 dark:text-gray-300" />
+            <Search size={14} className="sm:w-4 sm:h-4 text-stone-700 dark:text-stone-300" />
           </button>
         )}
 
@@ -55,15 +55,15 @@ export default function Header({
           onClick={toggleTheme}
           className={`hidden sm:flex w-9 h-9 rounded-full items-center justify-center active:scale-95 transition-all ${
             theme === 'dark'
-              ? 'bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
-              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+              ? 'bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50'
+              : 'bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 dark:hover:bg-stone-600'
           }`}
           title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
         >
           {theme === 'dark' ? (
-            <Sun size={16} className="text-yellow-600 dark:text-yellow-400" />
+            <Sun size={16} className="text-amber-600 dark:text-amber-400" />
           ) : (
-            <Moon size={16} className="text-gray-600 dark:text-gray-400" />
+            <Moon size={16} className="text-stone-600 dark:text-stone-400" />
           )}
         </button>
 
@@ -93,15 +93,15 @@ export default function Header({
           onClick={toggleTheme}
           className={`sm:hidden w-8 h-8 rounded-full flex items-center justify-center active:scale-95 transition-all ${
             theme === 'dark'
-              ? 'bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
-              : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+              ? 'bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50'
+              : 'bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 dark:hover:bg-stone-600'
           }`}
           title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
         >
           {theme === 'dark' ? (
-            <Sun size={14} className="text-yellow-600 dark:text-yellow-400" />
+            <Sun size={14} className="text-amber-600 dark:text-amber-400" />
           ) : (
-            <Moon size={14} className="text-gray-600 dark:text-gray-400" />
+            <Moon size={14} className="text-stone-600 dark:text-stone-400" />
           )}
         </button>
 
@@ -141,14 +141,14 @@ function CategoryButton({ categories, selectedCategories, onClick, compact = fal
         onClick={onClick}
         className={`${
           compact ? 'h-7 px-2.5' : 'h-8 px-3'
-        } rounded-full bg-gradient-to-r from-blue-500/10 to-pink-500/10 dark:from-blue-500/20 dark:to-pink-500/20 border border-blue-200/50 dark:border-blue-700/50 flex items-center gap-${
+        } rounded-full bg-gradient-to-r from-amber-500/10 to-rose-500/10 dark:from-amber-500/20 dark:to-rose-500/20 border border-amber-200/50 dark:border-amber-700/50 flex items-center gap-${
           compact ? '1.5' : '2'
-        } hover:from-blue-500/20 hover:to-pink-500/20 active:scale-95 transition-all`}
+        } hover:from-amber-500/20 hover:to-rose-500/20 active:scale-95 transition-all`}
         title="Manage categories"
       >
         {/* Show loader when syncing */}
         {isLoading && (
-          <Loader2 size={compact ? 12 : 14} className="animate-spin text-blue-500" />
+          <Loader2 size={compact ? 12 : 14} className="animate-spin text-amber-500" />
         )}
         <span className="flex items-center gap-0.5">
           {selectedCategories.slice(0, compact ? 3 : 4).map((catName) => {
@@ -160,7 +160,7 @@ function CategoryButton({ categories, selectedCategories, onClick, compact = fal
             ) : null;
           })}
         </span>
-        <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-semibold text-gray-700 dark:text-gray-300`}>
+        <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-semibold text-stone-700 dark:text-stone-300`}>
           {selectedCategories.length === 1
             ? compact
               ? categories.find((c) => c.name === selectedCategories[0])?.name?.slice(0, 8)
@@ -178,17 +178,17 @@ function CategoryButton({ categories, selectedCategories, onClick, compact = fal
       onClick={onClick}
       className={`${
         compact ? 'h-7 px-2.5' : 'h-8 px-3'
-      } rounded-full bg-gray-100 dark:bg-gray-700 flex items-center gap-${
+      } rounded-full bg-stone-100 dark:bg-stone-700 flex items-center gap-${
         compact ? '1.5' : '2'
-      } hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-95 transition-all`}
+      } hover:bg-stone-200 dark:hover:bg-stone-600 active:scale-95 transition-all`}
       title="Select categories"
     >
       {/* Show loader when syncing */}
       {isLoading && (
-        <Loader2 size={compact ? 12 : 14} className="animate-spin text-blue-500" />
+        <Loader2 size={compact ? 12 : 14} className="animate-spin text-amber-500" />
       )}
       <span className={compact ? 'text-xs' : 'text-sm'}>📚</span>
-      <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-medium text-gray-500 dark:text-gray-400`}>
+      <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-medium text-stone-500 dark:text-stone-400`}>
         {compact ? 'All' : 'All quotes'}
       </span>
     </button>

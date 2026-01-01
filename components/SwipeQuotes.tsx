@@ -1883,7 +1883,7 @@ export default function SwipeQuotes() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-pink-950 flex overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 flex overflow-hidden">
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -2219,7 +2219,7 @@ export default function SwipeQuotes() {
         {/* Progress Bar */}
         <div className="fixed top-0 left-0 right-0 h-[2px] bg-white/30 backdrop-blur-sm z-50">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-pink-500 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-amber-500 to-rose-500 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>

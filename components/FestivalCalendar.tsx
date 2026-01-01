@@ -278,7 +278,7 @@ export default function FestivalCalendar({
       <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl">
+            <div className="p-2 bg-gradient-to-br from-orange-500 to-rose-500 rounded-xl">
               <Calendar className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -308,7 +308,7 @@ export default function FestivalCalendar({
             )}
             <button
               onClick={goToToday}
-              className="px-3 py-1.5 text-sm bg-purple-600/30 hover:bg-purple-600/50 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm bg-amber-600/30 hover:bg-amber-600/50 rounded-lg transition-colors"
             >
               Today
             </button>
@@ -352,8 +352,8 @@ export default function FestivalCalendar({
                 className={`
                   relative min-h-[80px] p-2 rounded-lg transition-all text-left
                   ${item.isCurrentMonth ? '' : 'opacity-40'}
-                  ${isToday ? 'ring-2 ring-purple-500' : ''}
-                  ${isSelected ? 'bg-purple-600/40 ring-2 ring-purple-400' : 'hover:bg-white/10'}
+                  ${isToday ? 'ring-2 ring-amber-500' : ''}
+                  ${isSelected ? 'bg-amber-600/40 ring-2 ring-amber-400' : 'hover:bg-white/10'}
                   ${isPast && item.isCurrentMonth ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                   ${holiday ? 'bg-pink-500/10' : 'bg-white/5'}
                 `}
@@ -361,7 +361,7 @@ export default function FestivalCalendar({
                 <div className="flex items-start justify-between">
                   <span className={`
                     text-sm font-medium
-                    ${isToday ? 'bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}
+                    ${isToday ? 'bg-amber-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}
                   `}>
                     {item.day}
                   </span>
@@ -385,7 +385,7 @@ export default function FestivalCalendar({
                           className={`w-2 h-2 rounded-full ${
                             s.status === 'sent' ? 'bg-green-500' :
                             s.status === 'failed' ? 'bg-red-500' :
-                            'bg-blue-500'
+                            'bg-amber-500'
                           }`}
                           title={s.title}
                         />
@@ -404,7 +404,7 @@ export default function FestivalCalendar({
         {/* Legend */}
         <div className="flex items-center gap-4 mt-4 text-xs text-gray-400">
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-blue-500" /> Scheduled
+            <div className="w-2 h-2 rounded-full bg-amber-500" /> Scheduled
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-green-500" /> Sent
@@ -458,12 +458,12 @@ export default function FestivalCalendar({
                       <div className={`p-2 rounded-lg ${
                         scheduled.status === 'sent' ? 'bg-green-500/20' :
                         scheduled.status === 'failed' ? 'bg-red-500/20' :
-                        'bg-blue-500/20'
+                        'bg-amber-500/20'
                       }`}>
                         <Mail className={`w-4 h-4 ${
                           scheduled.status === 'sent' ? 'text-green-400' :
                           scheduled.status === 'failed' ? 'text-red-400' :
-                          'text-blue-400'
+                          'text-amber-400'
                         }`} />
                       </div>
                       <div>
@@ -490,7 +490,7 @@ export default function FestivalCalendar({
           {/* Schedule New Email Button */}
           <button
             onClick={() => setShowScheduleModal(true)}
-            className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-medium flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 rounded-xl font-medium flex items-center justify-center gap-2"
           >
             <Plus className="w-5 h-5" />
             Schedule Email for This Date
@@ -601,7 +601,7 @@ export default function FestivalCalendar({
                   <span className="text-sm text-gray-400 ml-2">hrs</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  📅 Scheduled for <span className="text-purple-400 font-mono">{scheduleForm.scheduled_time}</span> hours
+                  📅 Scheduled for <span className="text-amber-400 font-mono">{scheduleForm.scheduled_time}</span> hours
                 </p>
               </div>
 
@@ -666,7 +666,7 @@ export default function FestivalCalendar({
                         key={user.id}
                         className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
                           scheduleForm.user_ids.includes(user.id)
-                            ? 'bg-purple-600/30'
+                            ? 'bg-amber-600/30'
                             : 'hover:bg-white/5'
                         }`}
                       >
@@ -705,7 +705,7 @@ export default function FestivalCalendar({
                 onClick={handleScheduleSubmit}
                 disabled={isSubmitting || !scheduleForm.title || !scheduleForm.subject || 
                   (scheduleForm.user_ids.length === 0 && !scheduleForm.selectAll)}
-                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-xl font-medium flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-xl font-medium flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>

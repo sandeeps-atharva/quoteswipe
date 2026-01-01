@@ -90,7 +90,7 @@ export default function Review() {
 
   if (isSubmitted) {
     return (
-      <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50'}`}>
+      <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0C0A09]' : 'bg-[#FFFBF7]'}`}>
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
           <div className={`rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 text-center ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-xl`}>
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
@@ -105,7 +105,7 @@ export default function Review() {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
               <Link
                 href="/"
-                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-pink-600 text-white rounded-lg sm:rounded-xl font-medium text-sm sm:text-base hover:opacity-90 transition-all"
+                className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-amber-600 to-rose-600 text-white rounded-lg sm:rounded-xl font-medium text-sm sm:text-base hover:opacity-90 transition-all"
               >
                 Back to Quotes
               </Link>
@@ -127,7 +127,7 @@ export default function Review() {
   }
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-pink-50'}`}>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0C0A09]' : 'bg-[#FFFBF7]'}`}>
       <div className="max-w-2xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {/* Header */}
         <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -209,7 +209,7 @@ export default function Review() {
                     theme === 'dark'
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                       : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
+                  } focus:ring-2 focus:ring-amber-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
                   placeholder="John Doe"
                 />
               </div>
@@ -228,7 +228,7 @@ export default function Review() {
                     theme === 'dark'
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                       : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
+                  } focus:ring-2 focus:ring-amber-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
                   placeholder="john@example.com"
                 />
                 <p className={`text-[10px] sm:text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -252,7 +252,7 @@ export default function Review() {
                   theme === 'dark'
                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                     : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                } focus:ring-2 focus:ring-amber-500 focus:border-transparent`}
                 placeholder="Sum up your experience in a few words..."
               />
             </div>
@@ -272,7 +272,7 @@ export default function Review() {
                   theme === 'dark'
                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                     : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500'
-                } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                } focus:ring-2 focus:ring-amber-500 focus:border-transparent`}
                 placeholder="Tell others what you love about QuoteSwipe..."
               />
             </div>
@@ -308,7 +308,7 @@ export default function Review() {
           <div className={`mt-4 sm:mt-6 pt-4 sm:pt-6 border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} text-center`}>
             <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
               Have a bug report or suggestion?{' '}
-              <Link href="/feedback" className="text-blue-500 hover:text-blue-600 font-medium">
+              <Link href="/feedback" className="text-amber-500 hover:text-amber-600 font-medium">
                 Send private feedback →
               </Link>
             </p>

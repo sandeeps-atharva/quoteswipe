@@ -27,11 +27,15 @@ export default function CustomToaster() {
             t.type === 'success'
               ? 'bg-emerald-50 dark:bg-emerald-950/80 border-emerald-200 dark:border-emerald-800/60'
               : t.type === 'error'
-              ? 'bg-red-50 dark:bg-red-950/80 border-red-200 dark:border-red-800/60'
-              : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700'
+              ? 'bg-rose-50 dark:bg-rose-950/80 border-rose-200 dark:border-rose-800/60'
+              : 'bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/80 dark:to-orange-950/80 border-amber-200 dark:border-amber-800/60'
           }`}
           style={{
-            boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.02)',
+            boxShadow: t.type === 'success' 
+              ? '0 4px 20px -4px rgba(16, 185, 129, 0.2), 0 0 0 1px rgba(16, 185, 129, 0.05)'
+              : t.type === 'error'
+              ? '0 4px 20px -4px rgba(244, 63, 94, 0.2), 0 0 0 1px rgba(244, 63, 94, 0.05)'
+              : '0 4px 20px -4px rgba(249, 115, 22, 0.2), 0 0 0 1px rgba(249, 115, 22, 0.05)',
           }}
         >
           {/* Icon */}
@@ -39,8 +43,8 @@ export default function CustomToaster() {
             t.type === 'success'
               ? 'bg-emerald-500'
               : t.type === 'error'
-              ? 'bg-red-500'
-              : 'bg-blue-500'
+              ? 'bg-gradient-to-br from-rose-500 to-red-500'
+              : 'bg-gradient-to-br from-amber-500 to-orange-500'
           }`}>
             {t.type === 'success' ? (
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -66,8 +70,8 @@ export default function CustomToaster() {
               t.type === 'success'
                 ? 'text-emerald-900 dark:text-emerald-100'
                 : t.type === 'error'
-                ? 'text-red-900 dark:text-red-100'
-                : 'text-gray-900 dark:text-white'
+                ? 'text-rose-900 dark:text-rose-100'
+                : 'text-amber-900 dark:text-amber-100'
             }`}>
               {typeof t.message === 'function' ? t.message(t) : t.message}
             </p>
@@ -80,8 +84,8 @@ export default function CustomToaster() {
               t.type === 'success'
                 ? 'hover:bg-emerald-200 dark:hover:bg-emerald-800/50 text-emerald-600 dark:text-emerald-400'
                 : t.type === 'error'
-                ? 'hover:bg-red-200 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400'
+                ? 'hover:bg-rose-200 dark:hover:bg-rose-800/50 text-rose-600 dark:text-rose-400'
+                : 'hover:bg-amber-200 dark:hover:bg-amber-800/50 text-amber-600 dark:text-amber-400'
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -97,8 +101,8 @@ export default function CustomToaster() {
                 t.type === 'success'
                   ? 'bg-emerald-500'
                   : t.type === 'error'
-                  ? 'bg-red-500'
-                  : 'bg-blue-500'
+                  ? 'bg-gradient-to-r from-rose-500 to-red-500'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500'
               }`}
               style={{
                 animation: 'shrink 2000ms linear forwards',

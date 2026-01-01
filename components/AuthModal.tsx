@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Sparkles, ArrowRight, Check } from 'lucide-react';
 import Modal from './Modal';
 import GoogleSignInButton from './GoogleSignInButton';
 
@@ -109,7 +109,6 @@ export default function AuthModal({
     });
     setError('');
     
-    // Validate on change if field was touched
     if (touched[name]) {
       const fieldError = validateField(name, value);
       setValidationErrors(prev => ({
@@ -133,7 +132,6 @@ export default function AuthModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Mark all fields as touched
     setTouched({ name: true, email: true, password: true });
     
     if (!validateForm()) {
@@ -184,68 +182,81 @@ export default function AuthModal({
     setTouched({});
   };
 
-  const getInputClassName = (fieldName: string) => {
-    const hasError = touched[fieldName] && validationErrors[fieldName as keyof ValidationErrors];
-    return `w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border ${
-      hasError 
-        ? 'border-red-400 dark:border-red-500 focus:border-red-500 dark:focus:border-red-400 focus:ring-red-200 dark:focus:ring-red-800' 
-        : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-200 dark:focus:ring-blue-800'
-    } bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 text-sm sm:text-base focus:ring-2 outline-none transition-all`;
-  };
+  const features = [
+    { icon: '📚', text: '210+ Categories' },
+    { icon: '💾', text: 'Save Favorites' },
+    { icon: '🎨', text: 'Custom Themes' },
+    { icon: '∞', text: 'Unlimited Swipes' },
+  ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      {/* Header */}
-      <div className="text-center mb-4 sm:mb-6 md:mb-8">
-        <Image 
-          src="/logo.svg" 
-          alt="QuoteSwipe" 
-          width={80}
-          height={80}
-          className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-2 sm:mb-3 md:mb-4"
-        />
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-1 sm:mb-2">
-          {!isLoading && swipeCount >= 5 ? 'Loving the quotes?' : 'Welcome to QuoteSwipe!'}
+    <Modal isOpen={isOpen} onClose={onClose} size="md" variant="gradient">
+      {/* Header with Logo */}
+      <div className="text-center mb-6">
+        <div className="relative inline-block">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-rose-500 rounded-2xl blur-xl opacity-30 scale-110" />
+          <Image 
+            src="/logo.svg" 
+            alt="QuoteSwipe" 
+            width={72}
+            height={72}
+            className="relative w-16 h-16 sm:w-18 sm:h-18 mx-auto"
+          />
+        </div>
+        
+        <h2 className="mt-4 text-2xl sm:text-3xl font-bold text-stone-800 dark:text-stone-100">
+          {authMode === 'forgot-password' 
+            ? 'Reset Password' 
+            : swipeCount >= 5 
+              ? 'Loving the quotes?' 
+              : 'Welcome Back!'}
         </h2>
-        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 px-2">
-          {!isLoading && swipeCount >= 5
-            ? 'Create an account to continue swiping and save your favorites!'
-            : 'Sign in to access all features'}
+        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+          {authMode === 'forgot-password'
+            ? "Enter your email and we'll send you a reset link"
+            : swipeCount >= 5
+              ? 'Create an account to keep swiping and save your favorites!'
+              : 'Sign in to access all your saved quotes'}
         </p>
         
-        {/* Feature highlights */}
-        <div className="flex flex-wrap justify-center gap-2 mt-3 px-2">
-          {['All categories', 'Save favorites', 'Customize cards', 'Unlimited swipes'].map((feature, i) => (
-            <span 
-              key={i}
-              className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-blue-50 to-pink-50 dark:from-blue-900/20 dark:to-pink-900/20 rounded-full text-[10px] sm:text-xs text-gray-600 dark:text-gray-400"
-            >
-              <span className="text-green-500 text-xs">✓</span>
-              {feature}
-            </span>
-          ))}
-        </div>
+        {/* Feature Pills */}
+        {/* {authMode !== 'forgot-password' && (
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
+            {features.map((feature, i) => (
+              <span 
+                key={i}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 
+                  bg-gradient-to-r from-amber-100 to-rose-100 dark:from-amber-900/30 dark:to-rose-900/30 
+                  rounded-full text-xs font-medium text-stone-600 dark:text-stone-300
+                  border border-amber-200/50 dark:border-amber-800/30"
+              >
+                <span>{feature.icon}</span>
+                {feature.text}
+              </span>
+            ))}
+          </div>
+        )} */}
       </div>
 
-      {/* Auth Toggle */}
+      {/* Auth Mode Toggle */}
       {authMode !== 'forgot-password' && (
-        <div className="flex gap-1 sm:gap-2 mb-4 sm:mb-6 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl">
+        <div className="flex gap-1 mb-6 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
           <button
             onClick={() => switchMode('login')}
-            className={`flex-1 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-sm sm:text-base font-medium transition-all ${
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
               authMode === 'login'
-                ? 'bg-white dark:bg-gray-600 shadow-md text-gray-800 dark:text-gray-200'
-                : 'text-gray-600 dark:text-gray-400'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-md shadow-orange-500/25 text-white'
+                : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
             }`}
           >
             Sign In
           </button>
           <button
             onClick={() => switchMode('register')}
-            className={`flex-1 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-sm sm:text-base font-medium transition-all ${
+            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
               authMode === 'register'
-                ? 'bg-white dark:bg-gray-600 shadow-md text-gray-800 dark:text-gray-200'
-                : 'text-gray-600 dark:text-gray-400'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-md shadow-orange-500/25 text-white'
+                : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
             }`}
           >
             Sign Up
@@ -255,161 +266,169 @@ export default function AuthModal({
 
       {/* Error Message */}
       {error && (
-        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg sm:rounded-xl text-red-600 dark:text-red-400 text-xs sm:text-sm">
-          {error}
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl">
+          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
         </div>
       )}
 
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg sm:rounded-xl text-green-600 dark:text-green-400 text-xs sm:text-sm whitespace-pre-line">
-          {successMessage}
+        <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl">
+          <div className="flex items-start gap-2">
+            <Check size={18} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+            <p className="text-emerald-600 dark:text-emerald-400 text-sm whitespace-pre-line">{successMessage}</p>
+          </div>
         </div>
       )}
 
-      {/* Sign In Form */}
-      {authMode === 'login' && (
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+      {/* Forms */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Name Field (Register only) */}
+        {authMode === 'register' && (
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-              Email
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
+              Full Name
             </label>
+            <div className="relative">
+              <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                onBlur={handleBlur}
+                className={`w-full pl-11 pr-4 py-3 rounded-xl border-2 
+                  ${touched.name && validationErrors.name 
+                    ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200' 
+                    : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
+                  }
+                  bg-white/50 dark:bg-stone-800/50 text-stone-800 dark:text-stone-100 
+                  placeholder-stone-400 focus:ring-2 focus:outline-none transition-all`}
+                placeholder="John Doe"
+                disabled={isLoading}
+              />
+            </div>
+            {touched.name && validationErrors.name && (
+              <p className="mt-1.5 text-xs text-red-500">{validationErrors.name}</p>
+            )}
+          </div>
+        )}
+
+        {/* Email Field */}
+        <div>
+          <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
+            Email Address
+          </label>
+          <div className="relative">
+            <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
               onBlur={handleBlur}
-              className={getInputClassName('email')}
+              className={`w-full pl-11 pr-4 py-3 rounded-xl border-2 
+                ${touched.email && validationErrors.email 
+                  ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200' 
+                  : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
+                }
+                bg-white/50 dark:bg-stone-800/50 text-stone-800 dark:text-stone-100 
+                placeholder-stone-400 focus:ring-2 focus:outline-none transition-all`}
               placeholder="you@example.com"
               disabled={isLoading}
             />
-            {touched.email && validationErrors.email && (
-              <p className="mt-1 text-xs text-red-500 dark:text-red-400">{validationErrors.email}</p>
-            )}
           </div>
+          {touched.email && validationErrors.email && (
+            <p className="mt-1.5 text-xs text-red-500">{validationErrors.email}</p>
+          )}
+        </div>
+
+        {/* Password Field */}
+        {authMode !== 'forgot-password' && (
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
               Password
             </label>
             <div className="relative">
+              <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                className={`${getInputClassName('password')} pr-10`}
+                className={`w-full pl-11 pr-12 py-3 rounded-xl border-2 
+                  ${touched.password && validationErrors.password 
+                    ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200' 
+                    : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
+                  }
+                  bg-white/50 dark:bg-stone-800/50 text-stone-800 dark:text-stone-100 
+                  placeholder-stone-400 focus:ring-2 focus:outline-none transition-all`}
                 placeholder="••••••••"
                 disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
                 tabIndex={-1}
               >
-                {showPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
             {touched.password && validationErrors.password && (
-              <p className="mt-1 text-xs text-red-500 dark:text-red-400">{validationErrors.password}</p>
+              <p className="mt-1.5 text-xs text-red-500">{validationErrors.password}</p>
+            )}
+            {!validationErrors.password && authMode === 'register' && (
+              <p className="mt-1.5 text-xs text-stone-400">
+                Min 8 characters with uppercase, lowercase & number
+              </p>
             )}
           </div>
+        )}
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 
+            hover:from-amber-600 hover:via-orange-600 hover:to-rose-600
+            text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25
+            hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5
+            transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+            flex items-center justify-center gap-2 group"
+        >
+          {isLoading ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <>
+              {authMode === 'login' && 'Sign In'}
+              {authMode === 'register' && 'Create Account'}
+              {authMode === 'forgot-password' && 'Send Reset Link'}
+              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            </>
+          )}
+        </button>
+
+        {/* Forgot Password / Back to Sign In */}
+        {authMode === 'login' && (
           <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-          
-          {/* Don't have account & Forgot Password */}
-          <div className="text-center space-y-2 pt-2">
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
-              <button
-                type="button"
-                onClick={() => switchMode('register')}
-                className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
-              >
-                Sign Up
-              </button>
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode('forgot-password');
-                setError('');
-                setSuccessMessage('');
-                setValidationErrors({});
-                setTouched({});
-                setFormData({ ...formData, password: '' });
-              }}
-              className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
-            >
-              Forgot Password?
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="relative pt-2">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-xs sm:text-sm">
-              <span className="px-3 sm:px-4 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                or
-              </span>
-            </div>
-          </div>
-
-          {/* Google Sign In */}
-          <GoogleSignInButton
-            onSuccess={(response) => {
-              if (onGoogleSuccess) {
-                onGoogleSuccess(response.user);
-              }
-              onClose();
+            type="button"
+            onClick={() => {
+              setAuthMode('forgot-password');
+              setError('');
+              setSuccessMessage('');
+              setValidationErrors({});
+              setTouched({});
+              setFormData({ ...formData, password: '' });
             }}
-            onError={(error) => setError(error)}
-            disabled={isLoading}
-          />
-        </form>
-      )}
-
-      {/* Forgot Password Form */}
-      {authMode === 'forgot-password' && (
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              onBlur={handleBlur}
-              className={getInputClassName('email')}
-              placeholder="you@example.com"
-              disabled={isLoading}
-            />
-            {touched.email && validationErrors.email && (
-              <p className="mt-1 text-xs text-red-500 dark:text-red-400">{validationErrors.email}</p>
-            )}
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+            className="w-full text-sm text-stone-500 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
           >
-            {isLoading ? 'Sending...' : 'Send Reset Link'}
+            Forgot your password?
           </button>
+        )}
+
+        {authMode === 'forgot-password' && (
           <button
             type="button"
             onClick={() => {
@@ -420,133 +439,49 @@ export default function AuthModal({
               setTouched({});
               setFormData({ email: '', password: '', name: '' });
             }}
-            className="w-full text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:underline"
+            className="w-full text-sm text-stone-500 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
           >
-            Back to Sign In
+            ← Back to Sign In
           </button>
-        </form>
+        )}
+      </form>
+
+      {/* Divider */}
+      {authMode !== 'forgot-password' && (
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-stone-200 dark:border-stone-700"></div>
+          </div>
+          <div className="relative flex justify-center">
+            <span className="px-4 bg-gradient-to-br from-white via-amber-50/30 to-rose-50/30 dark:from-stone-900 dark:via-stone-800 dark:to-stone-900 text-sm text-stone-400">
+              or continue with
+            </span>
+          </div>
+        </div>
       )}
 
-      {/* Sign Up Form */}
-      {authMode === 'register' && (
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-              Full Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              onBlur={handleBlur}
-              className={getInputClassName('name')}
-              placeholder="John Doe"
-              disabled={isLoading}
-            />
-            {touched.name && validationErrors.name && (
-              <p className="mt-1 text-xs text-red-500 dark:text-red-400">{validationErrors.name}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              onBlur={handleBlur}
-              className={getInputClassName('email')}
-              placeholder="you@example.com"
-              disabled={isLoading}
-            />
-            {touched.email && validationErrors.email && (
-              <p className="mt-1 text-xs text-red-500 dark:text-red-400">{validationErrors.email}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                onBlur={handleBlur}
-                className={`${getInputClassName('password')} pr-10`}
-                placeholder="••••••••"
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                tabIndex={-1}
-              >
-                {showPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
-              </button>
-            </div>
-            {touched.password && validationErrors.password && (
-              <p className="mt-1 text-xs text-red-500 dark:text-red-400">{validationErrors.password}</p>
-            )}
-            {!validationErrors.password && authMode === 'register' && (
-              <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                Min 8 characters with uppercase, lowercase & number
-              </p>
-            )}
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-pink-500 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
-          >
-            {isLoading ? 'Creating account...' : 'Sign Up'}
-          </button>
-          
-          {/* Already have account link */}
-          <p className="text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 pt-2">
-            Already have an account?{' '}
-            <button
-              type="button"
-              onClick={() => switchMode('login')}
-              className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
-            >
-              Sign In
-            </button>
-          </p>
+      {/* Google Sign In */}
+      {authMode !== 'forgot-password' && (
+        <GoogleSignInButton
+          onSuccess={(response) => {
+            if (onGoogleSuccess) {
+              onGoogleSuccess(response.user);
+            }
+            onClose();
+          }}
+          onError={(error) => setError(error)}
+          disabled={isLoading}
+        />
+      )}
 
-          {/* Divider */}
-          <div className="relative pt-2">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-xs sm:text-sm">
-              <span className="px-3 sm:px-4 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                or
-              </span>
-            </div>
-          </div>
-
-          {/* Google Sign In */}
-          <GoogleSignInButton
-            onSuccess={(response) => {
-              if (onGoogleSuccess) {
-                onGoogleSuccess(response.user);
-              }
-              onClose();
-            }}
-            onError={(error) => setError(error)}
-            disabled={isLoading}
-          />
-        </form>
+      {/* Footer Text */}
+      {authMode !== 'forgot-password' && (
+        <p className="mt-4 text-center text-xs text-stone-400">
+          By continuing, you agree to our{' '}
+          <a href="/terms-of-service" className="text-amber-600 dark:text-amber-400 hover:underline">Terms</a>
+          {' '}and{' '}
+          <a href="/privacy-policy" className="text-amber-600 dark:text-amber-400 hover:underline">Privacy Policy</a>
+        </p>
       )}
     </Modal>
   );

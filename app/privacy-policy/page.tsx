@@ -6,7 +6,7 @@ import LegalPageLayout, { SectionCard, ListItem, ContactCTA } from '@/components
 export default function PrivacyPolicy() {
   const sections = [
     {
-      icon: <Eye className="text-blue-600 dark:text-blue-400" />,
+      icon: <Eye className="text-amber-600 dark:text-amber-400" />,
       title: "Information We Collect",
       content: [
         "Personal information (name, email) when you register an account",
@@ -17,7 +17,7 @@ export default function PrivacyPolicy() {
       ]
     },
     {
-      icon: <Server className="text-blue-600 dark:text-blue-400" />,
+      icon: <Server className="text-amber-600 dark:text-amber-400" />,
       title: "How We Use Your Information",
       content: [
         "To provide and maintain our quote discovery service",
@@ -28,7 +28,7 @@ export default function PrivacyPolicy() {
       ]
     },
     {
-      icon: <Lock className="text-blue-600 dark:text-blue-400" />,
+      icon: <Lock className="text-amber-600 dark:text-amber-400" />,
       title: "Data Security",
       content: [
         "We use industry-standard encryption (SSL/TLS) to protect data in transit",
@@ -39,7 +39,7 @@ export default function PrivacyPolicy() {
       ]
     },
     {
-      icon: <Cookie className="text-blue-600 dark:text-blue-400" />,
+      icon: <Cookie className="text-amber-600 dark:text-amber-400" />,
       title: "Cookies & Tracking",
       content: [
         "Essential cookies for authentication and session management",
@@ -50,7 +50,7 @@ export default function PrivacyPolicy() {
       ]
     },
     {
-      icon: <Globe className="text-blue-600 dark:text-blue-400" />,
+      icon: <Globe className="text-amber-600 dark:text-amber-400" />,
       title: "Third-Party Services",
       content: [
         "Google Authentication for secure sign-in",
@@ -61,7 +61,7 @@ export default function PrivacyPolicy() {
       ]
     },
     {
-      icon: <Mail className="text-blue-600 dark:text-blue-400" />,
+      icon: <Mail className="text-amber-600 dark:text-amber-400" />,
       title: "Your Rights",
       content: [
         "Access your personal data at any time through your profile",

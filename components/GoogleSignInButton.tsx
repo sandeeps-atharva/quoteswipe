@@ -129,8 +129,8 @@ export default function GoogleSignInButton({
     <div className="w-full">
       {isLoading && (
         <div className="flex items-center justify-center py-3">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-          <span className="ml-2 text-gray-600 dark:text-gray-400">Signing in...</span>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-amber-500"></div>
+          <span className="ml-2 text-stone-600 dark:text-stone-400">Signing in...</span>
         </div>
       )}
       <div 
@@ -142,7 +142,7 @@ export default function GoogleSignInButton({
         <button
           type="button"
           disabled={disabled}
-          className="w-full py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-full font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-3"
+          className="w-full py-3 px-4 border border-stone-300 dark:border-stone-600 rounded-full font-medium text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors flex items-center justify-center gap-3"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path

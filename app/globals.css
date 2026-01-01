@@ -3,17 +3,25 @@
 /* Configure dark mode to use class selector */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Light mode (default) */
+/* Light mode (default) - Warm Sunset Theme */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #FFFBF7;
+  --foreground: #1C1917;
+  --accent-primary: #F59E0B;
+  --accent-secondary: #F97316;
+  --accent-tertiary: #E11D48;
+  --accent-gradient: linear-gradient(135deg, #F59E0B 0%, #F97316 50%, #E11D48 100%);
 }
 
 /* Dark mode - triggered by .dark class on html element */
 html.dark,
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #0C0A09;
+  --foreground: #FAFAF9;
+  --accent-primary: #FBBF24;
+  --accent-secondary: #FB923C;
+  --accent-tertiary: #F43F5E;
+  --accent-gradient: linear-gradient(135deg, #FBBF24 0%, #FB923C 50%, #F43F5E 100%);
 }
 
 @theme inline {
@@ -112,10 +120,20 @@ body {
   --tw-translate-x: -106%;
 }
 
-/* Custom Scrollbar Styles - Sleek & Modern */
+/* Hidden Scrollbar - allows scrolling without visible scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Custom Scrollbar Styles - Warm Sunset Theme */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(0, 0, 0, 0.05);
+  scrollbar-color: rgba(249, 115, 22, 0.5) rgba(0, 0, 0, 0.05);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -129,23 +147,23 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+  background: linear-gradient(180deg, #F59E0B 0%, #F97316 50%, #E11D48 100%);
   border-radius: 100px;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+  background: linear-gradient(180deg, #D97706 0%, #EA580C 50%, #BE123C 100%);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, #1d4ed8 0%, #6d28d9 50%, #be185d 100%);
+  background: linear-gradient(180deg, #B45309 0%, #C2410C 50%, #9F1239 100%);
 }
 
 /* Dark mode scrollbar */
 .dark .custom-scrollbar {
-  scrollbar-color: rgba(139, 92, 246, 0.6) rgba(255, 255, 255, 0.05);
+  scrollbar-color: rgba(251, 191, 36, 0.6) rgba(255, 255, 255, 0.05);
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-track {
@@ -153,17 +171,17 @@ body {
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.4);
+  background: linear-gradient(180deg, #FBBF24 0%, #FB923C 50%, #F43F5E 100%);
+  box-shadow: 0 2px 4px rgba(251, 191, 36, 0.4);
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.6);
+  background: linear-gradient(180deg, #F59E0B 0%, #F97316 50%, #E11D48 100%);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.6);
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+  background: linear-gradient(180deg, #D97706 0%, #EA580C 50%, #BE123C 100%);
 }
 
 /* ============================================
@@ -200,7 +218,7 @@ body {
 /* Legacy alias */
 .font-display { font-family: var(--font-playfair), Georgia, serif; }
 
-/* Gradient Border Support */
+/* Gradient Border Support - Warm Sunset */
 .gradient-border {
   position: relative;
   background: white;
@@ -213,7 +231,7 @@ body {
   inset: 0;
   border-radius: inherit;
   padding: 2px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(236, 72, 153, 0.3));
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(225, 29, 72, 0.3));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -221,11 +239,11 @@ body {
 }
 
 .dark .gradient-border {
-  background: rgb(31, 41, 55);
+  background: rgb(28, 25, 23);
 }
 
 .dark .gradient-border::before {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(236, 72, 153, 0.4));
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.4), rgba(244, 63, 94, 0.4));
 }
 
 /* Thin Scrollbar for dropdowns */
@@ -374,7 +392,7 @@ body {
 .slick-dots li.slick-active .slick-dot-custom {
   width: 20px;
   border-radius: 10px;
-  background: linear-gradient(90deg, #3b82f6, #ec4899);
+  background: linear-gradient(90deg, #F59E0B, #E11D48);
 }
 
 @media (min-width: 640px) {
@@ -393,7 +411,7 @@ body {
 
 .slick-dots li.slick-active button:hover,
 .slick-dots li.slick-active .slick-dot-custom:hover {
-  background: linear-gradient(90deg, #2563eb, #db2777);
+  background: linear-gradient(90deg, #D97706, #BE123C);
 }
 
 /* Dark mode dots */
@@ -409,7 +427,7 @@ body {
 
 .dark .slick-dots li.slick-active button,
 .dark .slick-dots li.slick-active .slick-dot-custom {
-  background: linear-gradient(90deg, #60a5fa, #f472b6);
+  background: linear-gradient(90deg, #FBBF24, #F43F5E);
 }
 
 /* Slick Arrow Overrides */
