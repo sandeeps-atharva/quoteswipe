@@ -531,12 +531,12 @@ function AuthorSection({ author, colors, hasBackgroundImage }: AuthorSectionProp
     <div className="flex-shrink-0">
       {/* <div className="w-14 h-px mb-4" style={{ background: colors.divider }} /> */}
       
-      <div className="flex items-center justify-between">
-        {author ? (
-          <p className="text-sm font-medium tracking-wide" style={textStyle}>
+      <div className="flex items-center justify-end">
+        {author && (
+          <p data-author-text="true" className="text-sm font-medium tracking-wide mr-auto" style={textStyle}>
             — {author}
           </p>
-        ) : <div />}
+        )}
         
         <div className="flex items-center gap-1.5" style={{ opacity: colors.isDark ? 0.7 : 0.6 }}>
           {/* Inline SVG Logo - Blue/Purple/Pink Theme for downloads */}
@@ -2118,6 +2118,13 @@ export default function ShareModal({
     const previewCard = previewRef.current?.querySelector('[data-preview-card="true"]') as HTMLElement;
     if (!previewCard) return null;
 
+    // Hide author text before generating image (author shows in preview but not in download)
+    const authorElement = previewCard.querySelector('[data-author-text="true"]') as HTMLElement;
+    const originalDisplay = authorElement?.style.display;
+    if (authorElement) {
+      authorElement.style.display = 'none';
+    }
+
     // Calculate effective pixel ratio based on zoom level
     // When zoomed in, we need higher resolution to maintain quality
     // Cap at reasonable maximum to prevent memory issues on mobile
@@ -2138,17 +2145,31 @@ export default function ShareModal({
       style: { borderRadius: '0px', overflow: 'hidden' },
     };
 
+    // Helper to restore author visibility
+    const restoreAuthor = () => {
+      if (authorElement) {
+        authorElement.style.display = originalDisplay || '';
+      }
+    };
+
     try {
-      return await toPng(previewCard, imageOptions);
+      const result = await toPng(previewCard, imageOptions);
+      restoreAuthor();
+      return result;
     } catch {
       // Fallback with lower quality if device can't handle high resolution
       try {
-        return await toPng(previewCard, { ...imageOptions, pixelRatio: Math.max(2, effectivePixelRatio - 2) });
+        const result = await toPng(previewCard, { ...imageOptions, pixelRatio: Math.max(2, effectivePixelRatio - 2) });
+        restoreAuthor();
+        return result;
       } catch {
         // Last resort fallback
         try {
-          return await toPng(previewCard, { ...imageOptions, pixelRatio: 2 });
+          const result = await toPng(previewCard, { ...imageOptions, pixelRatio: 2 });
+          restoreAuthor();
+          return result;
       } catch {
+        restoreAuthor();
         return null;
       }
     }
