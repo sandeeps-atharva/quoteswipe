@@ -10,6 +10,7 @@ interface LikedQuote {
   author: string;
   category: string;
   category_icon?: string;
+  custom_background?: string | null;
 }
 
 interface LikedQuotesViewProps {
@@ -166,50 +167,70 @@ export default function LikedQuotesView({
               </button>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredQuotes.map((quote) => (
-                <div
-                  key={quote.id}
-                  onClick={() => handleQuoteClick(quote)}
-                  className={`group relative bg-white dark:bg-stone-900 rounded-2xl p-4 shadow-sm border border-rose-100 dark:border-rose-900/30 hover:shadow-md hover:border-rose-200 dark:hover:border-rose-800 transition-all cursor-pointer ${
-                    navigatingId === quote.id ? 'opacity-50 pointer-events-none' : ''
-                  }`}
-                >
-                  {navigatingId === quote.id && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-white/80 dark:bg-stone-900/80 rounded-2xl backdrop-blur-sm">
-                      <div className="relative">
-                        <span className="text-3xl animate-bounce">💬</span>
-                      </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+              {filteredQuotes.map((quote) => {
+                // Use stored background if available, otherwise use default
+                const defaultBgs = [
+                  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80',
+                  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+                  'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&q=80',
+                  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&q=80',
+                  'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
+                  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
+                ];
+                const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+                const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
+                
+                return (
+                  <div
+                    key={quote.id}
+                    onClick={() => handleQuoteClick(quote)}
+                    className={`group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm ${
+                      navigatingId === quote.id ? 'opacity-50 pointer-events-none' : ''
+                    }`}
+                  >
+                    {/* Background Image */}
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${backgroundUrl})` }}
+                    />
+                    
+                    {/* Dark Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    
+                    {/* Heart Icon */}
+                    <div className="absolute top-2 right-2 z-10">
+                      <Heart size={18} className="text-rose-500 drop-shadow-lg" fill="currentColor" />
                     </div>
-                  )}
-                  
-                  {/* Actions */}
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+                    
+                    {/* Share Button - Shows on hover */}
                     <button
                       onClick={(e) => handleShare(e, quote)}
-                      className="p-2 bg-rose-100 dark:bg-rose-900/30 hover:bg-rose-200 dark:hover:bg-rose-800/50 rounded-lg transition-colors"
+                      className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10"
                       title="Share"
                     >
-                      <Share2 size={14} className="text-rose-600 dark:text-rose-400" />
+                      <Share2 size={14} className="text-white" />
                     </button>
-                  </div>
-
-                  {/* Content */}
-                  <div className="pr-16">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Heart size={14} className="text-rose-400 shrink-0" fill="currentColor" />
-                      <span className="text-lg">{quote.category_icon}</span>
-                      <span className="text-xs text-stone-500 truncate">{quote.category}</span>
+                    
+                    {/* Loading Overlay */}
+                    {navigatingId === quote.id && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
+                        <Loader2 size={24} className="animate-spin text-white" />
+                      </div>
+                    )}
+                    
+                    {/* Quote Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
+                      <p className="text-white text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
+                        "{quote.text}"
+                      </p>
+                      <p className="text-white/70 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
+                        — {quote.author}
+                      </p>
                     </div>
-                    <p className="text-sm text-stone-900 dark:text-white leading-relaxed line-clamp-3 mb-2">
-                      "{quote.text}"
-                    </p>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
-                      — {quote.author}
-                    </p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

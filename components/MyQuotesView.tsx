@@ -194,7 +194,7 @@ export default function MyQuotesView({
               </button>
             </div>
           ) : (
-            <div className="p-3 sm:p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 md:p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
               {filteredQuotes.map((quote) => {
                 const isPublic = isQuotePublic(quote.is_public);
                 const hasCustomBg = !!quote.custom_background;
@@ -202,131 +202,99 @@ export default function MyQuotesView({
                 const presetBg = quote.background_id 
                   ? BACKGROUND_IMAGES.find(bg => bg.id === quote.background_id)?.url 
                   : null;
-                const hasBackground = hasCustomBg || !!presetBg;
-                const backgroundUrl = quote.custom_background || presetBg;
+                
+                // Default backgrounds for quotes without custom background
+                const defaultBgs = [
+                  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80',
+                  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+                  'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&q=80',
+                  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&q=80',
+                  'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
+                  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
+                ];
+                const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+                const backgroundUrl = quote.custom_background || presetBg || defaultBgs[bgIndex];
                 
                 return (
                   <div
                     key={quote.id}
                     onClick={() => onViewQuote(quote)}
-                    className="group relative rounded-xl sm:rounded-2xl overflow-hidden shadow-sm border border-stone-200 dark:border-stone-800 hover:border-amber-300 dark:hover:border-amber-700 transition-all active:scale-[0.98] cursor-pointer"
+                    className="group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm"
                   >
-                    {/* Background - custom, preset, or default */}
-                    {hasBackground && backgroundUrl ? (
-                      <div 
-                        className="absolute inset-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${backgroundUrl})` }}
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/60" />
-                      </div>
-                    ) : (
-                      <div className="absolute inset-0 bg-white dark:bg-stone-900" />
-                    )}
+                    {/* Background Image */}
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${backgroundUrl})` }}
+                    />
                     
-                    {/* Gradient accent bar */}
-                    <div className="absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-orange-500 to-rose-500 z-10" />
-
-                    {/* Content */}
-                    <div className="relative z-10 p-3 sm:p-4 pt-3.5 sm:pt-5">
-                      {/* Quote Text */}
-                      <div className="flex gap-2 sm:gap-3">
-                        <span className="text-lg sm:text-xl shrink-0">{quote.category_icon || '✨'}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-xs sm:text-sm leading-relaxed line-clamp-3 ${
-                            hasBackground 
-                              ? 'text-white drop-shadow-md' 
-                              : 'text-stone-800 dark:text-stone-200'
-                          }`}>
-                            "{quote.text}"
-                          </p>
-                          {quote.author && (
-                            <p className={`text-[10px] sm:text-xs mt-1.5 sm:mt-2 ${
-                              hasBackground 
-                                ? 'text-white/80 drop-shadow' 
-                                : 'text-stone-500'
-                            }`}>— {quote.author}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Meta & Actions */}
-                      <div className={`flex items-center justify-between mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t ${
-                        hasBackground 
-                          ? 'border-white/20' 
-                          : 'border-stone-100 dark:border-stone-800'
+                    {/* Dark Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    
+                    {/* Top Icons Row */}
+                    <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
+                      {/* Visibility Badge */}
+                      <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 backdrop-blur-sm ${
+                        isPublic
+                          ? 'bg-green-500/30 text-green-200'
+                          : 'bg-black/30 text-white/80'
                       }`}>
-                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                          {/* Visibility Badge */}
-                          <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 sm:gap-1 ${
-                            hasBackground
-                              ? isPublic
-                                ? 'bg-green-500/30 text-green-200'
-                                : 'bg-white/20 text-white/80'
-                              : isPublic
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                          }`}>
-                            {isPublic ? <Globe size={9} className="sm:w-[10px] sm:h-[10px]" /> : <Lock size={9} className="sm:w-[10px] sm:h-[10px]" />}
-                            {isPublic ? 'Public' : 'Private'}
-                          </span>
-                          
-                          {/* Date */}
-                          {quote.created_at && (
-                            <span className={`text-[9px] sm:text-[10px] ${
-                              hasBackground ? 'text-white/60' : 'text-stone-400'
-                            }`}>
-                              {formatDate(quote.created_at)}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-0.5 sm:gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditQuote(quote);
-                            }}
-                            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                              hasBackground
-                                ? 'bg-white/20 hover:bg-white/30 text-white'
-                                : 'bg-stone-50 dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-400'
-                            }`}
-                          >
-                            <Edit3 size={14} className="sm:w-4 sm:h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onShareQuote(quote);
-                            }}
-                            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                              hasBackground
-                                ? 'bg-orange-500/30 hover:bg-orange-500/40 text-orange-200'
-                                : 'bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 text-orange-600'
-                            }`}
-                          >
-                            <Share2 size={14} className="sm:w-4 sm:h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(quote.id);
-                            }}
-                            disabled={deletingId === quote.id}
-                            className={`p-1.5 sm:p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                              hasBackground
-                                ? 'bg-red-500/30 hover:bg-red-500/40 text-red-200'
-                                : 'bg-red-50 dark:bg-red-900/30 hover:bg-red-100 text-red-600'
-                            }`}
-                          >
-                            {deletingId === quote.id ? (
-                              <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" />
-                            ) : (
-                              <Trash2 size={14} className="sm:w-4 sm:h-4" />
-                            )}
-                          </button>
-                        </div>
+                        {isPublic ? <Globe size={9} className="sm:w-[10px] sm:h-[10px]" /> : <Lock size={9} className="sm:w-[10px] sm:h-[10px]" />}
+                        <span className="hidden sm:inline">{isPublic ? 'Public' : 'Private'}</span>
+                      </span>
+                      
+                      {/* Sparkle Icon */}
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center shadow-lg">
+                        <Sparkles size={12} className="sm:w-3.5 sm:h-3.5 text-white" />
                       </div>
+                    </div>
+                    
+                    {/* Action Buttons - Shows on hover */}
+                    <div className="absolute top-10 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditQuote(quote);
+                        }}
+                        className="p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <Edit3 size={14} className="text-white" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onShareQuote(quote);
+                        }}
+                        className="p-1.5 bg-orange-500/50 backdrop-blur-sm hover:bg-orange-500/70 rounded-lg transition-colors"
+                        title="Share"
+                      >
+                        <Share2 size={14} className="text-white" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(quote.id);
+                        }}
+                        disabled={deletingId === quote.id}
+                        className="p-1.5 bg-red-500/50 backdrop-blur-sm hover:bg-red-500/70 rounded-lg transition-colors disabled:opacity-50"
+                        title="Delete"
+                      >
+                        {deletingId === quote.id ? (
+                          <Loader2 size={14} className="text-white animate-spin" />
+                        ) : (
+                          <Trash2 size={14} className="text-white" />
+                        )}
+                      </button>
+                    </div>
+                    
+                    {/* Quote Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
+                      <p className="text-white text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
+                        "{quote.text}"
+                      </p>
+                      <p className="text-white/70 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
+                        — {quote.author}
+                      </p>
                     </div>
                   </div>
                 );

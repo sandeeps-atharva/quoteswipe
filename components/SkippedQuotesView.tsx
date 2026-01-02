@@ -10,6 +10,7 @@ interface SkippedQuote {
   author: string;
   category: string;
   category_icon?: string;
+  custom_background?: string | null;
 }
 
 interface SkippedQuotesViewProps {
@@ -166,48 +167,70 @@ export default function SkippedQuotesView({
               </button>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredQuotes.map((quote) => (
-                <div
-                  key={quote.id}
-                  onClick={() => handleQuoteClick(quote)}
-                  className={`group relative bg-white dark:bg-stone-900 rounded-2xl p-4 shadow-sm border border-stone-200 dark:border-stone-800 hover:shadow-md hover:border-stone-300 dark:hover:border-stone-700 transition-all cursor-pointer ${
-                    navigatingId === quote.id ? 'opacity-50 pointer-events-none' : ''
-                  }`}
-                >
-                  {navigatingId === quote.id && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-white/50 dark:bg-stone-900/50 rounded-2xl">
-                      <Loader2 size={24} className="animate-spin text-stone-400" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+              {filteredQuotes.map((quote) => {
+                // Use stored background if available, otherwise use default
+                const defaultBgs = [
+                  'https://images.unsplash.com/photo-1553356084-58ef4a67b2a7?w=400&q=80',
+                  'https://images.unsplash.com/photo-1557683316-973673baf926?w=400&q=80',
+                  'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&q=80',
+                  'https://images.unsplash.com/photo-1475070929565-c985b496cb9f?w=400&q=80',
+                  'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=400&q=80',
+                  'https://images.unsplash.com/photo-1504805572947-34fad45aed93?w=400&q=80',
+                ];
+                const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+                const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
+                
+                return (
+                  <div
+                    key={quote.id}
+                    onClick={() => handleQuoteClick(quote)}
+                    className={`group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm ${
+                      navigatingId === quote.id ? 'opacity-50 pointer-events-none' : ''
+                    }`}
+                  >
+                    {/* Background Image */}
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center grayscale-[30%]"
+                      style={{ backgroundImage: `url(${backgroundUrl})` }}
+                    />
+                    
+                    {/* Dark Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                    
+                    {/* Skipped Icon */}
+                    <div className="absolute top-2 right-2 z-10">
+                      <ThumbsDown size={18} className="text-stone-400 drop-shadow-lg" />
                     </div>
-                  )}
-                  
-                  {/* Actions */}
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+                    
+                    {/* Share Button - Shows on hover */}
                     <button
                       onClick={(e) => handleShare(e, quote)}
-                      className="p-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-lg transition-colors"
+                      className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10"
                       title="Share"
                     >
-                      <Share2 size={14} className="text-stone-500" />
+                      <Share2 size={14} className="text-white" />
                     </button>
-                  </div>
-
-                  {/* Content */}
-                  <div className="pr-12">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ThumbsDown size={14} className="text-stone-400 shrink-0" />
-                      <span className="text-lg opacity-50">{quote.category_icon}</span>
-                      <span className="text-xs text-stone-400 truncate">{quote.category}</span>
+                    
+                    {/* Loading Overlay */}
+                    {navigatingId === quote.id && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
+                        <Loader2 size={24} className="animate-spin text-white" />
+                      </div>
+                    )}
+                    
+                    {/* Quote Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
+                      <p className="text-white/90 text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
+                        "{quote.text}"
+                      </p>
+                      <p className="text-white/60 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
+                        — {quote.author}
+                      </p>
                     </div>
-                    <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed line-clamp-3 mb-2">
-                      "{quote.text}"
-                    </p>
-                    <p className="text-xs text-stone-400 truncate">
-                      — {quote.author}
-                    </p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

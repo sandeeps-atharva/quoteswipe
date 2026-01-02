@@ -1262,12 +1262,39 @@ export default function SwipeQuotes() {
     const filteredQuotes = getFilteredQuotes();
     const currentQuote = filteredQuotes[currentIndex];
 
+    // Calculate the actual displayed background URL (same logic as rendering)
+    const getDisplayedBackgroundUrl = (quote: Quote): string | null => {
+      const quoteIdStr = String(quote.id);
+      
+      // Priority 1: Saved custom background for this specific quote
+      if (savedQuoteBackgrounds[quoteIdStr]?.url) {
+        return savedQuoteBackgrounds[quoteIdStr].url;
+      }
+      
+      // Priority 2: Quote's own custom_background
+      if (quote.custom_background) {
+        return quote.custom_background;
+      }
+      
+      // Priority 3: User-selected global background (if not 'none')
+      if (backgroundImage && backgroundImage.id !== 'none' && backgroundImage.url) {
+        return backgroundImage.url;
+      }
+      
+      // Priority 4: Random background for this quote
+      const randomBg = getRandomBackgroundForQuote(quote.id);
+      return randomBg?.url || null;
+    };
+
     if (direction === 'right' && currentQuote) {
       // Check if user already liked this quote
       const alreadyLiked = likedQuotes.some(q => q.id === currentQuote.id);
       
       if (!alreadyLiked) {
         setLastLikedQuote(currentQuote);
+        
+        // Get the actual displayed background
+        const displayedBgUrl = getDisplayedBackgroundUrl(currentQuote);
         
         // OPTIMISTIC UPDATE: Update UI immediately
         setLikedQuotes(prev => [...prev, currentQuote]);
@@ -1283,7 +1310,10 @@ export default function SwipeQuotes() {
           fetch('/api/user/likes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quoteId: currentQuote.id }),
+            body: JSON.stringify({ 
+              quoteId: currentQuote.id,
+              customBackground: displayedBgUrl 
+            }),
           }).catch(error => {
             console.error('Like quote error:', error);
             // Silently fail - UI already updated
@@ -1298,6 +1328,9 @@ export default function SwipeQuotes() {
       const alreadyDisliked = dislikedQuotes.some(q => q.id === currentQuote.id);
       
       if (!alreadyDisliked) {
+        // Get the actual displayed background
+        const displayedBgUrl = getDisplayedBackgroundUrl(currentQuote);
+        
         // OPTIMISTIC UPDATE: Update UI immediately
         setDislikedQuotes(prev => [...prev, currentQuote]);
         setLikedQuotes(prev => prev.filter(q => q.id !== currentQuote.id));
@@ -1312,7 +1345,10 @@ export default function SwipeQuotes() {
           fetch('/api/user/dislikes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quoteId: currentQuote.id }),
+            body: JSON.stringify({ 
+              quoteId: currentQuote.id,
+              customBackground: displayedBgUrl 
+            }),
           }).catch(error => {
             console.error('Dislike quote error:', error);
             // Silently fail - UI already updated
@@ -1555,10 +1591,37 @@ export default function SwipeQuotes() {
   };
 
   // Feed View Handlers - Simple actions without swipe animation
+  // Helper to get the actual displayed background for a quote (feed view)
+  const getQuoteDisplayedBackground = useCallback((quote: Quote): string | null => {
+    const quoteIdStr = String(quote.id);
+    
+    // Priority 1: Saved custom background for this specific quote
+    if (savedQuoteBackgrounds[quoteIdStr]?.url) {
+      return savedQuoteBackgrounds[quoteIdStr].url;
+    }
+    
+    // Priority 2: Quote's own custom_background
+    if (quote.custom_background) {
+      return quote.custom_background;
+    }
+    
+    // Priority 3: User-selected global background (if not 'none')
+    if (backgroundImage && backgroundImage.id !== 'none' && backgroundImage.url) {
+      return backgroundImage.url;
+    }
+    
+    // Priority 4: Random background for this quote
+    const randomBg = getRandomBackgroundForQuote(quote.id);
+    return randomBg?.url || null;
+  }, [savedQuoteBackgrounds, backgroundImage]);
+
   const handleLikeQuote = useCallback((quote: Quote) => {
     const alreadyLiked = likedQuotes.some(q => String(q.id) === String(quote.id));
     
     if (!alreadyLiked) {
+      // Get the actual displayed background for this quote
+      const displayedBgUrl = getQuoteDisplayedBackground(quote);
+      
       // Optimistic update
       setLikedQuotes(prev => [...prev, quote]);
       setQuotes(prev => prev.map(q => 
@@ -1575,7 +1638,10 @@ export default function SwipeQuotes() {
         fetch('/api/user/likes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quoteId: quote.id }),
+          body: JSON.stringify({ 
+            quoteId: quote.id,
+            customBackground: displayedBgUrl 
+          }),
         }).catch(console.error);
       }
       
@@ -1583,12 +1649,15 @@ export default function SwipeQuotes() {
     } else {
       toast('Already liked!', { icon: '❤️', duration: 1500 });
     }
-  }, [likedQuotes, isAuthenticated]);
+  }, [likedQuotes, isAuthenticated, getQuoteDisplayedBackground]);
 
   const handleDislikeQuote = useCallback((quote: Quote) => {
     const alreadyDisliked = dislikedQuotes.some(q => String(q.id) === String(quote.id));
     
     if (!alreadyDisliked) {
+      // Get the actual displayed background for this quote
+      const displayedBgUrl = getQuoteDisplayedBackground(quote);
+      
       // Optimistic update
       setDislikedQuotes(prev => [...prev, quote]);
       setQuotes(prev => prev.map(q => 
@@ -1605,13 +1674,16 @@ export default function SwipeQuotes() {
         fetch('/api/user/dislikes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quoteId: quote.id }),
+          body: JSON.stringify({ 
+            quoteId: quote.id,
+            customBackground: displayedBgUrl 
+          }),
         }).catch(console.error);
       }
       
       toast('Skipped 👎', { duration: 1500 });
     }
-  }, [dislikedQuotes, isAuthenticated]);
+  }, [dislikedQuotes, isAuthenticated, getQuoteDisplayedBackground]);
 
   const handleSaveQuote = useCallback((quote: Quote) => {
     const alreadySaved = savedQuotes.some(q => String(q.id) === String(quote.id));

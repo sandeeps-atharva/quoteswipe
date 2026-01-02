@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, Bookmark, Trash2, Share2, Loader2, X, ImageIcon, ArrowLeft } from 'lucide-react';
-import Image from 'next/image';
+import { Search, Bookmark, Trash2, Share2, Loader2, X, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface SavedQuote {
@@ -185,116 +184,78 @@ export default function SavedQuotesView({
               </button>
             </div>
           ) : (
-            <div className="p-3 sm:p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {filteredQuotes.map((quote) => (
-                <div
-                  key={quote.id}
-                  onClick={() => onQuoteClick(quote.id, quote.category, quote.custom_background)}
-                  className={`group relative rounded-xl sm:rounded-2xl overflow-hidden shadow-sm border transition-all active:scale-[0.98] cursor-pointer ${
-                    quote.custom_background
-                      ? 'border-amber-300 dark:border-amber-700 min-h-[120px] sm:min-h-[140px]'
-                      : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 hover:border-amber-300 dark:hover:border-amber-700'
-                  }`}
-                >
-                  {/* Background Image Layer */}
-                  {quote.custom_background && (
-                    <>
-                      <Image
-                        src={quote.custom_background}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/50 to-black/70" />
-                    </>
-                  )}
-
-                  {/* Content */}
-                  <div className={`relative z-10 p-3 sm:p-4 ${quote.custom_background ? 'min-h-[120px] sm:min-h-[140px] flex flex-col justify-between' : ''}`}>
-                    {/* Quote Text */}
-                    <div className="flex gap-2 sm:gap-3">
-                      <span className="text-lg sm:text-xl shrink-0">{quote.category_icon || '📚'}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs sm:text-sm leading-relaxed line-clamp-3 ${
-                          quote.custom_background 
-                            ? 'text-white drop-shadow-md' 
-                            : 'text-stone-800 dark:text-stone-200'
-                        }`}>
-                          "{quote.text}"
-                        </p>
-                        {quote.author && (
-                          <p className={`text-[10px] sm:text-xs mt-1.5 sm:mt-2 ${
-                            quote.custom_background 
-                              ? 'text-white/80 drop-shadow' 
-                              : 'text-stone-500'
-                          }`}>
-                            — {quote.author}
-                          </p>
-                        )}
-                      </div>
+            <div className="p-3 sm:p-4 md:p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+              {filteredQuotes.map((quote) => {
+                // Default backgrounds for quotes without custom background
+                const defaultBgs = [
+                  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80',
+                  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+                  'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&q=80',
+                  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&q=80',
+                  'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
+                  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
+                ];
+                const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+                const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
+                
+                return (
+                  <div
+                    key={quote.id}
+                    onClick={() => onQuoteClick(quote.id, quote.category, quote.custom_background)}
+                    className="group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm"
+                  >
+                    {/* Background Image */}
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${backgroundUrl})` }}
+                    />
+                    
+                    {/* Dark Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    
+                    {/* Bookmark Icon */}
+                    <div className="absolute top-2 right-2 z-10">
+                      <Bookmark size={18} className="text-amber-500 drop-shadow-lg" fill="currentColor" />
                     </div>
-
-                    {/* Actions */}
-                    <div className={`flex items-center justify-between mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 ${
-                      quote.custom_background 
-                        ? 'border-t border-white/20' 
-                        : 'border-t border-stone-100 dark:border-stone-800'
-                    }`}>
-                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                        {quote.custom_background && (
-                          <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 sm:gap-1 ${
-                            quote.custom_background 
-                              ? 'bg-white/20 text-white' 
-                              : 'bg-amber-100 text-amber-700'
-                          }`}>
-                            <ImageIcon size={9} className="sm:w-[10px] sm:h-[10px]" />
-                            Custom BG
-                          </span>
+                    
+                    {/* Action Buttons - Shows on hover */}
+                    <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                      <button
+                        onClick={(e) => handleShare(e, quote)}
+                        className="p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg transition-colors"
+                        title="Share"
+                      >
+                        <Share2 size={14} className="text-white" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(quote.id);
+                        }}
+                        disabled={deletingId === quote.id}
+                        className="p-1.5 bg-red-500/50 backdrop-blur-sm hover:bg-red-500/70 rounded-lg transition-colors disabled:opacity-50"
+                        title="Remove"
+                      >
+                        {deletingId === quote.id ? (
+                          <Loader2 size={14} className="text-white animate-spin" />
+                        ) : (
+                          <Trash2 size={14} className="text-white" />
                         )}
-                        <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full truncate max-w-[80px] sm:max-w-[100px] ${
-                          quote.custom_background 
-                            ? 'bg-white/20 text-white' 
-                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
-                        }`}>
-                          {quote.category}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-0.5 sm:gap-1">
-                        <button
-                          onClick={(e) => handleShare(e, quote)}
-                          className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                            quote.custom_background
-                              ? 'bg-white/20 hover:bg-white/30 text-white'
-                              : 'bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 text-orange-600'
-                          }`}
-                        >
-                          <Share2 size={14} className="sm:w-4 sm:h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(quote.id);
-                          }}
-                          disabled={deletingId === quote.id}
-                          className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                            quote.custom_background
-                              ? 'bg-white/20 hover:bg-red-500/50 text-white'
-                              : 'bg-red-50 dark:bg-red-900/30 hover:bg-red-100 text-red-600'
-                          } disabled:opacity-50`}
-                        >
-                          {deletingId === quote.id ? (
-                            <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" />
-                          ) : (
-                            <Trash2 size={14} className="sm:w-4 sm:h-4" />
-                          )}
-                        </button>
-                      </div>
+                      </button>
+                    </div>
+                    
+                    {/* Quote Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
+                      <p className="text-white text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
+                        "{quote.text}"
+                      </p>
+                      <p className="text-white/70 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
+                        — {quote.author}
+                      </p>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

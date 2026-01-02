@@ -751,39 +751,68 @@ export default function Sidebar({
             <button onClick={() => setCollectionSearch('')} className="text-xs text-rose-500 hover:text-rose-600 mt-2">Clear search</button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filteredLikedQuotes.map((quote) => (
-              <div 
-                key={quote.id} 
-                onClick={() => handleQuoteClick(quote.id, quote.category)}
-                className={`group relative bg-gradient-to-r from-rose-50/50 to-white dark:from-rose-900/10 dark:to-stone-800 rounded-xl p-3 border border-rose-100 dark:border-rose-900/30 hover:shadow-md hover:border-rose-200 dark:hover:border-rose-800 transition-all cursor-pointer ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                {navigatingQuoteId === quote.id && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <Loader2 size={18} className="animate-spin text-rose-500" />
-                  </div>
-                )}
-                <button
-                  onClick={(e) => handleShareQuote(e, quote)}
-                  className="absolute top-2 right-2 p-1.5 bg-rose-100 dark:bg-rose-900/30 hover:bg-rose-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
-                  title="Share"
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+            {filteredLikedQuotes.map((quote) => {
+              const hasCustomBg = !!quote.custom_background;
+              const defaultBgs = [
+                'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80',
+                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+                'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&q=80',
+                'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&q=80',
+                'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
+                'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
+              ];
+              const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+              const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
+              
+              return (
+                <div 
+                  key={quote.id} 
+                  onClick={() => handleQuoteClick(quote.id, quote.category)}
+                  className={`group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
                 >
-                  <Share2 size={14} className="text-rose-500" />
-                </button>
-                <div className="flex items-start gap-2">
-                  <div className="shrink-0 mt-0.5">
-                    <Heart size={14} className="text-rose-400" fill="currentColor" />
+                  {/* Background Image */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${backgroundUrl})` }}
+                  />
+                  
+                  {/* Dark Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  
+                  {/* Heart Icon */}
+                  <div className="absolute top-2 right-2 z-10">
+                    <Heart size={18} className="text-rose-500 drop-shadow-lg" fill="currentColor" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-stone-900 dark:text-white leading-snug line-clamp-2">"{quote.text}"</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm">{quote.category_icon}</span>
-                      {quote.author && <p className="text-[10px] sm:text-xs text-stone-500 truncate">— {quote.author}</p>}
+                  
+                  {/* Share Button - Shows on hover */}
+                  <button
+                    onClick={(e) => handleShareQuote(e, quote)}
+                    className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10"
+                    title="Share"
+                  >
+                    <Share2 size={14} className="text-white" />
+                  </button>
+                  
+                  {/* Loading Overlay */}
+                  {navigatingQuoteId === quote.id && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
+                      <Loader2 size={24} className="animate-spin text-white" />
                     </div>
+                  )}
+                  
+                  {/* Quote Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
+                    <p className="text-white text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
+                      "{quote.text}"
+                    </p>
+                    <p className="text-white/70 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
+                      — {quote.author}
+                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -846,39 +875,67 @@ export default function Sidebar({
             <button onClick={() => setCollectionSearch('')} className="text-xs text-stone-500 hover:text-stone-600 mt-2">Clear search</button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filteredDislikedQuotes.map((quote) => (
-              <div 
-                key={quote.id} 
-                onClick={() => handleQuoteClick(quote.id, quote.category)}
-                className={`group relative bg-stone-50 dark:bg-stone-800/50 rounded-xl p-3 border border-stone-100 dark:border-stone-700 hover:bg-white dark:hover:bg-stone-800 hover:shadow-sm transition-all cursor-pointer ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                {navigatingQuoteId === quote.id && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <Loader2 size={18} className="animate-spin text-stone-400" />
-                  </div>
-                )}
-                <button
-                  onClick={(e) => handleShareQuote(e, quote)}
-                  className="absolute top-2 right-2 p-1.5 bg-stone-100 dark:bg-stone-700 hover:bg-stone-200 active:scale-95 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
-                  title="Share"
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+            {filteredDislikedQuotes.map((quote) => {
+              const defaultBgs = [
+                'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80',
+                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+                'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400&q=80',
+                'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&q=80',
+                'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
+                'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
+              ];
+              const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+              const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
+              
+              return (
+                <div 
+                  key={quote.id} 
+                  onClick={() => handleQuoteClick(quote.id, quote.category)}
+                  className={`group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 grayscale-[30%] ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
                 >
-                  <Share2 size={14} className="text-stone-500" />
-                </button>
-                <div className="flex items-start gap-2">
-                  <div className="shrink-0 mt-0.5">
-                    <ThumbsDown size={14} className="text-stone-300 dark:text-stone-600" />
+                  {/* Background Image */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${backgroundUrl})` }}
+                  />
+                  
+                  {/* Dark Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                  
+                  {/* Skipped Icon */}
+                  <div className="absolute top-2 right-2 z-10">
+                    <ThumbsDown size={16} className="text-stone-400 drop-shadow-lg" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-snug line-clamp-2">"{quote.text}"</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm opacity-50">{quote.category_icon}</span>
-                      {quote.author && <p className="text-[10px] sm:text-xs text-stone-400 truncate">— {quote.author}</p>}
+                  
+                  {/* Share Button - Shows on hover */}
+                  <button
+                    onClick={(e) => handleShareQuote(e, quote)}
+                    className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10"
+                    title="Share"
+                  >
+                    <Share2 size={14} className="text-white" />
+                  </button>
+                  
+                  {/* Loading Overlay */}
+                  {navigatingQuoteId === quote.id && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
+                      <Loader2 size={24} className="animate-spin text-white" />
                     </div>
+                  )}
+                  
+                  {/* Quote Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
+                    <p className="text-white/90 text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
+                      "{quote.text}"
+                    </p>
+                    <p className="text-white/60 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
+                      — {quote.author}
+                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { quoteId } = await request.json();
+    const { quoteId, customBackground } = await request.json();
     if (!quoteId) {
       return NextResponse.json(
         { error: 'Quote ID is required' },
@@ -30,6 +30,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingLike) {
+      // Update background if provided and different
+      if (customBackground && existingLike.custom_background !== customBackground) {
+        await userLikesCollection.updateOne(
+          { _id: existingLike._id },
+          { $set: { custom_background: customBackground } }
+        );
+      }
       return NextResponse.json(
         { message: 'Quote already liked', alreadyLiked: true },
         { status: 200 }
@@ -42,10 +49,11 @@ export async function POST(request: NextRequest) {
       quote_id: quoteObjId
     });
 
-    // Insert like
+    // Insert like with custom background
     await userLikesCollection.insertOne({
       user_id: userObjId,
       quote_id: quoteObjId,
+      custom_background: customBackground || null,
       created_at: new Date()
     } as any);
 
@@ -77,13 +85,25 @@ export async function GET(request: NextRequest) {
     const quotesCollection = await getCollection('quotes');
     const categoriesCollection = await getCollection('categories');
 
-    // Get user's liked quote IDs
+    // Get user's liked quote IDs with backgrounds
     const likes = await userLikesCollection
       .find({ user_id: toObjectId(userId) as any })
       .sort({ created_at: -1 })
       .toArray() as any[];
 
     const quoteIds = likes.map((l: any) => l.quote_id);
+    
+    // Create a map of quote_id -> custom_background (store multiple key formats for reliable lookup)
+    const backgroundMap = new Map<string, string | null>();
+    likes.forEach((l: any) => {
+      const bg = l.custom_background || null;
+      // Store with ObjectId string representation
+      backgroundMap.set(String(l.quote_id), bg);
+      // Also store with just the hex string if it's an ObjectId
+      if (l.quote_id?.toHexString) {
+        backgroundMap.set(l.quote_id.toHexString(), bg);
+      }
+    });
 
     if (quoteIds.length === 0) {
       return NextResponse.json({ quotes: [] }, { status: 200 });
@@ -104,15 +124,26 @@ export async function GET(request: NextRequest) {
     const categories = await categoriesCollection.find({}).toArray() as any[];
     const categoryMap = new Map(categories.map((c: any) => [c.id || c._id?.toString(), c]));
 
-    // Transform quotes
+    // Transform quotes with stored background
     const result = quotes.map((q: any) => {
       const category = categoryMap.get(q.category_id) || categoryMap.get(String(q.category_id));
+      const quoteId = q.id || q._id?.toString();
+      const objIdStr = q._id?.toString();
+      const hexStr = q._id?.toHexString?.();
+      
+      // Try multiple lookup strategies to find the background
+      const storedBg = backgroundMap.get(String(quoteId)) 
+        || backgroundMap.get(objIdStr) 
+        || backgroundMap.get(hexStr)
+        || null;
+      
       return {
-        id: q.id || q._id?.toString(),
+        id: quoteId,
         text: q.text,
         author: q.author,
         category: category?.name || 'Unknown',
-        category_icon: category?.icon || '📚'
+        category_icon: category?.icon || '📚',
+        custom_background: storedBg
       };
     });
 
