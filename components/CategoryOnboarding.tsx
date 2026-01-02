@@ -69,7 +69,7 @@ export default function CategoryOnboarding({
     ['Love', 'Motivation', 'Wisdom', 'Humor', 'Life', 'Success', 'Happiness', 'Friendship'].includes(c.name)
   );
   const trendingCategories = categories.filter(c => 
-    ['Love Story', 'Romantic Meeting', 'Deep Emotional', 'Long Distance Love', 'Soulmate Stories', 'Love Confessions', 'Viral Love Reels', 'Healing Journey', 'Vulnerable & Raw', '2am Quotes', 'Savage Comebacks', 'Shower Thoughts', 'Toxic Truths', 'Villain Era', 'Main Character Energy', 'Rizz & Flirting', 'Overthinking'].includes(c.name)
+    ['Love Story', 'Romantic Meeting', 'Deep Emotional', 'Long Distance Love', 'Soulmate Stories', 'Love Confessions', 'Viral Love Reels', 'Healing Journey', 'Vulnerable & Raw', '2am Quotes', 'Savage Comebacks', 'Shower Thoughts', 'Toxic Truths', 'Villain Era', 'Main Character Energy', 'Rizz & Flirting', 'Overthinking', 'Bollywood Dialogues', 'Hollywood Romance', 'Modern Bollywood'].includes(c.name)
   );
   const otherCategories = categories.filter(c => 
     !popularCategories.includes(c) && !trendingCategories.includes(c)
