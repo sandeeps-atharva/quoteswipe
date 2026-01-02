@@ -2148,10 +2148,10 @@ export default function ShareModal({
         // Last resort fallback
         try {
           return await toPng(previewCard, { ...imageOptions, pixelRatio: 2 });
-        } catch {
-          return null;
-        }
+      } catch {
+        return null;
       }
+    }
     }
   }, [selectedFormat.pixelRatio, bgZoom]);
 

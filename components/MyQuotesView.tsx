@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, Sparkles, Trash2, Share2, Loader2, X, Edit3, Globe, Lock, Plus, ArrowLeft } from 'lucide-react';
+import { Search, Sparkles, Trash2, Share2, Loader2, X, Edit3, Globe, Lock, Plus, ArrowLeft, MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { isQuotePublic } from '@/lib/helpers';
 import { BACKGROUND_IMAGES } from '@/lib/constants';
@@ -42,6 +42,7 @@ export default function MyQuotesView({
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
+  const [activeActionsId, setActiveActionsId] = useState<string | number | null>(null);
 
   // Refresh quotes on mount
   useEffect(() => {
@@ -62,6 +63,7 @@ export default function MyQuotesView({
   // Handle delete
   const handleDelete = useCallback(async (quoteId: string | number) => {
     setDeletingId(quoteId);
+    setActiveActionsId(null);
     try {
       const response = await fetch(`/api/user/quotes/${quoteId}`, {
         method: 'DELETE',
@@ -79,6 +81,21 @@ export default function MyQuotesView({
       setDeletingId(null);
     }
   }, [onDeleteQuote]);
+
+  // Toggle actions menu (for mobile)
+  const toggleActions = useCallback((e: React.MouseEvent, quoteId: string | number) => {
+    e.stopPropagation();
+    setActiveActionsId(prev => prev === quoteId ? null : quoteId);
+  }, []);
+
+  // Handle card click - on mobile with actions shown, close actions; otherwise navigate
+  const handleCardClick = useCallback((quote: UserQuote) => {
+    if (activeActionsId === quote.id) {
+      setActiveActionsId(null);
+    } else {
+      onViewQuote(quote);
+    }
+  }, [activeActionsId, onViewQuote]);
 
   // Format date
   const formatDate = (dateString?: string) => {
@@ -215,10 +232,12 @@ export default function MyQuotesView({
                 const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
                 const backgroundUrl = quote.custom_background || presetBg || defaultBgs[bgIndex];
                 
+                const isActionsVisible = activeActionsId === quote.id;
+                
                 return (
                   <div
                     key={quote.id}
-                    onClick={() => onViewQuote(quote)}
+                    onClick={() => handleCardClick(quote)}
                     className="group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm"
                   >
                     {/* Background Image */}
@@ -242,33 +261,49 @@ export default function MyQuotesView({
                         <span className="hidden sm:inline">{isPublic ? 'Public' : 'Private'}</span>
                       </span>
                       
-                      {/* Sparkle Icon */}
-                      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center shadow-lg">
-                        <Sparkles size={12} className="sm:w-3.5 sm:h-3.5 text-white" />
+                      {/* Mobile Menu Button (hidden when actions shown) + Sparkle Icon */}
+                      <div className="flex items-center gap-1">
+                        {!isActionsVisible && (
+                          <button
+                            onClick={(e) => toggleActions(e, quote.id)}
+                            className="p-1.5 bg-black/30 backdrop-blur-sm rounded-lg sm:hidden active:bg-black/50"
+                          >
+                            <MoreVertical size={14} className="text-white" />
+                          </button>
+                        )}
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center shadow-lg">
+                          <Sparkles size={12} className="sm:w-3.5 sm:h-3.5 text-white" />
+                        </div>
                       </div>
                     </div>
                     
-                    {/* Action Buttons - Shows on hover */}
-                    <div className="absolute top-10 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                    {/* Action Buttons - Shows instantly on mobile when active, with transition on desktop hover */}
+                    <div className={`absolute top-10 right-2 flex flex-col gap-1 z-10 ${
+                      isActionsVisible 
+                        ? 'flex' 
+                        : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
+                    }`}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          setActiveActionsId(null);
                           onEditQuote(quote);
                         }}
-                        className="p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg transition-colors"
+                        className="p-2 sm:p-1.5 bg-black/40 backdrop-blur-sm hover:bg-black/60 active:bg-black/60 rounded-lg"
                         title="Edit"
                       >
-                        <Edit3 size={14} className="text-white" />
+                        <Edit3 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          setActiveActionsId(null);
                           onShareQuote(quote);
                         }}
-                        className="p-1.5 bg-orange-500/50 backdrop-blur-sm hover:bg-orange-500/70 rounded-lg transition-colors"
+                        className="p-2 sm:p-1.5 bg-orange-500/60 backdrop-blur-sm hover:bg-orange-500/80 active:bg-orange-500/80 rounded-lg"
                         title="Share"
                       >
-                        <Share2 size={14} className="text-white" />
+                        <Share2 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -276,13 +311,13 @@ export default function MyQuotesView({
                           handleDelete(quote.id);
                         }}
                         disabled={deletingId === quote.id}
-                        className="p-1.5 bg-red-500/50 backdrop-blur-sm hover:bg-red-500/70 rounded-lg transition-colors disabled:opacity-50"
+                        className="p-2 sm:p-1.5 bg-red-500/60 backdrop-blur-sm hover:bg-red-500/80 active:bg-red-500/80 rounded-lg disabled:opacity-50"
                         title="Delete"
                       >
                         {deletingId === quote.id ? (
-                          <Loader2 size={14} className="text-white animate-spin" />
+                          <Loader2 size={16} className="sm:w-3.5 sm:h-3.5 text-white animate-spin" />
                         ) : (
-                          <Trash2 size={14} className="text-white" />
+                          <Trash2 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
                         )}
                       </button>
                     </div>

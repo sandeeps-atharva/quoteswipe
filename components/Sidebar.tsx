@@ -766,11 +766,11 @@ export default function Sidebar({
               const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
               
               return (
-                <div 
-                  key={quote.id} 
-                  onClick={() => handleQuoteClick(quote.id, quote.category)}
+              <div 
+                key={quote.id} 
+                onClick={() => handleQuoteClick(quote.id, quote.category)}
                   className={`group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
-                >
+              >
                   {/* Background Image */}
                   <div 
                     className="absolute inset-0 bg-cover bg-center"
@@ -786,19 +786,19 @@ export default function Sidebar({
                   </div>
                   
                   {/* Share Button - Shows on hover */}
-                  <button
-                    onClick={(e) => handleShareQuote(e, quote)}
+                <button
+                  onClick={(e) => handleShareQuote(e, quote)}
                     className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10"
-                    title="Share"
-                  >
+                  title="Share"
+                >
                     <Share2 size={14} className="text-white" />
-                  </button>
+                </button>
                   
                   {/* Loading Overlay */}
                   {navigatingQuoteId === quote.id && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
                       <Loader2 size={24} className="animate-spin text-white" />
-                    </div>
+                  </div>
                   )}
                   
                   {/* Quote Content */}
@@ -809,8 +809,8 @@ export default function Sidebar({
                     <p className="text-white/70 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
                       — {quote.author}
                     </p>
+                    </div>
                   </div>
-                </div>
               );
             })}
           </div>
@@ -889,11 +889,11 @@ export default function Sidebar({
               const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
               
               return (
-                <div 
-                  key={quote.id} 
-                  onClick={() => handleQuoteClick(quote.id, quote.category)}
+              <div 
+                key={quote.id} 
+                onClick={() => handleQuoteClick(quote.id, quote.category)}
                   className={`group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 grayscale-[30%] ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
-                >
+              >
                   {/* Background Image */}
                   <div 
                     className="absolute inset-0 bg-cover bg-center"
@@ -909,19 +909,19 @@ export default function Sidebar({
                   </div>
                   
                   {/* Share Button - Shows on hover */}
-                  <button
-                    onClick={(e) => handleShareQuote(e, quote)}
+                <button
+                  onClick={(e) => handleShareQuote(e, quote)}
                     className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10"
-                    title="Share"
-                  >
+                  title="Share"
+                >
                     <Share2 size={14} className="text-white" />
-                  </button>
+                </button>
                   
                   {/* Loading Overlay */}
                   {navigatingQuoteId === quote.id && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
                       <Loader2 size={24} className="animate-spin text-white" />
-                    </div>
+                  </div>
                   )}
                   
                   {/* Quote Content */}
@@ -932,8 +932,8 @@ export default function Sidebar({
                     <p className="text-white/60 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
                       — {quote.author}
                     </p>
+                    </div>
                   </div>
-                </div>
               );
             })}
           </div>

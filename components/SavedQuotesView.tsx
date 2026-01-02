@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, Bookmark, Trash2, Share2, Loader2, X, ArrowLeft } from 'lucide-react';
+import { Search, Bookmark, Trash2, Share2, Loader2, X, ArrowLeft, MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface SavedQuote {
@@ -30,6 +30,7 @@ export default function SavedQuotesView({
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
+  const [activeActionsId, setActiveActionsId] = useState<string | number | null>(null);
 
   // Fetch saved quotes
   useEffect(() => {
@@ -90,8 +91,24 @@ export default function SavedQuotesView({
   // Handle share
   const handleShare = useCallback((e: React.MouseEvent, quote: SavedQuote) => {
     e.stopPropagation();
+    setActiveActionsId(null);
     onShareQuote(quote);
   }, [onShareQuote]);
+
+  // Toggle actions menu (for mobile)
+  const toggleActions = useCallback((e: React.MouseEvent, quoteId: string | number) => {
+    e.stopPropagation();
+    setActiveActionsId(prev => prev === quoteId ? null : quoteId);
+  }, []);
+
+  // Handle card click - on mobile with actions shown, close actions; otherwise navigate
+  const handleCardClick = useCallback((quote: SavedQuote) => {
+    if (activeActionsId === quote.id) {
+      setActiveActionsId(null);
+    } else {
+      onQuoteClick(quote.id, quote.category, quote.custom_background);
+    }
+  }, [activeActionsId, onQuoteClick]);
 
   return (
     <div 
@@ -198,10 +215,12 @@ export default function SavedQuotesView({
                 const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
                 const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
                 
+                const isActionsVisible = activeActionsId === quote.id;
+                
                 return (
                   <div
                     key={quote.id}
-                    onClick={() => onQuoteClick(quote.id, quote.category, quote.custom_background)}
+                    onClick={() => handleCardClick(quote)}
                     className="group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm"
                   >
                     {/* Background Image */}
@@ -218,28 +237,43 @@ export default function SavedQuotesView({
                       <Bookmark size={18} className="text-amber-500 drop-shadow-lg" fill="currentColor" />
                     </div>
                     
-                    {/* Action Buttons - Shows on hover */}
-                    <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                    {/* Mobile Menu Button - Hidden when actions shown */}
+                    {!isActionsVisible && (
+                      <button
+                        onClick={(e) => toggleActions(e, quote.id)}
+                        className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm rounded-lg z-10 sm:hidden active:bg-black/50"
+                      >
+                        <MoreVertical size={14} className="text-white" />
+                      </button>
+                    )}
+                    
+                    {/* Action Buttons - Shows instantly on mobile when active, with transition on desktop hover */}
+                    <div className={`absolute top-2 left-2 flex gap-1 z-10 ${
+                      isActionsVisible 
+                        ? 'flex' 
+                        : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
+                    }`}>
                       <button
                         onClick={(e) => handleShare(e, quote)}
-                        className="p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg transition-colors"
+                        className="p-2 sm:p-1.5 bg-black/40 backdrop-blur-sm hover:bg-black/60 active:bg-black/60 rounded-lg"
                         title="Share"
                       >
-                        <Share2 size={14} className="text-white" />
+                        <Share2 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          setActiveActionsId(null);
                           handleDelete(quote.id);
                         }}
                         disabled={deletingId === quote.id}
-                        className="p-1.5 bg-red-500/50 backdrop-blur-sm hover:bg-red-500/70 rounded-lg transition-colors disabled:opacity-50"
+                        className="p-2 sm:p-1.5 bg-red-500/60 backdrop-blur-sm hover:bg-red-500/80 active:bg-red-500/80 rounded-lg disabled:opacity-50"
                         title="Remove"
                       >
                         {deletingId === quote.id ? (
-                          <Loader2 size={14} className="text-white animate-spin" />
+                          <Loader2 size={16} className="sm:w-3.5 sm:h-3.5 text-white animate-spin" />
                         ) : (
-                          <Trash2 size={14} className="text-white" />
+                          <Trash2 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
                         )}
                       </button>
                     </div>

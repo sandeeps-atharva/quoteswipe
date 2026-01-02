@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, Heart, Share2, Loader2, X, ArrowLeft } from 'lucide-react';
+import { Search, Heart, Share2, Loader2, X, ArrowLeft, MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface LikedQuote {
@@ -28,6 +28,7 @@ export default function LikedQuotesView({
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [navigatingId, setNavigatingId] = useState<string | number | null>(null);
+  const [activeActionsId, setActiveActionsId] = useState<string | number | null>(null);
 
   // Fetch liked quotes
   useEffect(() => {
@@ -64,17 +65,29 @@ export default function LikedQuotesView({
   // Handle share
   const handleShare = useCallback((e: React.MouseEvent, quote: LikedQuote) => {
     e.stopPropagation();
+    setActiveActionsId(null);
     onShareQuote(quote);
   }, [onShareQuote]);
 
+  // Toggle actions menu (for mobile)
+  const toggleActions = useCallback((e: React.MouseEvent, quoteId: string | number) => {
+    e.stopPropagation();
+    setActiveActionsId(prev => prev === quoteId ? null : quoteId);
+  }, []);
+
   // Handle quote click with loading state
   const handleQuoteClick = useCallback((quote: LikedQuote) => {
+    // On mobile with actions shown, close actions instead of navigating
+    if (activeActionsId === quote.id) {
+      setActiveActionsId(null);
+      return;
+    }
     if (navigatingId) return;
     setNavigatingId(quote.id);
     onQuoteClick(quote.id, quote.category);
     // Reset after navigation
     setTimeout(() => setNavigatingId(null), 500);
-  }, [navigatingId, onQuoteClick]);
+  }, [navigatingId, onQuoteClick, activeActionsId]);
 
   return (
     <div 
@@ -181,6 +194,8 @@ export default function LikedQuotesView({
                 const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
                 const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
                 
+                const isActionsVisible = activeActionsId === quote.id;
+                
                 return (
                   <div
                     key={quote.id}
@@ -203,14 +218,30 @@ export default function LikedQuotesView({
                       <Heart size={18} className="text-rose-500 drop-shadow-lg" fill="currentColor" />
                     </div>
                     
-                    {/* Share Button - Shows on hover */}
-                    <button
-                      onClick={(e) => handleShare(e, quote)}
-                      className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10"
-                      title="Share"
-                    >
-                      <Share2 size={14} className="text-white" />
-                    </button>
+                    {/* Mobile Menu Button - Hidden when actions shown */}
+                    {!isActionsVisible && (
+                      <button
+                        onClick={(e) => toggleActions(e, quote.id)}
+                        className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm rounded-lg z-10 sm:hidden active:bg-black/50"
+                      >
+                        <MoreVertical size={14} className="text-white" />
+                      </button>
+                    )}
+                    
+                    {/* Share Button - Shows instantly on mobile when active, with transition on desktop hover */}
+                    <div className={`absolute top-2 left-2 flex gap-1 z-10 ${
+                      isActionsVisible 
+                        ? 'flex' 
+                        : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
+                    }`}>
+                      <button
+                        onClick={(e) => handleShare(e, quote)}
+                        className="p-2 sm:p-1.5 bg-black/40 backdrop-blur-sm hover:bg-black/60 active:bg-black/60 rounded-lg"
+                        title="Share"
+                      >
+                        <Share2 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
+                      </button>
+                    </div>
                     
                     {/* Loading Overlay */}
                     {navigatingId === quote.id && (
