@@ -192,7 +192,7 @@ export default function AuthModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md" variant="gradient">
       {/* Header with Logo */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-4 sm:mb-6">
         <div className="relative inline-block">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-rose-500 rounded-2xl blur-xl opacity-30 scale-110" />
           <Image 
@@ -200,50 +200,32 @@ export default function AuthModal({
             alt="QuoteSwipe" 
             width={72}
             height={72}
-            className="relative w-16 h-16 sm:w-18 sm:h-18 mx-auto"
+            className="relative w-12 h-12 sm:w-16 sm:h-16 mx-auto"
           />
         </div>
         
-        <h2 className="mt-4 text-2xl sm:text-3xl font-bold text-stone-800 dark:text-stone-100">
+        <h2 className="mt-3 sm:mt-4 text-xl sm:text-2xl md:text-3xl font-bold text-stone-800 dark:text-stone-100">
           {authMode === 'forgot-password' 
             ? 'Reset Password' 
             : swipeCount >= 5 
               ? 'Loving the quotes?' 
               : 'Welcome Back!'}
         </h2>
-        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+        <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-stone-500 dark:text-stone-400 px-2">
           {authMode === 'forgot-password'
             ? "Enter your email and we'll send you a reset link"
             : swipeCount >= 5
               ? 'Create an account to keep swiping and save your favorites!'
               : 'Sign in to access all your saved quotes'}
         </p>
-        
-        {/* Feature Pills */}
-        {/* {authMode !== 'forgot-password' && (
-          <div className="flex flex-wrap justify-center gap-2 mt-4">
-            {features.map((feature, i) => (
-              <span 
-                key={i}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 
-                  bg-gradient-to-r from-amber-100 to-rose-100 dark:from-amber-900/30 dark:to-rose-900/30 
-                  rounded-full text-xs font-medium text-stone-600 dark:text-stone-300
-                  border border-amber-200/50 dark:border-amber-800/30"
-              >
-                <span>{feature.icon}</span>
-                {feature.text}
-              </span>
-            ))}
-          </div>
-        )} */}
       </div>
 
       {/* Auth Mode Toggle */}
       {authMode !== 'forgot-password' && (
-        <div className="flex gap-1 mb-6 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
+        <div className="flex gap-1 mb-4 sm:mb-6 p-1 bg-stone-100 dark:bg-stone-800 rounded-lg sm:rounded-xl">
           <button
             onClick={() => switchMode('login')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+            className={`flex-1 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${
               authMode === 'login'
                 ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-md shadow-orange-500/25 text-white'
                 : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
@@ -253,7 +235,7 @@ export default function AuthModal({
           </button>
           <button
             onClick={() => switchMode('register')}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+            className={`flex-1 py-2 sm:py-2.5 rounded-md sm:rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${
               authMode === 'register'
                 ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-md shadow-orange-500/25 text-white'
                 : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
@@ -266,38 +248,38 @@ export default function AuthModal({
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl">
-          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+        <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg sm:rounded-xl">
+          <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">{error}</p>
         </div>
       )}
 
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl">
+        <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg sm:rounded-xl">
           <div className="flex items-start gap-2">
-            <Check size={18} className="text-emerald-500 mt-0.5 flex-shrink-0" />
-            <p className="text-emerald-600 dark:text-emerald-400 text-sm whitespace-pre-line">{successMessage}</p>
+            <Check size={16} className="sm:w-[18px] sm:h-[18px] text-emerald-500 mt-0.5 flex-shrink-0" />
+            <p className="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm whitespace-pre-line">{successMessage}</p>
           </div>
         </div>
       )}
 
       {/* Forms */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         {/* Name Field (Register only) */}
         {authMode === 'register' && (
           <div>
-            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
+            <label className="block text-xs sm:text-sm font-medium text-stone-700 dark:text-stone-300 mb-1 sm:mb-1.5">
               Full Name
             </label>
             <div className="relative">
-              <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+              <User size={16} className="sm:w-[18px] sm:h-[18px] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                className={`w-full pl-11 pr-4 py-3 rounded-xl border-2 
+                className={`w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 text-sm sm:text-base
                   ${touched.name && validationErrors.name 
                     ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200' 
                     : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
@@ -309,25 +291,25 @@ export default function AuthModal({
               />
             </div>
             {touched.name && validationErrors.name && (
-              <p className="mt-1.5 text-xs text-red-500">{validationErrors.name}</p>
+              <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-red-500">{validationErrors.name}</p>
             )}
           </div>
         )}
 
         {/* Email Field */}
         <div>
-          <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
+          <label className="block text-xs sm:text-sm font-medium text-stone-700 dark:text-stone-300 mb-1 sm:mb-1.5">
             Email Address
           </label>
           <div className="relative">
-            <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+            <Mail size={16} className="sm:w-[18px] sm:h-[18px] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
               onBlur={handleBlur}
-              className={`w-full pl-11 pr-4 py-3 rounded-xl border-2 
+              className={`w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 text-sm sm:text-base
                 ${touched.email && validationErrors.email 
                   ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200' 
                   : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
@@ -339,25 +321,25 @@ export default function AuthModal({
             />
           </div>
           {touched.email && validationErrors.email && (
-            <p className="mt-1.5 text-xs text-red-500">{validationErrors.email}</p>
+            <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-red-500">{validationErrors.email}</p>
           )}
         </div>
 
         {/* Password Field */}
         {authMode !== 'forgot-password' && (
           <div>
-            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
+            <label className="block text-xs sm:text-sm font-medium text-stone-700 dark:text-stone-300 mb-1 sm:mb-1.5">
               Password
             </label>
             <div className="relative">
-              <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+              <Lock size={16} className="sm:w-[18px] sm:h-[18px] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
                 onBlur={handleBlur}
-                className={`w-full pl-11 pr-12 py-3 rounded-xl border-2 
+                className={`w-full pl-9 sm:pl-11 pr-10 sm:pr-12 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 text-sm sm:text-base
                   ${touched.password && validationErrors.password 
                     ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200' 
                     : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
@@ -370,17 +352,17 @@ export default function AuthModal({
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+                className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Eye size={16} className="sm:w-[18px] sm:h-[18px]" />}
               </button>
             </div>
             {touched.password && validationErrors.password && (
-              <p className="mt-1.5 text-xs text-red-500">{validationErrors.password}</p>
+              <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-red-500">{validationErrors.password}</p>
             )}
             {!validationErrors.password && authMode === 'register' && (
-              <p className="mt-1.5 text-xs text-stone-400">
+              <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-stone-400">
                 Min 8 characters with uppercase, lowercase & number
               </p>
             )}
@@ -391,21 +373,21 @@ export default function AuthModal({
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 
+          className="w-full py-2.5 sm:py-3.5 px-4 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 
             hover:from-amber-600 hover:via-orange-600 hover:to-rose-600
-            text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25
+            text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl shadow-lg shadow-orange-500/25
             hover:shadow-xl hover:shadow-orange-500/30 hover:-translate-y-0.5
             transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
             flex items-center justify-center gap-2 group"
         >
           {isLoading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <>
               {authMode === 'login' && 'Sign In'}
               {authMode === 'register' && 'Create Account'}
               {authMode === 'forgot-password' && 'Send Reset Link'}
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] group-hover:translate-x-1 transition-transform" />
             </>
           )}
         </button>
@@ -422,7 +404,7 @@ export default function AuthModal({
               setTouched({});
               setFormData({ ...formData, password: '' });
             }}
-            className="w-full text-sm text-stone-500 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            className="w-full text-xs sm:text-sm text-stone-500 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors py-1"
           >
             Forgot your password?
           </button>
@@ -439,7 +421,7 @@ export default function AuthModal({
               setTouched({});
               setFormData({ email: '', password: '', name: '' });
             }}
-            className="w-full text-sm text-stone-500 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            className="w-full text-xs sm:text-sm text-stone-500 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors py-1"
           >
             ← Back to Sign In
           </button>
@@ -448,12 +430,12 @@ export default function AuthModal({
 
       {/* Divider */}
       {authMode !== 'forgot-password' && (
-        <div className="relative my-6">
+        <div className="relative my-4 sm:my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-stone-200 dark:border-stone-700"></div>
           </div>
           <div className="relative flex justify-center">
-            <span className="px-4 bg-gradient-to-br from-white via-amber-50/30 to-rose-50/30 dark:from-stone-900 dark:via-stone-800 dark:to-stone-900 text-sm text-stone-400">
+            <span className="px-3 sm:px-4 bg-gradient-to-br from-white via-amber-50/30 to-rose-50/30 dark:from-stone-900 dark:via-stone-800 dark:to-stone-900 text-xs sm:text-sm text-stone-400">
               or continue with
             </span>
           </div>
@@ -476,7 +458,7 @@ export default function AuthModal({
 
       {/* Footer Text */}
       {authMode !== 'forgot-password' && (
-        <p className="mt-4 text-center text-xs text-stone-400">
+        <p className="mt-3 sm:mt-4 text-center text-[10px] sm:text-xs text-stone-400 px-2">
           By continuing, you agree to our{' '}
           <a href="/terms-of-service" className="text-amber-600 dark:text-amber-400 hover:underline">Terms</a>
           {' '}and{' '}

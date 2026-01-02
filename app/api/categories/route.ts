@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     // For non-authenticated users, limit to only 1 category (unless onboarding)
     let limitedCategories = categories;
     if (!isAuthenticated && !isOnboarding) {
-      limitedCategories = categories.slice(0, 1);
+      limitedCategories = categories.slice(6, 7);
     }
 
     const response = NextResponse.json(
