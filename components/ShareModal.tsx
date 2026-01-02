@@ -2115,11 +2115,20 @@ export default function ShareModal({
     const previewCard = previewRef.current?.querySelector('[data-preview-card="true"]') as HTMLElement;
     if (!previewCard) return null;
 
+    // Calculate effective pixel ratio based on zoom level
+    // When zoomed in, we need higher resolution to maintain quality
+    // Cap at reasonable maximum to prevent memory issues on mobile
+    const zoomMultiplier = Math.min(bgZoom, 2); // Cap zoom multiplier at 2x
+    const effectivePixelRatio = Math.min(
+      selectedFormat.pixelRatio * zoomMultiplier,
+      8 // Maximum pixel ratio to prevent memory issues
+    );
+
     // Quality settings based on selected format
     // Story: 1080×1920, Post: 1920×2400, Square: 1080×1080
     const imageOptions = {
       quality: 1.0,
-      pixelRatio: selectedFormat.pixelRatio,
+      pixelRatio: effectivePixelRatio,
       cacheBust: true,
       width: previewCard.offsetWidth,
       height: previewCard.offsetHeight,
@@ -2131,12 +2140,17 @@ export default function ShareModal({
     } catch {
       // Fallback with lower quality if device can't handle high resolution
       try {
-        return await toPng(previewCard, { ...imageOptions, pixelRatio: Math.max(2, selectedFormat.pixelRatio - 2) });
+        return await toPng(previewCard, { ...imageOptions, pixelRatio: Math.max(2, effectivePixelRatio - 2) });
       } catch {
-        return null;
+        // Last resort fallback
+        try {
+          return await toPng(previewCard, { ...imageOptions, pixelRatio: 2 });
+        } catch {
+          return null;
+        }
       }
     }
-  }, [selectedFormat.pixelRatio]);
+  }, [selectedFormat.pixelRatio, bgZoom]);
 
   // Get filename for download
   const getFilename = useCallback(() => {
