@@ -155,3 +155,44 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// DELETE handler for removing a dislike (used by undo functionality)
+export async function DELETE(request: NextRequest) {
+  try {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { quoteId } = await request.json();
+    if (!quoteId) {
+      return NextResponse.json(
+        { error: 'Quote ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const userDislikesCollection = await getCollection('user_dislikes');
+
+    // Remove the dislike
+    const result = await userDislikesCollection.deleteOne({
+      user_id: userId,
+      quote_id: quoteId
+    });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { message: 'Dislike not found', notFound: true },
+        { status: 200 }
+      );
+    }
+
+    return NextResponse.json({ message: 'Dislike removed' }, { status: 200 });
+  } catch (error) {
+    console.error('Remove dislike error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

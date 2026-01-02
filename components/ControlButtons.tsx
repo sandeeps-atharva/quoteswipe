@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, X, Share2, Bookmark, Sparkles } from 'lucide-react';
+import { Heart, X, Share2, Bookmark, Sparkles, Undo2 } from 'lucide-react';
 
 interface ControlButtonsProps {
   onLike: () => void;
@@ -11,6 +11,7 @@ interface ControlButtonsProps {
   canUndo: boolean;
   swipeDirection?: 'left' | 'right' | null;
   isAnimating?: boolean;
+  isUndoing?: boolean;
 }
 
 export default function ControlButtons({
@@ -18,11 +19,37 @@ export default function ControlButtons({
   onDislike,
   onSave,
   onShare,
+  onUndo,
+  canUndo,
   swipeDirection,
   isAnimating = false,
+  isUndoing = false,
 }: ControlButtonsProps) {
   return (
     <div className="flex items-center justify-center gap-2.5 sm:gap-4 px-4">
+      {/* Undo Button */}
+      <button
+        onClick={onUndo}
+        disabled={!canUndo || isUndoing}
+        className={`group relative w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-300 ${
+          !canUndo
+            ? 'bg-stone-100 dark:bg-stone-800/50 text-stone-300 dark:text-stone-600 cursor-not-allowed opacity-50'
+            : isUndoing
+            ? 'bg-gradient-to-br from-violet-500 to-purple-500 text-white scale-105 shadow-lg shadow-violet-500/40 animate-pulse'
+            : 'bg-white/90 dark:bg-stone-800/90 backdrop-blur-sm text-violet-500 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:scale-105 active:scale-95 shadow-md sm:shadow-lg border border-stone-200/50 dark:border-stone-700/50'
+        }`}
+        aria-label="Undo last swipe"
+        title={canUndo ? 'Undo last swipe' : 'No swipes to undo'}
+      >
+        <Undo2 
+          size={14} 
+          className={`sm:w-[18px] sm:h-[18px] transition-transform duration-300 ${
+            isUndoing ? 'animate-spin' : canUndo ? 'group-hover:-rotate-45' : ''
+          }`} 
+          strokeWidth={2.5}
+        />
+      </button>
+
       {/* Skip/Dislike Button */}
       <button
         onClick={onDislike}

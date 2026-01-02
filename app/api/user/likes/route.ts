@@ -156,3 +156,46 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// DELETE handler for removing a like (used by undo functionality)
+export async function DELETE(request: NextRequest) {
+  try {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { quoteId } = await request.json();
+    if (!quoteId) {
+      return NextResponse.json(
+        { error: 'Quote ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const userLikesCollection = await getCollection('user_likes');
+    const userObjId = toObjectId(userId) as any;
+    const quoteObjId = toObjectId(quoteId);
+
+    // Remove the like
+    const result = await userLikesCollection.deleteOne({
+      user_id: userObjId,
+      quote_id: quoteObjId
+    });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { message: 'Like not found', notFound: true },
+        { status: 200 }
+      );
+    }
+
+    return NextResponse.json({ message: 'Like removed' }, { status: 200 });
+  } catch (error) {
+    console.error('Remove like error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

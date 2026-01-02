@@ -28,6 +28,7 @@ interface QuoteCardProps {
   swipeDirection: 'left' | 'right' | null;
   isDragging: boolean;
   isAnimating?: boolean;
+  isUndoing?: boolean; // When true, enables smooth animation for undo
   totalQuotes: number;
   onDragStart: (e: React.MouseEvent | React.TouchEvent) => void;
   onDragMove: (e: React.MouseEvent | React.TouchEvent) => void;
@@ -86,6 +87,7 @@ function QuoteCard({
   swipeDirection,
   isDragging,
   isAnimating = false,
+  isUndoing = false,
   totalQuotes,
   onDragStart,
   onDragMove,
@@ -157,17 +159,24 @@ function QuoteCard({
   const yOffset = offset * 15;
   const zIndex = 10 - offset;
 
+  // Determine transition based on state:
+  // - During drag (isDragging && !isAnimating): no transition for responsive dragging
+  // - During undo animation (isUndoing): smooth transition for undo effect
+  // - During button press animation (isAnimating): smooth transition
+  // - Otherwise: smooth transition for card stacking
+  const shouldAnimate = isUndoing || isAnimating || !(isDragging && !isAnimating && isTopCard);
+
     return {
       transform: `translateX(${translateX}px) translateY(${translateY + yOffset}px) rotate(${rotation}deg) scale(${scale})`,
       zIndex,
       opacity: 1,
-      transition: (isDragging && !isAnimating) && isTopCard ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      transition: shouldAnimate ? 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
       userSelect: 'none' as const,
       WebkitUserSelect: 'none' as const,
       MozUserSelect: 'none' as const,
       msUserSelect: 'none' as const,
     };
-  }, [offset, isTopCard, dragOffset.x, dragOffset.y, isDragging, isAnimating]);
+  }, [offset, isTopCard, dragOffset.x, dragOffset.y, isDragging, isAnimating, isUndoing]);
 
   // Memoized card background style
   const cardStyle = useMemo(() => ({

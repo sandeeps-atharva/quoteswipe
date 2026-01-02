@@ -58,6 +58,15 @@ const ProfileView = lazy(() => import('./ProfileView'));
 const QUOTES_CACHE_DURATION = CACHE_DURATIONS.QUOTES;
 const CATEGORIES_CACHE_DURATION = CACHE_DURATIONS.CATEGORIES;
 
+// Interface for swipe history tracking (used for undo functionality)
+interface SwipeHistoryItem {
+  index: number;
+  direction: 'left' | 'right';
+  quote: Quote;
+  wasNewAction: boolean; // true if this was a new like/dislike (not already existing)
+  backgroundUrl?: string | null; // Store the background for restoration
+}
+
 export default function SwipeQuotes() {
   // Track visitor on page load
   useVisitorTracking();
@@ -100,7 +109,9 @@ export default function SwipeQuotes() {
     const cached = getFromCache<number>('currentQuoteIndex', 60 * 60 * 1000);
     return cached || 0;
   });
-  const [swipeHistory, setSwipeHistory] = useState<Array<{ index: number; direction: 'left' | 'right' }>>([]); // Track previous indices and directions
+  // Enhanced swipe history for undo functionality (supports multiple undos)
+  const [swipeHistory, setSwipeHistory] = useState<SwipeHistoryItem[]>([]);
+  const [isUndoing, setIsUndoing] = useState(false); // Animation state for undo
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false); // For programmatic animations
@@ -1397,8 +1408,22 @@ export default function SwipeQuotes() {
       }
     }
 
-    // Add current index and direction to history before moving forward
-    setSwipeHistory([...swipeHistory, { index: currentIndex, direction }]);
+    // Add current index, direction, and quote to history before moving forward
+    // This enables proper undo functionality with all necessary data
+    const alreadyLikedBefore = direction === 'right' && likedQuotes.some(q => q.id === currentQuote?.id);
+    const alreadyDislikedBefore = direction === 'left' && dislikedQuotes.some(q => q.id === currentQuote?.id);
+    const wasNewAction = direction === 'right' ? !alreadyLikedBefore : !alreadyDislikedBefore;
+    
+    if (currentQuote) {
+      const historyItem: SwipeHistoryItem = {
+        index: currentIndex,
+        direction,
+        quote: currentQuote,
+        wasNewAction,
+        backgroundUrl: getDisplayedBackgroundUrl(currentQuote),
+      };
+      setSwipeHistory(prev => [...prev, historyItem]);
+    }
 
     setSwipeDirection(direction);
     setTimeout(() => {
@@ -1419,52 +1444,95 @@ export default function SwipeQuotes() {
   };
 
   const handleUndo = async () => {
-    if (swipeHistory.length === 0) return;
+    if (swipeHistory.length === 0 || isUndoing) return;
 
-    const filteredQuotes = getFilteredQuotes();
+    setIsUndoing(true);
+    
     const lastSwipe = swipeHistory[swipeHistory.length - 1];
-    const previousIndex = lastSwipe.index;
-    const previousDirection = lastSwipe.direction;
+    const { index: previousIndex, direction: previousDirection, quote: previousQuote, wasNewAction } = lastSwipe;
     const newHistory = swipeHistory.slice(0, -1);
 
-    // Remove last liked quote if it was liked (swiped right)
-    if (lastLikedQuote && previousDirection === 'right') {
-      setLikedQuotes(likedQuotes.filter(q => q.id !== lastLikedQuote.id));
+    // Revert the like/dislike action
+    if (previousDirection === 'right' && wasNewAction) {
+      // Was a new like - remove it
+      setLikedQuotes(prev => prev.filter(q => q.id !== previousQuote.id));
       
-      // If authenticated, remove like from database
+      // Revert the likes count
+      setQuotes(prev => prev.map(q => 
+        q.id === previousQuote.id 
+          ? { ...q, likes_count: Math.max(0, (q.likes_count || 1) - 1) }
+          : q
+      ));
+      
+      // Remove like from database
       if (isAuthenticated) {
         try {
-          // Note: We'd need a DELETE endpoint for this, but for now we'll just update the UI
-          // The like will remain in DB but won't show in UI
-          // You can add DELETE /api/user/likes/:quoteId endpoint if needed
+          await fetch('/api/user/likes', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quoteId: previousQuote.id }),
+          });
         } catch (error) {
           console.error('Error removing like:', error);
         }
       }
-      setLastLikedQuote(null);
+      
+      // Clear last liked quote if it was the one being undone
+      if (lastLikedQuote?.id === previousQuote.id) {
+        setLastLikedQuote(null);
+      }
+    } else if (previousDirection === 'left' && wasNewAction) {
+      // Was a new dislike - remove it
+      setDislikedQuotes(prev => prev.filter(q => q.id !== previousQuote.id));
+      
+      // Revert the dislikes count
+      setQuotes(prev => prev.map(q => 
+        q.id === previousQuote.id 
+          ? { ...q, dislikes_count: Math.max(0, (q.dislikes_count || 1) - 1) }
+          : q
+      ));
+      
+      // Remove dislike from database
+      if (isAuthenticated) {
+        try {
+          await fetch('/api/user/dislikes', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quoteId: previousQuote.id }),
+          });
+        } catch (error) {
+          console.error('Error removing dislike:', error);
+        }
+      }
     }
 
     // Decrement swipe count
     if (!isAuthenticated && swipeCount > 0) {
-      setSwipeCount(swipeCount - 1);
+      setSwipeCount(prev => prev - 1);
     } else if (isAuthenticated && authenticatedSwipeCount > 0) {
-      setAuthenticatedSwipeCount(authenticatedSwipeCount - 1);
+      setAuthenticatedSwipeCount(prev => prev - 1);
     }
 
-    // Animate undo with reverse swipe direction
-    // If swiped right, card comes back from right
-    // If swiped left, card comes back from left
-    const reverseDirection = previousDirection === 'right' ? 'right' : 'left';
-    setSwipeDirection(reverseDirection);
-    const offsetX = previousDirection === 'right' ? 200 : -200;
-    setDragOffset({ x: offsetX, y: 0 });
+    // Step 1: Set current index to the previous quote (it will be off-screen)
+    setCurrentIndex(previousIndex);
     
+    // Step 2: Position the card off-screen in the direction it was swiped
+    // Card comes back FROM where it went TO
+    const startOffsetX = previousDirection === 'right' ? 400 : -400;
+    setDragOffset({ x: startOffsetX, y: 0 });
+    setSwipeDirection(previousDirection);
+    
+    // Step 3: After a brief moment, animate the card back to center
     setTimeout(() => {
-      setCurrentIndex(previousIndex);
-      setSwipeHistory(newHistory);
       setDragOffset({ x: 0, y: 0 });
-      setSwipeDirection(null);
-    }, 300);
+      
+      // Step 4: Clear direction after animation completes
+      setTimeout(() => {
+        setSwipeDirection(null);
+        setSwipeHistory(newHistory);
+        setIsUndoing(false);
+      }, 350);
+    }, 50);
   };
 
   const handleLike = () => {
@@ -2339,6 +2407,7 @@ export default function SwipeQuotes() {
                       swipeDirection={swipeDirection}
                       isDragging={isDragging}
                       isAnimating={isAnimating}
+                      isUndoing={isUndoing}
                       totalQuotes={filteredQuotes.length}
                       onDragStart={handleDragStart}
                       onDragMove={handleDragMove}
@@ -2358,6 +2427,7 @@ export default function SwipeQuotes() {
               onShare={handleShare}
               onUndo={handleUndo}
               canUndo={swipeHistory.length > 0}
+              isUndoing={isUndoing}
               swipeDirection={isDragging && !isAnimating ? swipeDirection : null}
               isAnimating={isDragging && !isAnimating && Math.abs(dragOffset.x) > (isMobile ? 30 : 50)}
             />
