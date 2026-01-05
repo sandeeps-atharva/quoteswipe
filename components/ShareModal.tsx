@@ -6,6 +6,7 @@ import { toPng } from 'html-to-image';
 import { isQuotePublic } from '@/lib/helpers';
 import Image from 'next/image';
 import { CardTheme, FontStyle, BackgroundImage, DEFAULT_THEME, DEFAULT_FONT, BACKGROUND_IMAGES, FONT_STYLES } from '@/lib/constants';
+import QuoteReelModal from './QuoteReelModal';
 
 // ============================================================================
 // Types & Interfaces
@@ -1866,11 +1867,28 @@ interface ShareOptionsGridProps {
   onInstagram: () => void;
   onWhatsApp: () => void;
   onPinterest: () => void;
+  onCreateReel: () => void;
 }
 
-function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, onPinterest }: ShareOptionsGridProps) {
+// Film icon for Reel
+function FilmIcon({ className }: { className?: string }) {
   return (
-    <div className="grid grid-cols-4 gap-2 sm:gap-3">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect width="18" height="18" x="3" y="3" rx="2"/>
+      <path d="M7 3v18"/>
+      <path d="M3 7.5h4"/>
+      <path d="M3 12h18"/>
+      <path d="M3 16.5h4"/>
+      <path d="M17 3v18"/>
+      <path d="M17 7.5h4"/>
+      <path d="M17 16.5h4"/>
+    </svg>
+  );
+}
+
+function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, onPinterest, onCreateReel }: ShareOptionsGridProps) {
+  return (
+    <div className="grid grid-cols-5 gap-2 sm:gap-3">
       <ShareButton
         onClick={onDownload}
         disabled={isGenerating}
@@ -1912,6 +1930,16 @@ function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, o
         shadowColor="shadow-red-500/20 group-hover:shadow-red-500/40"
         icon={<PinterestIcon className="sm:w-6 sm:h-6 text-white" />}
         label="Pinterest"
+      />
+
+      <ShareButton
+        onClick={onCreateReel}
+        disabled={isGenerating}
+        gradient="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/50 dark:to-purple-950/50"
+        iconBg="bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500"
+        shadowColor="shadow-violet-500/20 group-hover:shadow-violet-500/40"
+        icon={<FilmIcon className="sm:w-6 sm:h-6 text-white" />}
+        label="Reel"
       />
     </div>
   );
@@ -1964,6 +1992,9 @@ export default function ShareModal({
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
+  
+  // Reel modal state
+  const [showReelModal, setShowReelModal] = useState(false);
   const [showTextFormatControl, setShowTextFormatControl] = useState(false);
   
   // Edited quote text (with line breaks)
@@ -2742,6 +2773,7 @@ export default function ShareModal({
             onInstagram={handleInstagramShare}
             onWhatsApp={handleWhatsAppShare}
             onPinterest={handlePinterestShare}
+            onCreateReel={() => setShowReelModal(true)}
           />
 
           {/* More Options */}
@@ -2755,6 +2787,18 @@ export default function ShareModal({
           </button>
           </div>
         </div>
+
+      {/* Quote Reel Modal */}
+      <QuoteReelModal
+        isOpen={showReelModal}
+        onClose={() => setShowReelModal(false)}
+        quote={{
+          id: quote.id,
+          text: quote.text,
+          author: quote.author,
+          category: quote.category,
+        }}
+      />
     </div>
   );
 }
