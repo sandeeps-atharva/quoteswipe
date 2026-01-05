@@ -138,8 +138,8 @@ export default function QuoteReelModal({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const animationFrameRef = useRef<number>();
-  const playIntervalRef = useRef<NodeJS.Timeout>();
+  const animationFrameRef = useRef<number | null>(null);
+  const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate total duration
   const totalDuration = images.length * settings.duration;
