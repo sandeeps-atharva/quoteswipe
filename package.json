@@ -9,8 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@ffmpeg/ffmpeg": "^0.12.15",
-    "@ffmpeg/util": "^0.12.2",
     "@google-cloud/translate": "^9.3.0",
     "@react-oauth/google": "^0.12.2",
     "@types/nodemailer": "^7.0.4",
