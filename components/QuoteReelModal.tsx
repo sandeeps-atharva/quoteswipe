@@ -4,6 +4,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Plus, Trash2, Play, Pause, Download, Loader2, Film, Image as ImageIcon, Sparkles, ChevronLeft, ChevronRight, Check, Type, AlignLeft, AlignCenter, AlignRight, Eye, EyeOff, Minus, MoveUp, MoveDown, MoveLeft, MoveRight, Bold, Italic, Underline, RotateCcw, Video, ImagePlus, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { FONT_STYLES, FontStyle } from '@/lib/constants';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 // ============================================================================
 // Types & Interfaces
@@ -195,6 +197,11 @@ export default function QuoteReelModal({
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  
+  // FFmpeg state
+  const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
+  const [ffmpegLoading, setFfmpegLoading] = useState(false);
+  const ffmpegRef = useRef<FFmpeg | null>(null);
 
   // Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -378,6 +385,32 @@ export default function QuoteReelModal({
       }
     }
   }, [isVideoPlaying, uploadedVideo]);
+
+  // Load FFmpeg
+  const loadFFmpeg = useCallback(async () => {
+    if (ffmpegLoaded || ffmpegLoading) return ffmpegRef.current;
+    
+    setFfmpegLoading(true);
+    try {
+      const ffmpeg = new FFmpeg();
+      ffmpegRef.current = ffmpeg;
+      
+      // Load FFmpeg with CORS-enabled URLs
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+      
+      setFfmpegLoaded(true);
+      setFfmpegLoading(false);
+      return ffmpeg;
+    } catch (error) {
+      console.error('Failed to load FFmpeg:', error);
+      setFfmpegLoading(false);
+      throw error;
+    }
+  }, [ffmpegLoaded, ffmpegLoading]);
 
   // Remove image
   const removeImage = useCallback((index: number) => {
@@ -611,238 +644,206 @@ export default function QuoteReelModal({
     ctx.shadowBlur = 0;
   }, [images, settings.transition, textSettings, customQuoteText]);
 
-  // Generate video from uploaded video with text overlay
-  // Keeps SAME dimensions and duration as uploaded video
+  // Generate video from uploaded video with text overlay using FFmpeg
+  // Keeps SAME dimensions, duration and quality as uploaded video - NO LAG
   const generateVideoFromUpload = useCallback(async () => {
     if (!uploadedVideo || !uploadedVideoFile) return;
 
     setIsGenerating(true);
     setGenerationProgress(0);
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
     try {
-      // Pre-load logo image ONCE before starting
-      let logoImg: HTMLImageElement | null = null;
-      try {
-        logoImg = await loadImage('/logo.svg');
-      } catch (e) {
-        console.warn('Could not load logo, will use fallback');
+      // Step 1: Load FFmpeg
+      setGenerationProgress(5);
+      const ffmpeg = await loadFFmpeg();
+      if (!ffmpeg) {
+        throw new Error('Failed to load FFmpeg');
       }
 
-      // Create video element for source
+      // Step 2: Get video dimensions
+      setGenerationProgress(10);
       const sourceVideo = document.createElement('video');
       sourceVideo.src = uploadedVideo;
       sourceVideo.muted = true;
-      sourceVideo.playsInline = true;
       sourceVideo.preload = 'auto';
       
       await new Promise<void>((resolve, reject) => {
-        sourceVideo.onloadeddata = () => resolve();
+        sourceVideo.onloadedmetadata = () => resolve();
         sourceVideo.onerror = () => reject(new Error('Failed to load video'));
         sourceVideo.load();
       });
 
-      // USE ORIGINAL VIDEO DIMENSIONS - keeps same quality as uploaded
       const videoWidth = sourceVideo.videoWidth;
       const videoHeight = sourceVideo.videoHeight;
-      const actualDuration = sourceVideo.duration;
-      
-      // Set canvas to EXACT video dimensions
-      canvas.width = videoWidth;
-      canvas.height = videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
 
-      // Pre-calculate text settings based on video dimensions
+      // Step 3: Create overlay image (transparent PNG with text + logo)
+      setGenerationProgress(20);
+      const overlayCanvas = document.createElement('canvas');
+      overlayCanvas.width = videoWidth;
+      overlayCanvas.height = videoHeight;
+      const ctx = overlayCanvas.getContext('2d');
+      if (!ctx) throw new Error('Failed to get canvas context');
+
+      // Make canvas transparent
+      ctx.clearRect(0, 0, videoWidth, videoHeight);
+
+      // Draw text overlay if enabled
       const displayQuoteText = customQuoteText.trim();
-      const baseFontSize = Math.floor(videoWidth * 0.045);
-      const fontSize = Math.floor(baseFontSize * (textSettings.fontSize / 100));
-      const fontWeight = textSettings.isBold ? '700' : '600';
-      const fontStyle = textSettings.isItalic ? 'italic' : 'normal';
-      const fontString = `${fontStyle} ${fontWeight} ${fontSize}px "${textSettings.fontFamily}", serif`;
-      const maxTextWidth = videoWidth * 0.85;
-      const lineHeight = fontSize * 1.5;
+      if (textSettings.showQuote && displayQuoteText) {
+        // Draw gradient overlay
+        const gradient = ctx.createLinearGradient(0, 0, 0, videoHeight);
+        gradient.addColorStop(0, 'rgba(0,0,0,0.3)');
+        gradient.addColorStop(0.4, 'rgba(0,0,0,0.1)');
+        gradient.addColorStop(0.6, 'rgba(0,0,0,0.1)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, videoWidth, videoHeight);
 
-      let baseTextY: number;
-      switch (textSettings.position) {
-        case 'top': baseTextY = videoHeight * 0.25; break;
-        case 'bottom': baseTextY = videoHeight * 0.70; break;
-        default: baseTextY = videoHeight * 0.45;
-      }
+        // Calculate text position
+        const baseFontSize = Math.floor(videoWidth * 0.045);
+        const fontSize = Math.floor(baseFontSize * (textSettings.fontSize / 100));
+        const fontWeight = textSettings.isBold ? '700' : '600';
+        const fontStyle = textSettings.isItalic ? 'italic' : 'normal';
+        ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${textSettings.fontFamily}", serif`;
+        ctx.fillStyle = textSettings.textColor;
 
-      let baseTextX: number;
-      let textAlignValue: CanvasTextAlign;
-      switch (textSettings.alignment) {
-        case 'left':
-          textAlignValue = 'left';
-          baseTextX = videoWidth * 0.08;
-          break;
-        case 'right':
-          textAlignValue = 'right';
-          baseTextX = videoWidth * 0.92;
-          break;
-        default:
-          textAlignValue = 'center';
-          baseTextX = videoWidth / 2;
-      }
-
-      const textX = baseTextX + (textSettings.offsetX / 100) * videoWidth;
-      const textY = baseTextY + (textSettings.offsetY / 100) * videoHeight;
-
-      // Pre-calculate logo dimensions - MATCH PREVIEW EXACTLY
-      // Preview: 240px width, logo=16px (6.67%), text=9px (3.75%), padding=12px (5%)
-      const logoSize = Math.floor(videoWidth * 0.0667);  // 16/240 = 6.67%
-      const logoFontSize = Math.floor(videoWidth * 0.0375);  // 9/240 = 3.75%
-      const paddingX = Math.floor(videoWidth * 0.05);  // 12/240 = 5%
-      const paddingY = Math.floor(videoHeight * 0.028);  // 12/426 = 2.8%
-      const gapSize = Math.floor(videoWidth * 0.025);  // 6/240 = 2.5%
-
-      // Calculate bitrate based on video dimensions (higher quality)
-      const bitrate = Math.max(8000000, videoWidth * videoHeight * 8);
-
-      // Create MediaRecorder with high bitrate to match original quality
-      const stream = canvas.captureStream(30);
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: bitrate,
-      });
-
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `quote-video-${videoWidth}x${videoHeight}-${Date.now()}.webm`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        setIsGenerating(false);
-        setGenerationProgress(100);
-      };
-
-      // Draw overlays function - called every frame
-      const drawOverlays = () => {
-        // Draw text overlay if enabled
-        if (textSettings.showQuote && displayQuoteText) {
-          // Draw overlay gradient
-          const gradient = ctx.createLinearGradient(0, 0, 0, videoHeight);
-          gradient.addColorStop(0, 'rgba(0,0,0,0.3)');
-          gradient.addColorStop(0.4, 'rgba(0,0,0,0.1)');
-          gradient.addColorStop(0.6, 'rgba(0,0,0,0.1)');
-          gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
-          ctx.fillStyle = gradient;
-          ctx.fillRect(0, 0, videoWidth, videoHeight);
-
-          // Draw text
-          ctx.textAlign = textAlignValue;
-          ctx.textBaseline = 'middle';
-          ctx.font = fontString;
-          ctx.fillStyle = textSettings.textColor;
-
-          if (textSettings.shadowEnabled) {
-            ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 2;
-            ctx.shadowOffsetY = 2;
-          } else {
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-          }
-
-          wrapText(ctx, displayQuoteText, textX, textY, maxTextWidth, lineHeight);
-          ctx.shadowColor = 'transparent';
-          ctx.shadowBlur = 0;
+        let baseTextY: number;
+        switch (textSettings.position) {
+          case 'top': baseTextY = videoHeight * 0.25; break;
+          case 'bottom': baseTextY = videoHeight * 0.70; break;
+          default: baseTextY = videoHeight * 0.45;
         }
 
-        // Draw logo watermark - MATCH PREVIEW EXACTLY (no background pill, just logo + text)
-        ctx.font = `600 ${logoFontSize}px "Arial", sans-serif`;
-        const textWidthLogo = ctx.measureText('QuoteSwipe').width;
-        
-        // Position from bottom-right corner (same as preview: bottom-3 right-3)
-        const logoX = videoWidth - paddingX - textWidthLogo - gapSize - logoSize;
-        const logoY = videoHeight - paddingY - logoSize;
-        
-        // Draw logo
-        if (logoImg) {
-          ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-        } else {
-          ctx.fillStyle = 'rgba(255,255,255,0.9)';
-          ctx.beginPath();
-          ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
-          ctx.fill();
+        let baseTextX: number;
+        switch (textSettings.alignment) {
+          case 'left':
+            ctx.textAlign = 'left';
+            baseTextX = videoWidth * 0.08;
+            break;
+          case 'right':
+            ctx.textAlign = 'right';
+            baseTextX = videoWidth * 0.92;
+            break;
+          default:
+            ctx.textAlign = 'center';
+            baseTextX = videoWidth / 2;
         }
 
-        // Draw "QuoteSwipe" text (right of logo with gap, vertically centered with logo)
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx.textAlign = 'left';
+        const textX = baseTextX + (textSettings.offsetX / 100) * videoWidth;
+        const textY = baseTextY + (textSettings.offsetY / 100) * videoHeight;
+
         ctx.textBaseline = 'middle';
-        ctx.fillText('QuoteSwipe', logoX + logoSize + gapSize, logoY + logoSize / 2);
-      };
 
-      // Real-time playback method - plays video and captures frames in real-time
-      // This preserves the original video timing exactly
-      return new Promise<void>((resolve) => {
-        let isRecording = true;
-        let lastProgressUpdate = 0;
+        if (textSettings.shadowEnabled) {
+          ctx.shadowColor = 'rgba(0,0,0,0.5)';
+          ctx.shadowBlur = 10;
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+        }
 
-        const renderLoop = () => {
-          if (!isRecording) return;
+        const maxTextWidth = videoWidth * 0.85;
+        const lineHeight = fontSize * 1.5;
+        wrapText(ctx, displayQuoteText, textX, textY, maxTextWidth, lineHeight);
+        
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+      }
 
-          // Draw current video frame at full size (no scaling)
-          ctx.drawImage(sourceVideo, 0, 0, videoWidth, videoHeight);
-          
-          // Draw overlays on top
-          drawOverlays();
+      // Draw logo watermark - MATCH PREVIEW EXACTLY
+      const logoSize = Math.floor(videoWidth * 0.0667);
+      const logoFontSize = Math.floor(videoWidth * 0.0375);
+      const paddingX = Math.floor(videoWidth * 0.05);
+      const paddingY = Math.floor(videoHeight * 0.028);
+      const gapSize = Math.floor(videoWidth * 0.025);
 
-          // Update progress
-          const progress = Math.floor((sourceVideo.currentTime / actualDuration) * 100);
-          if (progress !== lastProgressUpdate) {
-            lastProgressUpdate = progress;
-            setGenerationProgress(progress);
-          }
+      ctx.font = `600 ${logoFontSize}px "Arial", sans-serif`;
+      const textWidthLogo = ctx.measureText('QuoteSwipe').width;
+      const logoX = videoWidth - paddingX - textWidthLogo - gapSize - logoSize;
+      const logoY = videoHeight - paddingY - logoSize;
 
-          // Continue loop
-          requestAnimationFrame(renderLoop);
-        };
+      // Load and draw logo
+      try {
+        const logoImg = await loadImage('/logo.svg');
+        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+      } catch {
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath();
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
-        // When video ends, stop recording
-        sourceVideo.onended = () => {
-          isRecording = false;
-          mediaRecorder.stop();
-          resolve();
-        };
+      // Draw "QuoteSwipe" text
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('QuoteSwipe', logoX + logoSize + gapSize, logoY + logoSize / 2);
 
-        // Start recording and playback
-        mediaRecorder.start(100);
-        sourceVideo.currentTime = 0;
-        sourceVideo.play().then(() => {
-          renderLoop();
-        }).catch((error) => {
-          console.error('Failed to play video:', error);
-          setIsGenerating(false);
-          setVideoError('Failed to play video for processing.');
-          resolve();
-        });
+      // Step 4: Convert overlay to PNG blob
+      setGenerationProgress(30);
+      const overlayBlob = await new Promise<Blob>((resolve, reject) => {
+        overlayCanvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Failed to create overlay image'));
+        }, 'image/png');
       });
+
+      // Step 5: Write files to FFmpeg virtual filesystem
+      setGenerationProgress(40);
+      const videoData = await fetchFile(uploadedVideoFile);
+      const overlayData = new Uint8Array(await overlayBlob.arrayBuffer());
+      
+      await ffmpeg.writeFile('input.mp4', videoData);
+      await ffmpeg.writeFile('overlay.png', overlayData);
+
+      // Step 6: Set up progress tracking
+      ffmpeg.on('progress', ({ progress }) => {
+        // FFmpeg progress is 0-1, map to 50-95 range
+        setGenerationProgress(Math.floor(50 + progress * 45));
+      });
+
+      // Step 7: Process video with FFmpeg - overlay PNG on video
+      setGenerationProgress(50);
+      await ffmpeg.exec([
+        '-i', 'input.mp4',           // Input video
+        '-i', 'overlay.png',          // Overlay image
+        '-filter_complex', '[0:v][1:v]overlay=0:0',  // Overlay at position 0,0
+        '-c:a', 'copy',               // Copy audio without re-encoding
+        '-c:v', 'libx264',            // Use H.264 codec (widely supported)
+        '-preset', 'fast',            // Fast encoding
+        '-crf', '18',                 // High quality (lower = better, 18-23 is good)
+        '-movflags', '+faststart',    // Optimize for web playback
+        'output.mp4'                  // Output file
+      ]);
+
+      // Step 8: Read output and download
+      setGenerationProgress(95);
+      const outputData = await ffmpeg.readFile('output.mp4');
+      // Convert to Blob - outputData is Uint8Array
+      const outputBlob = new Blob([new Uint8Array(outputData as Uint8Array)], { type: 'video/mp4' });
+      const outputUrl = URL.createObjectURL(outputBlob);
+
+      const a = document.createElement('a');
+      a.href = outputUrl;
+      a.download = `quote-video-${videoWidth}x${videoHeight}-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(outputUrl);
+
+      // Clean up FFmpeg files
+      await ffmpeg.deleteFile('input.mp4');
+      await ffmpeg.deleteFile('overlay.png');
+      await ffmpeg.deleteFile('output.mp4');
+
+      setGenerationProgress(100);
+      setIsGenerating(false);
 
     } catch (error) {
       console.error('Video generation error:', error);
       setIsGenerating(false);
       setVideoError('Failed to generate video. Please try again.');
     }
-  }, [uploadedVideo, uploadedVideoFile, textSettings, customQuoteText]);
+  }, [uploadedVideo, uploadedVideoFile, textSettings, customQuoteText, loadFFmpeg]);
 
   // Generate video from images
   const generateVideo = useCallback(async () => {
