@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Copy, Check, ChevronUp, ThumbsDown, Loader2 } from 'lucide-react';
+import { Heart, Send, Bookmark, MoreHorizontal, Copy, Check, ChevronUp, ThumbsDown, Loader2, Sparkles, Quote as QuoteIcon, Palette } from 'lucide-react';
 import { BackgroundImage, FontStyle, CardTheme, getRandomBackgroundForQuote } from '@/lib/constants';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -11,34 +11,53 @@ interface TranslatableQuoteProps {
   text: string;
   fontStyle: FontStyle;
   textColor: string;
+  textLength: number;
 }
 
-const TranslatableQuote = memo(function TranslatableQuote({ text, fontStyle, textColor }: TranslatableQuoteProps) {
+const TranslatableQuote = memo(function TranslatableQuote({ text, fontStyle, textColor, textLength }: TranslatableQuoteProps) {
   const { translatedText, isLoading: isTranslating } = useTranslation({ text, enabled: true });
   const { isOriginal } = useLanguage();
   
   const displayText = translatedText || text;
   
+  // Dynamic font size based on text length
+  const getFontSize = () => {
+    if (textLength <= 80) return 'text-2xl sm:text-3xl';
+    if (textLength <= 150) return 'text-xl sm:text-2xl';
+    if (textLength <= 250) return 'text-lg sm:text-xl';
+    return 'text-base sm:text-lg';
+  };
+  
   return (
-    <div className="text-center max-w-[90%]">
+    <div className="text-center px-6 sm:px-8">
       {/* Translation indicator */}
       {!isOriginal && isTranslating && (
-        <div className="flex items-center justify-center gap-1.5 mb-3">
-          <Loader2 size={14} className="animate-spin" style={{ color: textColor }} />
-          <span className="text-xs font-medium" style={{ color: textColor, opacity: 0.8 }}>
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <Loader2 size={16} className="animate-spin" style={{ color: textColor }} />
+          <span className="text-sm font-medium" style={{ color: textColor, opacity: 0.8 }}>
             Translating...
           </span>
         </div>
       )}
+      
+      {/* Opening quote mark */}
+      <QuoteIcon 
+        size={28} 
+        className="mx-auto mb-4 opacity-40 rotate-180" 
+        style={{ color: textColor }}
+        fill="currentColor"
+      />
+      
       <p
-        className={`text-xl sm:text-2xl leading-relaxed font-medium transition-opacity duration-200 ${isTranslating ? 'opacity-40' : 'opacity-100'}`}
+        className={`${getFontSize()} leading-relaxed font-medium transition-opacity duration-200 ${isTranslating ? 'opacity-40' : 'opacity-100'}`}
         style={{
           fontFamily: fontStyle.fontFamily,
           color: textColor,
-          textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+          textShadow: '0 2px 12px rgba(0,0,0,0.4)',
+          lineHeight: 1.6,
         }}
       >
-        "{displayText}"
+        {displayText}
       </p>
     </div>
   );
@@ -66,6 +85,7 @@ interface FeedViewProps {
   onDislike: (quoteId: string | number) => void;
   onSave: (quoteId: string | number) => void;
   onShare: (quote: Quote) => void;
+  onEditBackground?: (quote: Quote) => void;
   cardTheme: CardTheme;
   fontStyle: FontStyle;
   backgroundImage: BackgroundImage;
@@ -84,6 +104,7 @@ export default function FeedView({
   onDislike,
   onSave,
   onShare,
+  onEditBackground,
   cardTheme,
   fontStyle,
   backgroundImage,
@@ -97,7 +118,6 @@ export default function FeedView({
   const [likeAnimationId, setLikeAnimationId] = useState<string | number | null>(null);
   const [visibleCount, setVisibleCount] = useState(10);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [expandedQuotes, setExpandedQuotes] = useState<Set<string | number>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const lastTapRef = useRef<{ id: string | number; time: number } | null>(null);
@@ -214,33 +234,17 @@ export default function FeedView({
     setTimeout(() => setLikeAnimationId(null), 300);
   };
 
-  const toggleExpand = (quoteId: string | number) => {
-    setExpandedQuotes(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(quoteId)) {
-        newSet.delete(quoteId);
-      } else {
-        newSet.add(quoteId);
-      }
-      return newSet;
-    });
-  };
-
   // Get background for quote
-  // Priority: 1. Target quote custom BG, 2. User-selected global BG, 3. Random BG
   const getQuoteBackground = (quoteId: string | number): BackgroundImage => {
-    // First priority: target quote with custom background (from saved quotes)
     const isTargetQuote = targetQuoteId && String(quoteId) === String(targetQuoteId);
     if (isTargetQuote && targetQuoteBackground) {
       return targetQuoteBackground;
     }
     
-    // Second priority: user has selected a background image
     if (backgroundImage && backgroundImage.id !== 'none' && backgroundImage.url) {
       return backgroundImage;
     }
     
-    // Third priority: use seeded random background based on quote ID
     return getRandomBackgroundForQuote(quoteId);
   };
 
@@ -252,7 +256,7 @@ export default function FeedView({
         return { background: bg.url };
       }
       return {
-        backgroundImage: `${bg.overlay || ''}, url(${bg.url})`,
+        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%), url(${bg.url})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       };
@@ -266,19 +270,14 @@ export default function FeedView({
     return count.toString();
   };
 
-  const getTimeAgo = (index: number): string => {
-    const times = ['Just now', '2m', '5m', '15m', '30m', '1h', '2h', '3h', '5h', '8h', '12h', '1d', '2d', '3d', '1w'];
-    return times[index % times.length];
-  };
-
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 top-16 bottom-16 overflow-y-auto overscroll-contain bg-[#FFFBF7] dark:bg-[#0C0A09]"
+      className="fixed inset-0 top-16 bottom-16 overflow-y-auto overscroll-contain bg-gradient-to-b from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900"
       style={{ WebkitOverflowScrolling: 'touch' }}
     >
       {/* Feed Container */}
-      <div className="max-w-[470px] mx-auto">
+      <div className="max-w-[500px] mx-auto px-3 sm:px-4 py-4 space-y-5">
         {visibleQuotes.map((quote, index) => {
           const isLiked = likedQuoteIds.has(quote.id) || likedQuoteIds.has(String(quote.id));
           const isDisliked = dislikedQuoteIds.has(quote.id) || dislikedQuoteIds.has(String(quote.id));
@@ -286,7 +285,6 @@ export default function FeedView({
           const isCopied = copiedId === quote.id;
           const showHeartAnimation = doubleTapId === quote.id;
           const showLikeAnimation = likeAnimationId === quote.id;
-          const isExpanded = expandedQuotes.has(quote.id);
           const isTargetQuote = targetQuoteId && String(quote.id) === String(targetQuoteId);
           const quoteBg = getQuoteBackground(quote.id);
           const likesCount = quote.likes_count || 0;
@@ -294,113 +292,146 @@ export default function FeedView({
           return (
             <article
               key={`${quote.id}-${index}`}
-              className={`bg-[#FFFBF7] dark:bg-[#0C0A09] border-b border-stone-200 dark:border-stone-800 ${isTargetQuote ? 'ring-1 ring-amber-500/30' : ''}`}
+              className={`group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 ${
+                isTargetQuote ? 'ring-2 ring-amber-500/50 ring-offset-2 ring-offset-stone-50 dark:ring-offset-stone-950' : ''
+              }`}
             >
-              {/* Post Header - Instagram Style */}
-              <div className="flex items-center justify-between px-3 py-2.5">
-                <div className="flex items-center gap-3">
-                  {/* Avatar with gradient ring */}
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-rose-600 p-[2px]">
-                      <div className="w-full h-full rounded-full bg-white dark:bg-stone-900 flex items-center justify-center text-lg">
-                        {quote.category_icon || '💭'}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Username & Location */}
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-stone-900 dark:text-white leading-tight">
-                      {quote.category.toLowerCase().replace(/\s+/g, '_')}
-                    </span>
-                    <span className="text-xs text-stone-500 dark:text-stone-400">
-                      {quote.author}
-                    </span>
-                  </div>
-                </div>
-                {/* More Options */}
-                <button className="p-2 -mr-2 text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300 transition-colors">
-                  <MoreHorizontal size={20} />
-                </button>
-              </div>
-
-              {/* Post Image/Content */}
+              {/* Main Card Content */}
               <div 
-                className="relative aspect-square cursor-pointer select-none"
+                className="relative aspect-[4/5] cursor-pointer select-none"
                 onClick={() => handleDoubleTap(quote)}
               >
                 {/* Background */}
                 <div 
-                  className="absolute inset-0"
+                  className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
                   style={getBackgroundStyle(quote.id)}
                 />
                 
-                {/* Quote Content */}
-                <div className="absolute inset-0 flex items-center justify-center p-8">
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/30" />
+                
+                {/* Top Bar - Category & Actions */}
+                <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10">
+                  {/* Category Badge */}
+                  <div className="flex items-center gap-2 bg-white/20 dark:bg-black/30 backdrop-blur-md rounded-full pl-1.5 pr-3 py-1.5 border border-white/20">
+                    <div className="w-7 h-7 rounded-full bg-white/90 dark:bg-stone-800 flex items-center justify-center text-sm shadow-sm">
+                      {quote.category_icon || '💭'}
+                    </div>
+                    <span className="text-xs font-semibold text-white drop-shadow-lg">
+                      {quote.category}
+                    </span>
+                  </div>
+                  
+                  {/* More Options */}
+                  <button className="w-9 h-9 rounded-full bg-white/20 dark:bg-black/30 backdrop-blur-md flex items-center justify-center border border-white/20 text-white hover:bg-white/30 transition-colors">
+                    <MoreHorizontal size={18} />
+                  </button>
+                </div>
+                
+                {/* Quote Content - Centered */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <TranslatableQuote 
                     text={quote.text}
                     fontStyle={fontStyle}
                     textColor={quoteBg.textColor || '#ffffff'}
+                    textLength={quote.text.length}
                   />
+                </div>
+                
+                {/* Author Badge - Bottom */}
+                <div className="absolute bottom-20 left-0 right-0 flex justify-center">
+                  <div className="bg-white/20 dark:bg-black/30 backdrop-blur-md rounded-full px-4 py-2 border border-white/20">
+                    <span className="text-sm font-medium text-white drop-shadow-lg">
+                      — {quote.author}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Double-tap Heart Animation */}
                 {showHeartAnimation && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                    <Heart
-                      size={100}
-                      className="text-rose-500 fill-rose-500 drop-shadow-2xl"
-                      style={{
-                        animation: 'heartBurst 0.8s ease-out forwards',
-                      }}
-                    />
+                    <div className="relative">
+                      <Heart
+                        size={120}
+                        className="text-rose-500 fill-rose-500 drop-shadow-2xl"
+                        style={{
+                          animation: 'heartBurst 0.8s ease-out forwards',
+                        }}
+                      />
+                      <Sparkles 
+                        size={40} 
+                        className="absolute -top-4 -right-4 text-yellow-400"
+                        style={{ animation: 'sparkle 0.6s ease-out forwards' }}
+                      />
+                      <Sparkles 
+                        size={30} 
+                        className="absolute -bottom-2 -left-6 text-pink-400"
+                        style={{ animation: 'sparkle 0.7s ease-out 0.1s forwards' }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Action Buttons - Instagram Style */}
-              <div className="px-3 pt-2">
-                <div className="flex items-center justify-between">
+              {/* Action Bar - Glassmorphism */}
+              <div className="absolute bottom-0 left-0 right-0 bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border-t border-white/30 dark:border-stone-700/50">
+                <div className="flex items-center justify-between px-2 py-2">
                   {/* Left Actions */}
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center">
                     {/* Like */}
                     <button
                       onClick={(e) => handleLikeWithAnimation(quote, e)}
-                      className="p-1 transition-transform active:scale-75"
+                      className={`group/btn flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all duration-300 ${
+                        isLiked 
+                          ? 'bg-rose-100 dark:bg-rose-950/50' 
+                          : 'hover:bg-stone-100 dark:hover:bg-stone-800'
+                      }`}
                     >
                       <Heart
-                        size={26}
-                        className={`transition-all duration-200 ${
+                        size={22}
+                        className={`transition-all duration-300 ${
                           isLiked 
                             ? 'text-rose-500 fill-rose-500' 
-                            : 'text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300'
+                            : 'text-stone-600 dark:text-stone-300 group-hover/btn:text-rose-500'
                         } ${showLikeAnimation ? 'scale-125' : 'scale-100'}`}
                       />
+                      {likesCount > 0 && (
+                        <span className={`text-sm font-semibold ${
+                          isLiked ? 'text-rose-600 dark:text-rose-400' : 'text-stone-600 dark:text-stone-300'
+                        }`}>
+                          {formatCount(likesCount)}
+                        </span>
+                      )}
                     </button>
 
-                    {/* Dislike */}
+                    {/* Skip/Dislike */}
                     <button
                       onClick={(e) => handleAction(() => onDislike(quote.id), e)}
-                      className="p-1 transition-transform active:scale-75"
+                      className={`p-2 rounded-xl transition-all duration-300 ${
+                        isDisliked 
+                          ? 'bg-stone-200 dark:bg-stone-700' 
+                          : 'hover:bg-stone-100 dark:hover:bg-stone-800'
+                      }`}
                     >
                       <ThumbsDown
-                        size={24}
+                        size={20}
                         className={`transition-colors ${
                           isDisliked 
-                            ? 'text-stone-400 fill-stone-400' 
-                            : 'text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300'
+                            ? 'text-stone-500 fill-stone-400' 
+                            : 'text-stone-600 dark:text-stone-300 hover:text-stone-700'
                         }`}
                       />
                     </button>
 
-                    {/* Comment/Copy */}
+                    {/* Copy */}
                     <button
                       onClick={(e) => handleCopy(quote, e)}
-                      className="p-1 transition-transform active:scale-75"
+                      className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-all duration-300"
                     >
                       {isCopied ? (
-                        <Check size={24} className="text-green-500" />
+                        <Check size={20} className="text-emerald-500" />
                       ) : (
-                        <Copy size={24} className="text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300 transition-colors" />
+                        <Copy size={20} className="text-stone-600 dark:text-stone-300 hover:text-emerald-500 transition-colors" />
                       )}
                     </button>
 
@@ -410,62 +441,43 @@ export default function FeedView({
                         e.stopPropagation();
                         onShare(quote);
                       }}
-                      className="p-1 transition-transform active:scale-75"
+                      className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-all duration-300"
                     >
-                      <Send size={24} className="text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300 transition-colors -rotate-12" />
+                      <Send size={20} className="text-stone-600 dark:text-stone-300 hover:text-sky-500 transition-colors" />
                     </button>
+
+                    {/* Edit Background */}
+                    {onEditBackground && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditBackground(quote);
+                        }}
+                        className="p-2 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-all duration-300"
+                      >
+                        <Palette size={20} className="text-stone-600 dark:text-stone-300 hover:text-violet-500 transition-colors" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Right Action - Save */}
                   <button
                     onClick={(e) => handleAction(() => onSave(quote.id), e)}
-                    className="p-1 transition-transform active:scale-75"
+                    className={`p-2 rounded-xl transition-all duration-300 ${
+                      isSaved 
+                        ? 'bg-amber-100 dark:bg-amber-950/50' 
+                        : 'hover:bg-stone-100 dark:hover:bg-stone-800'
+                    }`}
                   >
                     <Bookmark
-                      size={26}
+                      size={22}
                       className={`transition-colors ${
                         isSaved 
                           ? 'text-amber-500 fill-amber-500' 
-                          : 'text-stone-700 dark:text-white hover:text-stone-500 dark:hover:text-stone-300'
+                          : 'text-stone-600 dark:text-stone-300 hover:text-amber-500'
                       }`}
                     />
                   </button>
-                </div>
-
-                {/* Likes Count */}
-                {likesCount > 0 && (
-                  <div className="mt-2">
-                    <span className="text-sm font-semibold text-stone-900 dark:text-white">
-                      {formatCount(likesCount)} {likesCount === 1 ? 'like' : 'likes'}
-                    </span>
-                  </div>
-                )}
-
-                {/* Caption - Author */}
-                <div className="mt-1.5 pb-2">
-                  <p className="text-sm text-stone-900 dark:text-white">
-                    <span className="font-semibold mr-1.5">
-                      {quote.category.toLowerCase().replace(/\s+/g, '_')}
-                    </span>
-                    <span className="text-stone-700 dark:text-stone-300">
-                      {isExpanded || quote.text.length <= 100 
-                        ? `— ${quote.author}` 
-                        : `— ${quote.author.substring(0, 50)}...`}
-                    </span>
-                    {quote.text.length > 100 && !isExpanded && (
-                      <button 
-                        onClick={() => toggleExpand(quote.id)}
-                        className="text-stone-500 ml-1"
-                      >
-                        more
-                      </button>
-                    )}
-                  </p>
-                  
-                  {/* Timestamp */}
-                  <p className="text-[11px] text-stone-500 mt-1.5 uppercase tracking-wide">
-                    {getTimeAgo(index)}
-                  </p>
                 </div>
               </div>
             </article>
@@ -475,33 +487,41 @@ export default function FeedView({
         {/* Load More */}
         {visibleCount < uniqueQuotes.length && (
           <div ref={loadMoreRef} className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-stone-600 border-t-amber-500 rounded-full animate-spin" />
+            <div className="flex items-center gap-3 px-6 py-3 bg-white/60 dark:bg-stone-800/60 backdrop-blur-md rounded-full border border-stone-200/50 dark:border-stone-700/50">
+              <div className="w-5 h-5 border-2 border-stone-400 border-t-amber-500 rounded-full animate-spin" />
+              <span className="text-sm font-medium text-stone-600 dark:text-stone-300">Loading more...</span>
+            </div>
           </div>
         )}
 
         {/* End of Feed */}
         {visibleCount >= uniqueQuotes.length && uniqueQuotes.length > 0 && (
-          <div className="text-center py-12 border-t border-stone-800">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full border-2 border-stone-700 flex items-center justify-center">
-              <Check size={32} className="text-stone-600" />
+          <div className="text-center py-12 px-6">
+            <div className="inline-flex flex-col items-center bg-white/60 dark:bg-stone-800/60 backdrop-blur-md rounded-3xl p-8 border border-stone-200/50 dark:border-stone-700/50">
+              <div className="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                <Check size={40} className="text-white" strokeWidth={3} />
+              </div>
+              <p className="text-xl font-bold text-stone-800 dark:text-white">All Caught Up! ✨</p>
+              <p className="text-stone-500 dark:text-stone-400 text-sm mt-2">You've seen all the quotes</p>
+              <button
+                onClick={scrollToTop}
+                className="mt-6 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full font-semibold text-sm shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 hover:scale-105 transition-all duration-300"
+              >
+                Back to Top
+              </button>
             </div>
-            <p className="text-stone-900 dark:text-white font-medium">You're All Caught Up</p>
-            <p className="text-stone-500 text-sm mt-1">You've seen all new quotes</p>
-            <button
-              onClick={scrollToTop}
-              className="mt-4 text-amber-500 hover:text-amber-400 text-sm font-medium"
-            >
-              Back to top
-            </button>
           </div>
         )}
+
+        {/* Bottom Spacing */}
+        <div className="h-4" />
       </div>
 
-      {/* Scroll to Top */}
+      {/* Scroll to Top Button */}
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-20 right-4 p-3 bg-stone-800 text-white rounded-full shadow-lg hover:bg-stone-700 transition-all z-50 border border-stone-700"
+          className="fixed bottom-20 right-4 w-12 h-12 bg-white dark:bg-stone-800 text-stone-700 dark:text-white rounded-full shadow-xl hover:shadow-2xl hover:scale-110 transition-all z-50 border border-stone-200 dark:border-stone-700 flex items-center justify-center"
         >
           <ChevronUp size={24} />
         </button>
@@ -515,11 +535,21 @@ export default function FeedView({
             opacity: 1;
           }
           50% {
-            transform: scale(1.2);
+            transform: scale(1.3);
             opacity: 1;
           }
           100% {
             transform: scale(1);
+            opacity: 0;
+          }
+        }
+        @keyframes sparkle {
+          0% {
+            transform: scale(0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1.5) rotate(180deg);
             opacity: 0;
           }
         }

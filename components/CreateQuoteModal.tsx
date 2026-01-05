@@ -324,30 +324,32 @@ export default function CreateQuoteModal({
                 <div className="mb-4">
                   <p className="text-xs font-medium text-stone-500 mb-2">Preview</p>
                   <div 
-                    className="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-lg"
+                    className="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-lg transition-all duration-500"
                     style={{
                       background: previewBackground ? undefined : 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #e11d48 100%)',
                     }}
                   >
                     {previewBackground && previewBackground.length > 0 && (
                       <>
-                        {/* Use native img for base64 data URLs */}
+                        {/* Use native img for base64 data URLs - with smooth transition */}
                         {previewBackground.startsWith('data:') ? (
                           <img
                             src={previewBackground}
                             alt="Preview"
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
                           />
                         ) : (
-                          <Image
-                            src={previewBackground}
-                            alt="Preview"
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
+                          <div className="absolute inset-0 bg-cover bg-center transition-all duration-500">
+                            <Image
+                              src={previewBackground}
+                              alt="Preview"
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          </div>
                         )}
-                        <div className="absolute inset-0 bg-black/40" />
+                        <div className="absolute inset-0 bg-black/40 transition-all duration-500" />
                       </>
                     )}
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-4">

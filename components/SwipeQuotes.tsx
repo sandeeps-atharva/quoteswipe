@@ -46,6 +46,7 @@ const CreateQuoteModal = lazy(() => import('./CreateQuoteModal'));
 const CategoryOnboarding = lazy(() => import('./CategoryOnboarding'));
 const SaveQuoteModal = lazy(() => import('./SaveQuoteModal'));
 const ViewUserQuoteModal = lazy(() => import('./ViewUserQuoteModal'));
+const EditBackgroundModal = lazy(() => import('./EditBackgroundModal'));
 
 // Lazy load views for bottom navigation
 const SavedQuotesView = lazy(() => import('./SavedQuotesView'));
@@ -92,6 +93,8 @@ export default function SwipeQuotes() {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showSaveQuoteModal, setShowSaveQuoteModal] = useState(false);
   const [quoteToSave, setQuoteToSave] = useState<Quote | null>(null);
+  const [showEditBackgroundModal, setShowEditBackgroundModal] = useState(false);
+  const [quoteToEditBg, setQuoteToEditBg] = useState<Quote | null>(null);
   const [activeNavTab, setActiveNavTab] = useState<NavTab>('feed'); // Bottom nav active tab
   const [swipeCount, setSwipeCount] = useState(0); // For unauthenticated users
   const [authenticatedSwipeCount, setAuthenticatedSwipeCount] = useState(0); // For authenticated users
@@ -1443,7 +1446,7 @@ export default function SwipeQuotes() {
     }, 300);
   };
 
-  const handleUndo = async () => {
+  const handleUndo = () => {
     if (swipeHistory.length === 0 || isUndoing) return;
 
     setIsUndoing(true);
@@ -1452,9 +1455,9 @@ export default function SwipeQuotes() {
     const { index: previousIndex, direction: previousDirection, quote: previousQuote, wasNewAction } = lastSwipe;
     const newHistory = swipeHistory.slice(0, -1);
 
-    // Revert the like/dislike action
+    // OPTIMISTIC UPDATE: Update UI immediately, API calls in background
     if (previousDirection === 'right' && wasNewAction) {
-      // Was a new like - remove it
+      // Was a new like - remove it from UI immediately
       setLikedQuotes(prev => prev.filter(q => q.id !== previousQuote.id));
       
       // Revert the likes count
@@ -1464,25 +1467,24 @@ export default function SwipeQuotes() {
           : q
       ));
       
-      // Remove like from database
-      if (isAuthenticated) {
-        try {
-          await fetch('/api/user/likes', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quoteId: previousQuote.id }),
-          });
-        } catch (error) {
-          console.error('Error removing like:', error);
-        }
-      }
-      
       // Clear last liked quote if it was the one being undone
       if (lastLikedQuote?.id === previousQuote.id) {
         setLastLikedQuote(null);
       }
+      
+      // Remove like from database (fire and forget - don't block UI)
+      if (isAuthenticated) {
+        fetch('/api/user/likes', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId: previousQuote.id }),
+        }).catch(error => {
+          console.error('Error removing like:', error);
+          // Silently fail - UI already updated
+        });
+      }
     } else if (previousDirection === 'left' && wasNewAction) {
-      // Was a new dislike - remove it
+      // Was a new dislike - remove it from UI immediately
       setDislikedQuotes(prev => prev.filter(q => q.id !== previousQuote.id));
       
       // Revert the dislikes count
@@ -1492,17 +1494,16 @@ export default function SwipeQuotes() {
           : q
       ));
       
-      // Remove dislike from database
+      // Remove dislike from database (fire and forget - don't block UI)
       if (isAuthenticated) {
-        try {
-          await fetch('/api/user/dislikes', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quoteId: previousQuote.id }),
-          });
-        } catch (error) {
+        fetch('/api/user/dislikes', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId: previousQuote.id }),
+        }).catch(error => {
           console.error('Error removing dislike:', error);
-        }
+          // Silently fail - UI already updated
+        });
       }
     }
 
@@ -1513,26 +1514,28 @@ export default function SwipeQuotes() {
       setAuthenticatedSwipeCount(prev => prev - 1);
     }
 
-    // Step 1: Set current index to the previous quote (it will be off-screen)
+    // Update history immediately
+    setSwipeHistory(newHistory);
+
+    // ANIMATION: Card slides back from where it was swiped
+    // Step 1: Set index to previous quote & position it off-screen
     setCurrentIndex(previousIndex);
-    
-    // Step 2: Position the card off-screen in the direction it was swiped
-    // Card comes back FROM where it went TO
     const startOffsetX = previousDirection === 'right' ? 400 : -400;
     setDragOffset({ x: startOffsetX, y: 0 });
     setSwipeDirection(previousDirection);
     
-    // Step 3: After a brief moment, animate the card back to center
-    setTimeout(() => {
-      setDragOffset({ x: 0, y: 0 });
-      
-      // Step 4: Clear direction after animation completes
-      setTimeout(() => {
-        setSwipeDirection(null);
-        setSwipeHistory(newHistory);
-        setIsUndoing(false);
-      }, 350);
-    }, 50);
+    // Step 2: Animate the card back to center (use requestAnimationFrame for smooth start)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setDragOffset({ x: 0, y: 0 });
+        
+        // Step 3: Clear animation state after transition completes
+        setTimeout(() => {
+          setSwipeDirection(null);
+          setIsUndoing(false);
+        }, 350);
+      });
+    });
   };
 
   const handleLike = () => {
@@ -1657,6 +1660,30 @@ export default function SwipeQuotes() {
     });
     setShowShareModal(true);
   };
+
+  // Handle edit background for current quote
+  const handleEditBackground = () => {
+    const filteredQuotes = getFilteredQuotes();
+    const currentQuote = filteredQuotes[currentIndex];
+    
+    if (!currentQuote) return;
+    
+    setQuoteToEditBg(currentQuote);
+    setShowEditBackgroundModal(true);
+  };
+
+  // Handle applying new background to a specific quote
+  const handleApplyBackground = useCallback((newBackground: BackgroundImage) => {
+    if (!quoteToEditBg) return;
+    
+    const quoteIdStr = String(quoteToEditBg.id);
+    
+    // Update the per-quote background
+    setSavedQuoteBackgrounds(prev => ({
+      ...prev,
+      [quoteIdStr]: newBackground,
+    }));
+  }, [quoteToEditBg]);
 
   // Feed View Handlers - Simple actions without swipe animation
   // Helper to get the actual displayed background for a quote (feed view)
@@ -2230,6 +2257,26 @@ export default function SwipeQuotes() {
         </Suspense>
       )}
 
+      {/* Edit Background Modal - For editing background of current quote only */}
+      {showEditBackgroundModal && quoteToEditBg && (
+        <Suspense fallback={<ModalLoader />}>
+          <EditBackgroundModal
+            isOpen={showEditBackgroundModal}
+            onClose={() => {
+              setShowEditBackgroundModal(false);
+              setQuoteToEditBg(null);
+            }}
+            quote={quoteToEditBg}
+            currentBackground={
+              savedQuoteBackgrounds[String(quoteToEditBg.id)] || 
+              (backgroundImage.id !== 'none' ? backgroundImage : getRandomBackgroundForQuote(quoteToEditBg.id))
+            }
+            onApply={handleApplyBackground}
+            isAuthenticated={isAuthenticated}
+          />
+        </Suspense>
+      )}
+
       {showInstagramModal && (
         <Suspense fallback={<ModalLoader />}>
       <InstagramFollowModal
@@ -2426,6 +2473,7 @@ export default function SwipeQuotes() {
               onSave={handleSave}
               onShare={handleShare}
               onUndo={handleUndo}
+              onEdit={handleEditBackground}
               canUndo={swipeHistory.length > 0}
               isUndoing={isUndoing}
               swipeDirection={isDragging && !isAnimating ? swipeDirection : null}
@@ -2469,6 +2517,10 @@ export default function SwipeQuotes() {
               setShareQuote(quote);
               setShowShareModal(true);
             }}
+            onEditBackground={(quote) => {
+              setQuoteToEditBg(quote);
+              setShowEditBackgroundModal(true);
+            }}
             cardTheme={cardTheme}
             fontStyle={fontStyle}
             backgroundImage={backgroundImage}
@@ -2505,6 +2557,7 @@ export default function SwipeQuotes() {
           showSaveQuoteModal ||
           showCustomizationModal ||
           showCreateQuoteModal ||
+          showEditBackgroundModal ||
           showOnboarding ||
           viewingUserQuote !== null
         }

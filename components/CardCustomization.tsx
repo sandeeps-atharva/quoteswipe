@@ -743,18 +743,18 @@ function CardCustomization({
         <div className="p-3 sm:p-4 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50 shrink-0 relative">
           <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 text-center mb-2 sm:mb-3">Preview</p>
           <div
-            className="mx-auto w-32 sm:w-40 aspect-[4/5] rounded-lg sm:rounded-xl shadow-lg flex flex-col items-center justify-center p-3 sm:p-4 relative overflow-hidden"
+            className="mx-auto w-32 sm:w-40 aspect-[4/5] rounded-lg sm:rounded-xl shadow-lg flex flex-col items-center justify-center p-3 sm:p-4 relative overflow-hidden transition-all duration-500"
             style={{ background: selectedTheme.background }}
           >
-            {/* Background Image */}
+            {/* Background Image with smooth transition */}
             {selectedBackground.id !== 'none' && selectedBackground.url && (
               <>
                 <div 
-                  className="absolute inset-0 bg-cover bg-center"
+                  className="absolute inset-0 bg-cover bg-center transition-all duration-500"
                   style={{ backgroundImage: `url(${selectedBackground.thumbnail || selectedBackground.url})` }}
                 />
                 <div 
-                  className="absolute inset-0"
+                  className="absolute inset-0 transition-all duration-500"
                   style={{ background: selectedBackground.overlay }}
                 />
               </>

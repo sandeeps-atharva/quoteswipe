@@ -226,18 +226,18 @@ export default function SaveQuoteModal({
             <div className="p-3 sm:p-4 bg-stone-50 dark:bg-stone-800/50 shrink-0">
               <p className="text-xs text-stone-500 text-center mb-3">Preview</p>
               <div
-                className="mx-auto w-36 sm:w-48 aspect-[4/5] rounded-xl shadow-lg flex flex-col items-center justify-center p-4 relative overflow-hidden"
+                className="mx-auto w-36 sm:w-48 aspect-[4/5] rounded-xl shadow-lg flex flex-col items-center justify-center p-4 relative overflow-hidden transition-all duration-500"
                 style={{ background: selectedBackground.id === 'none' ? 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #e11d48 100%)' : undefined }}
               >
-                {/* Background Image */}
+                {/* Background Image with smooth transition */}
                 {selectedBackground.id !== 'none' && selectedBackground.url && (
                   <>
                     <div 
-                      className="absolute inset-0 bg-cover bg-center"
+                      className="absolute inset-0 bg-cover bg-center transition-all duration-500"
                       style={{ backgroundImage: `url(${selectedBackground.thumbnail || selectedBackground.url})` }}
                     />
                     <div 
-                      className="absolute inset-0"
+                      className="absolute inset-0 transition-all duration-500"
                       style={{ background: selectedBackground.overlay }}
                     />
                   </>
