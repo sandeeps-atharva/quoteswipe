@@ -571,47 +571,38 @@ export default function QuoteReelModal({
       ctx.shadowBlur = 0;
     }
 
-    // Logo/Watermark - Bottom Right with logo.svg
-    const logoSize = Math.floor(width * 0.045); // Logo icon size
-    const logoFontSize = Math.floor(width * 0.022);
-    const paddingX = width * 0.03; // Padding from right edge
-    const paddingY = height * 0.025; // Padding from bottom edge
-    const pillPadding = logoSize * 0.3;
-    const pillHeight = logoSize + pillPadding * 2;
-    const textWidth = ctx.measureText('QuoteSwipe').width + logoFontSize * 0.5;
-    const pillWidth = logoSize + textWidth + pillPadding * 3;
+    // Logo/Watermark - Bottom Right - MATCH PREVIEW EXACTLY
+    // Preview: 240px width, logo=16px (6.67%), text=9px (3.75%), padding=12px (5%)
+    const logoSize = Math.floor(width * 0.0667);  // 16/240 = 6.67%
+    const logoFontSize = Math.floor(width * 0.0375);  // 9/240 = 3.75%
+    const paddingX = Math.floor(width * 0.05);  // 12/240 = 5%
+    const paddingY = Math.floor(height * 0.028);  // 12/426 = 2.8%
+    const gapSize = Math.floor(width * 0.025);  // 6/240 = 2.5%
     
-    const pillX = width - paddingX - pillWidth;
-    const pillY = height - paddingY - pillHeight;
+    ctx.font = `600 ${logoFontSize}px "Arial", sans-serif`;
+    const textWidthLogo = ctx.measureText('QuoteSwipe').width;
     
-    // Draw semi-transparent pill background
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath();
-    ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
-    ctx.fill();
+    // Position from bottom-right corner (same as preview: bottom-3 right-3)
+    const logoX = width - paddingX - textWidthLogo - gapSize - logoSize;
+    const logoY = height - paddingY - logoSize;
     
     // Draw logo image
     try {
       const logoImg = await loadImage('/logo.svg');
-      const logoX = pillX + pillPadding;
-      const logoY = pillY + pillPadding;
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
     } catch (e) {
       // Fallback: draw a simple circle if logo fails to load
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.beginPath();
-      ctx.arc(pillX + pillPadding + logoSize / 2, pillY + pillHeight / 2, logoSize / 2, 0, Math.PI * 2);
+      ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
       ctx.fill();
     }
     
-    // Draw "QuoteSwipe" text
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 2;
-    ctx.font = `600 ${logoFontSize}px "Arial", sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    // Draw "QuoteSwipe" text (right of logo with gap, vertically centered with logo)
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('QuoteSwipe', pillX + pillPadding * 2 + logoSize, pillY + pillHeight / 2);
+    ctx.fillText('QuoteSwipe', logoX + logoSize + gapSize, logoY + logoSize / 2);
     
     // Reset
     ctx.textAlign = 'center';
@@ -700,13 +691,13 @@ export default function QuoteReelModal({
       const textX = baseTextX + (textSettings.offsetX / 100) * videoWidth;
       const textY = baseTextY + (textSettings.offsetY / 100) * videoHeight;
 
-      // Pre-calculate logo dimensions based on video dimensions
-      const logoSize = Math.floor(videoWidth * 0.04);
-      const logoFontSize = Math.floor(videoWidth * 0.018);
-      const paddingX = videoWidth * 0.03;
-      const paddingY = videoHeight * 0.02;
-      const pillPadding = logoSize * 0.3;
-      const pillHeight = logoSize + pillPadding * 2;
+      // Pre-calculate logo dimensions - MATCH PREVIEW EXACTLY
+      // Preview: 240px width, logo=16px (6.67%), text=9px (3.75%), padding=12px (5%)
+      const logoSize = Math.floor(videoWidth * 0.0667);  // 16/240 = 6.67%
+      const logoFontSize = Math.floor(videoWidth * 0.0375);  // 9/240 = 3.75%
+      const paddingX = Math.floor(videoWidth * 0.05);  // 12/240 = 5%
+      const paddingY = Math.floor(videoHeight * 0.028);  // 12/426 = 2.8%
+      const gapSize = Math.floor(videoWidth * 0.025);  // 6/240 = 2.5%
 
       // Calculate bitrate based on video dimensions (higher quality)
       const bitrate = Math.max(8000000, videoWidth * videoHeight * 8);
@@ -775,31 +766,29 @@ export default function QuoteReelModal({
           ctx.shadowBlur = 0;
         }
 
-        // Draw logo watermark
+        // Draw logo watermark - MATCH PREVIEW EXACTLY (no background pill, just logo + text)
         ctx.font = `600 ${logoFontSize}px "Arial", sans-serif`;
-        const textWidthLogo = ctx.measureText('QuoteSwipe').width + logoFontSize * 0.5;
-        const pillWidth = logoSize + textWidthLogo + pillPadding * 3;
-        const pillX = videoWidth - paddingX - pillWidth;
-        const pillY = videoHeight - paddingY - pillHeight;
-
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.beginPath();
-        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
-        ctx.fill();
-
+        const textWidthLogo = ctx.measureText('QuoteSwipe').width;
+        
+        // Position from bottom-right corner (same as preview: bottom-3 right-3)
+        const logoX = videoWidth - paddingX - textWidthLogo - gapSize - logoSize;
+        const logoY = videoHeight - paddingY - logoSize;
+        
+        // Draw logo
         if (logoImg) {
-          ctx.drawImage(logoImg, pillX + pillPadding, pillY + pillPadding, logoSize, logoSize);
+          ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
         } else {
-          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
           ctx.beginPath();
-          ctx.arc(pillX + pillPadding + logoSize / 2, pillY + pillHeight / 2, logoSize / 2, 0, Math.PI * 2);
+          ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        // Draw "QuoteSwipe" text (right of logo with gap, vertically centered with logo)
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText('QuoteSwipe', pillX + pillPadding * 2 + logoSize, pillY + pillHeight / 2);
+        ctx.fillText('QuoteSwipe', logoX + logoSize + gapSize, logoY + logoSize / 2);
       };
 
       // Real-time playback method - plays video and captures frames in real-time
