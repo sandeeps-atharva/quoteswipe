@@ -11,7 +11,7 @@ import Sidebar, { ViewMode } from './Sidebar';
 import QuoteCard from './QuoteCard';
 import FeedView from './FeedView';
 import ControlButtons, { ActionButtons } from './ControlButtons';
-import BottomNavBar, { NavTab } from './BottomNavBar';
+import BottomNavBar, { NavTab, CreateType } from './BottomNavBar';
 import OptionsMenu from './OptionsMenu';
 import Header from './Header';
 import FooterLinks from './FooterLinks';
@@ -47,6 +47,7 @@ const CategoryOnboarding = lazy(() => import('./CategoryOnboarding'));
 const SaveQuoteModal = lazy(() => import('./SaveQuoteModal'));
 const ViewUserQuoteModal = lazy(() => import('./ViewUserQuoteModal'));
 const EditBackgroundModal = lazy(() => import('./EditBackgroundModal'));
+const QuoteReelModal = lazy(() => import('./QuoteReelModal'));
 
 // Lazy load views for bottom navigation
 const SavedQuotesView = lazy(() => import('./SavedQuotesView'));
@@ -95,6 +96,8 @@ export default function SwipeQuotes() {
   const [quoteToSave, setQuoteToSave] = useState<Quote | null>(null);
   const [showEditBackgroundModal, setShowEditBackgroundModal] = useState(false);
   const [quoteToEditBg, setQuoteToEditBg] = useState<Quote | null>(null);
+  const [showQuoteReelModal, setShowQuoteReelModal] = useState(false);
+  const [reelQuote, setReelQuote] = useState<Quote | null>(null); // Quote for reel, null for empty reel
   const [activeNavTab, setActiveNavTab] = useState<NavTab>('feed'); // Bottom nav active tab
   const [swipeCount, setSwipeCount] = useState(0); // For unauthenticated users
   const [authenticatedSwipeCount, setAuthenticatedSwipeCount] = useState(0); // For authenticated users
@@ -1672,6 +1675,14 @@ export default function SwipeQuotes() {
     setShowEditBackgroundModal(true);
   };
 
+  // Handle create reel with current quote (from control buttons)
+  const handleCreateReel = () => {
+    const filteredQuotes = getFilteredQuotes();
+    const currentQuote = filteredQuotes[currentIndex];
+    setReelQuote(currentQuote || null);
+    setShowQuoteReelModal(true);
+  };
+
   // Handle applying new background to a specific quote
   const handleApplyBackground = useCallback((newBackground: BackgroundImage) => {
     if (!quoteToEditBg) return;
@@ -2277,6 +2288,20 @@ export default function SwipeQuotes() {
         </Suspense>
       )}
 
+      {/* Quote Reel Modal - For creating video reels with or without quote */}
+      {showQuoteReelModal && (
+        <Suspense fallback={<ModalLoader />}>
+          <QuoteReelModal
+            isOpen={showQuoteReelModal}
+            onClose={() => {
+              setShowQuoteReelModal(false);
+              setReelQuote(null);
+            }}
+            quote={reelQuote}
+          />
+        </Suspense>
+      )}
+
       {showInstagramModal && (
         <Suspense fallback={<ModalLoader />}>
       <InstagramFollowModal
@@ -2474,6 +2499,7 @@ export default function SwipeQuotes() {
               onShare={handleShare}
               onUndo={handleUndo}
               onEdit={handleEditBackground}
+              onCreateReel={handleCreateReel}
               canUndo={swipeHistory.length > 0}
               isUndoing={isUndoing}
               swipeDirection={isDragging && !isAnimating ? swipeDirection : null}
@@ -2537,10 +2563,20 @@ export default function SwipeQuotes() {
         activeTab={activeNavTab}
         onTabChange={(tab) => {
           if (tab === 'create') {
+            // This is now handled by onCreateSelect
             setEditingQuote(null);
             setShowCreateQuoteModal(true);
           } else {
             setActiveNavTab(tab);
+          }
+        }}
+        onCreateSelect={(type: CreateType) => {
+          if (type === 'quote') {
+            setEditingQuote(null);
+            setShowCreateQuoteModal(true);
+          } else if (type === 'reel') {
+            setReelQuote(null); // Open reel modal without pre-set quote
+            setShowQuoteReelModal(true);
           }
         }}
         savedCount={savedQuotes.length}
@@ -2558,6 +2594,7 @@ export default function SwipeQuotes() {
           showCustomizationModal ||
           showCreateQuoteModal ||
           showEditBackgroundModal ||
+          showQuoteReelModal ||
           showOnboarding ||
           viewingUserQuote !== null
         }

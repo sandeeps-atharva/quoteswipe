@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Heart, X, Bookmark, Sparkles, RotateCcw, Send, Palette, MoreVertical } from 'lucide-react';
+import { Heart, X, Bookmark, Sparkles, RotateCcw, Send, Palette, MoreVertical, Film } from 'lucide-react';
 
 interface ControlButtonsProps {
   onLike: () => void;
@@ -10,6 +10,7 @@ interface ControlButtonsProps {
   onShare: () => void;
   onUndo: () => void;
   onEdit?: () => void;
+  onCreateReel?: () => void;
   canUndo: boolean;
   swipeDirection?: 'left' | 'right' | null;
   isAnimating?: boolean;
@@ -23,6 +24,7 @@ export default function ControlButtons({
   onShare,
   onUndo,
   onEdit,
+  onCreateReel,
   canUndo,
   swipeDirection,
   isAnimating = false,
@@ -217,6 +219,20 @@ export default function ControlButtons({
                 title="Edit Background"
               >
                 <Palette size={18} strokeWidth={2.5} className="transition-transform group-hover:rotate-12" />
+              </button>
+            )}
+
+            {/* Create Reel Option */}
+            {onCreateReel && (
+              <button
+                onClick={() => {
+                  onCreateReel();
+                  setShowMoreMenu(false);
+                }}
+                className="group relative w-10 h-10 rounded-full flex items-center justify-center text-purple-500 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 hover:text-purple-600 dark:hover:text-purple-300 hover:scale-110 active:scale-95 transition-all duration-200"
+                title="Create Reel"
+              >
+                <Film size={18} strokeWidth={2.5} className="transition-transform group-hover:scale-110" />
               </button>
             )}
           </div>
