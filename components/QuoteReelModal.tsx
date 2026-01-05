@@ -621,27 +621,31 @@ export default function QuoteReelModal({
   }, [images, settings.transition, textSettings, customQuoteText]);
 
   // Generate video from uploaded video with text overlay
+  // Keeps SAME dimensions and duration as uploaded video
   const generateVideoFromUpload = useCallback(async () => {
     if (!uploadedVideo || !uploadedVideoFile) return;
 
     setIsGenerating(true);
     setGenerationProgress(0);
 
-    const quality = QUALITY_OPTIONS[settings.quality];
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    canvas.width = quality.width;
-    canvas.height = quality.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
     try {
+      // Pre-load logo image ONCE before starting
+      let logoImg: HTMLImageElement | null = null;
+      try {
+        logoImg = await loadImage('/logo.svg');
+      } catch (e) {
+        console.warn('Could not load logo, will use fallback');
+      }
+
       // Create video element for source
       const sourceVideo = document.createElement('video');
       sourceVideo.src = uploadedVideo;
       sourceVideo.muted = true;
       sourceVideo.playsInline = true;
+      sourceVideo.preload = 'auto';
       
       await new Promise<void>((resolve, reject) => {
         sourceVideo.onloadeddata = () => resolve();
@@ -649,11 +653,69 @@ export default function QuoteReelModal({
         sourceVideo.load();
       });
 
-      // Create MediaRecorder
-      const stream = canvas.captureStream(30); // 30 FPS
+      // USE ORIGINAL VIDEO DIMENSIONS - keeps same quality as uploaded
+      const videoWidth = sourceVideo.videoWidth;
+      const videoHeight = sourceVideo.videoHeight;
+      const actualDuration = sourceVideo.duration;
+      
+      // Set canvas to EXACT video dimensions
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Pre-calculate text settings based on video dimensions
+      const displayQuoteText = customQuoteText.trim();
+      const baseFontSize = Math.floor(videoWidth * 0.045);
+      const fontSize = Math.floor(baseFontSize * (textSettings.fontSize / 100));
+      const fontWeight = textSettings.isBold ? '700' : '600';
+      const fontStyle = textSettings.isItalic ? 'italic' : 'normal';
+      const fontString = `${fontStyle} ${fontWeight} ${fontSize}px "${textSettings.fontFamily}", serif`;
+      const maxTextWidth = videoWidth * 0.85;
+      const lineHeight = fontSize * 1.5;
+
+      let baseTextY: number;
+      switch (textSettings.position) {
+        case 'top': baseTextY = videoHeight * 0.25; break;
+        case 'bottom': baseTextY = videoHeight * 0.70; break;
+        default: baseTextY = videoHeight * 0.45;
+      }
+
+      let baseTextX: number;
+      let textAlignValue: CanvasTextAlign;
+      switch (textSettings.alignment) {
+        case 'left':
+          textAlignValue = 'left';
+          baseTextX = videoWidth * 0.08;
+          break;
+        case 'right':
+          textAlignValue = 'right';
+          baseTextX = videoWidth * 0.92;
+          break;
+        default:
+          textAlignValue = 'center';
+          baseTextX = videoWidth / 2;
+      }
+
+      const textX = baseTextX + (textSettings.offsetX / 100) * videoWidth;
+      const textY = baseTextY + (textSettings.offsetY / 100) * videoHeight;
+
+      // Pre-calculate logo dimensions based on video dimensions
+      const logoSize = Math.floor(videoWidth * 0.04);
+      const logoFontSize = Math.floor(videoWidth * 0.018);
+      const paddingX = videoWidth * 0.03;
+      const paddingY = videoHeight * 0.02;
+      const pillPadding = logoSize * 0.3;
+      const pillHeight = logoSize + pillPadding * 2;
+
+      // Calculate bitrate based on video dimensions (higher quality)
+      const bitrate = Math.max(8000000, videoWidth * videoHeight * 8);
+
+      // Create MediaRecorder with high bitrate to match original quality
+      const stream = canvas.captureStream(30);
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: quality.bitrate,
+        videoBitsPerSecond: bitrate,
       });
 
       const chunks: Blob[] = [];
@@ -667,10 +729,9 @@ export default function QuoteReelModal({
         const blob = new Blob(chunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         
-        // Download
         const a = document.createElement('a');
         a.href = url;
-        a.download = `quote-video-${settings.quality}-${Date.now()}.webm`;
+        a.download = `quote-video-${videoWidth}x${videoHeight}-${Date.now()}.webm`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -680,87 +741,23 @@ export default function QuoteReelModal({
         setGenerationProgress(100);
       };
 
-      mediaRecorder.start();
-
-      // Play and render frames
-      sourceVideo.currentTime = 0;
-      await sourceVideo.play();
-
-      const fps = 30;
-      const totalFrames = Math.ceil(videoDuration * fps);
-      
-      const renderFrame = async (frameNumber: number) => {
-        if (frameNumber >= totalFrames || sourceVideo.ended) {
-          mediaRecorder.stop();
-          return;
-        }
-
-        // Draw video frame
-        const videoWidth = sourceVideo.videoWidth;
-        const videoHeight = sourceVideo.videoHeight;
-        const videoRatio = videoWidth / videoHeight;
-        const canvasRatio = quality.width / quality.height;
-        
-        let drawWidth, drawHeight, drawX, drawY;
-        if (videoRatio > canvasRatio) {
-          drawHeight = quality.height;
-          drawWidth = quality.height * videoRatio;
-          drawX = (quality.width - drawWidth) / 2;
-          drawY = 0;
-        } else {
-          drawWidth = quality.width;
-          drawHeight = quality.width / videoRatio;
-          drawX = 0;
-          drawY = (quality.height - drawHeight) / 2;
-        }
-
-        ctx.clearRect(0, 0, quality.width, quality.height);
-        ctx.drawImage(sourceVideo, drawX, drawY, drawWidth, drawHeight);
-
-        // Draw text overlay
-        const displayQuoteText = customQuoteText.trim();
+      // Draw overlays function - called every frame
+      const drawOverlays = () => {
+        // Draw text overlay if enabled
         if (textSettings.showQuote && displayQuoteText) {
           // Draw overlay gradient
-          const gradient = ctx.createLinearGradient(0, 0, 0, quality.height);
+          const gradient = ctx.createLinearGradient(0, 0, 0, videoHeight);
           gradient.addColorStop(0, 'rgba(0,0,0,0.3)');
           gradient.addColorStop(0.4, 'rgba(0,0,0,0.1)');
           gradient.addColorStop(0.6, 'rgba(0,0,0,0.1)');
           gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
           ctx.fillStyle = gradient;
-          ctx.fillRect(0, 0, quality.width, quality.height);
+          ctx.fillRect(0, 0, videoWidth, videoHeight);
 
-          // Calculate text position
-          let baseTextY: number;
-          switch (textSettings.position) {
-            case 'top': baseTextY = quality.height * 0.25; break;
-            case 'bottom': baseTextY = quality.height * 0.70; break;
-            default: baseTextY = quality.height * 0.45;
-          }
-
-          let baseTextX: number;
-          switch (textSettings.alignment) {
-            case 'left':
-              ctx.textAlign = 'left';
-              baseTextX = quality.width * 0.08;
-              break;
-            case 'right':
-              ctx.textAlign = 'right';
-              baseTextX = quality.width * 0.92;
-              break;
-            default:
-              ctx.textAlign = 'center';
-              baseTextX = quality.width / 2;
-          }
-
-          const textX = baseTextX + (textSettings.offsetX / 100) * quality.width;
-          const textY = baseTextY + (textSettings.offsetY / 100) * quality.height;
+          // Draw text
+          ctx.textAlign = textAlignValue;
           ctx.textBaseline = 'middle';
-
-          const baseFontSize = Math.floor(quality.width * 0.045);
-          const fontSize = Math.floor(baseFontSize * (textSettings.fontSize / 100));
-          const fontWeight = textSettings.isBold ? '700' : '600';
-          const fontStyle = textSettings.isItalic ? 'italic' : 'normal';
-          ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${textSettings.fontFamily}", serif`;
+          ctx.font = fontString;
           ctx.fillStyle = textSettings.textColor;
 
           if (textSettings.shadowEnabled) {
@@ -768,68 +765,95 @@ export default function QuoteReelModal({
             ctx.shadowBlur = 10;
             ctx.shadowOffsetX = 2;
             ctx.shadowOffsetY = 2;
+          } else {
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
           }
 
-          const maxTextWidth = quality.width * 0.85;
-          const lineHeight = fontSize * 1.5;
           wrapText(ctx, displayQuoteText, textX, textY, maxTextWidth, lineHeight);
-
           ctx.shadowColor = 'transparent';
           ctx.shadowBlur = 0;
         }
 
-        // Draw logo
-        const logoSize = Math.floor(quality.width * 0.045);
-        const logoFontSize = Math.floor(quality.width * 0.022);
-        const paddingX = quality.width * 0.03;
-        const paddingY = quality.height * 0.025;
-        const pillPadding = logoSize * 0.3;
-        const pillHeight = logoSize + pillPadding * 2;
+        // Draw logo watermark
+        ctx.font = `600 ${logoFontSize}px "Arial", sans-serif`;
         const textWidthLogo = ctx.measureText('QuoteSwipe').width + logoFontSize * 0.5;
         const pillWidth = logoSize + textWidthLogo + pillPadding * 3;
-        const pillX = quality.width - paddingX - pillWidth;
-        const pillY = quality.height - paddingY - pillHeight;
+        const pillX = videoWidth - paddingX - pillWidth;
+        const pillY = videoHeight - paddingY - pillHeight;
 
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.beginPath();
         ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
         ctx.fill();
 
-        try {
-          const logoImg = await loadImage('/logo.svg');
+        if (logoImg) {
           ctx.drawImage(logoImg, pillX + pillPadding, pillY + pillPadding, logoSize, logoSize);
-        } catch (e) {
+        } else {
           ctx.fillStyle = 'rgba(255,255,255,0.8)';
           ctx.beginPath();
           ctx.arc(pillX + pillPadding + logoSize / 2, pillY + pillHeight / 2, logoSize / 2, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        ctx.shadowColor = 'rgba(0,0,0,0.3)';
-        ctx.shadowBlur = 2;
-        ctx.font = `600 ${logoFontSize}px "Arial", sans-serif`;
         ctx.fillStyle = 'rgba(255,255,255,0.95)';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText('QuoteSwipe', pillX + pillPadding * 2 + logoSize, pillY + pillHeight / 2);
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-
-        setGenerationProgress(Math.floor((frameNumber / totalFrames) * 100));
-
-        // Wait for next frame
-        await new Promise((resolve) => setTimeout(resolve, 1000 / fps));
-        requestAnimationFrame(() => renderFrame(frameNumber + 1));
       };
 
-      await renderFrame(0);
+      // Real-time playback method - plays video and captures frames in real-time
+      // This preserves the original video timing exactly
+      return new Promise<void>((resolve) => {
+        let isRecording = true;
+        let lastProgressUpdate = 0;
+
+        const renderLoop = () => {
+          if (!isRecording) return;
+
+          // Draw current video frame at full size (no scaling)
+          ctx.drawImage(sourceVideo, 0, 0, videoWidth, videoHeight);
+          
+          // Draw overlays on top
+          drawOverlays();
+
+          // Update progress
+          const progress = Math.floor((sourceVideo.currentTime / actualDuration) * 100);
+          if (progress !== lastProgressUpdate) {
+            lastProgressUpdate = progress;
+            setGenerationProgress(progress);
+          }
+
+          // Continue loop
+          requestAnimationFrame(renderLoop);
+        };
+
+        // When video ends, stop recording
+        sourceVideo.onended = () => {
+          isRecording = false;
+          mediaRecorder.stop();
+          resolve();
+        };
+
+        // Start recording and playback
+        mediaRecorder.start(100);
+        sourceVideo.currentTime = 0;
+        sourceVideo.play().then(() => {
+          renderLoop();
+        }).catch((error) => {
+          console.error('Failed to play video:', error);
+          setIsGenerating(false);
+          setVideoError('Failed to play video for processing.');
+          resolve();
+        });
+      });
 
     } catch (error) {
       console.error('Video generation error:', error);
       setIsGenerating(false);
       setVideoError('Failed to generate video. Please try again.');
     }
-  }, [uploadedVideo, uploadedVideoFile, videoDuration, settings, textSettings, customQuoteText]);
+  }, [uploadedVideo, uploadedVideoFile, textSettings, customQuoteText]);
 
   // Generate video from images
   const generateVideo = useCallback(async () => {
