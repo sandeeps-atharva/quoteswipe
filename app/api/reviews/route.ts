@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // For admin - get all reviews
+    // For admin - get all reviews with $lookup optimization
     const userId = getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -100,23 +100,49 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     
-    const reviews = await reviewsCollection
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray() as any[];
-    
-    // Get user names
-    const userIds = reviews.map((r: any) => r.user_id).filter(Boolean);
-    const users = userIds.length > 0 
-      ? await usersCollection.find({ _id: { $in: userIds.map(id => toObjectId(id) as any) } }).toArray() as any[]
-      : [];
-    const userMap = new Map(users.map((u: any) => [u._id.toString(), u.name]));
-    
-    const formattedReviews = reviews.map((r: any) => ({
-      ...r,
-      id: r.id || r._id?.toString(),
-      user_name: r.user_id ? userMap.get(r.user_id.toString()) : null
-    }));
+    // Single aggregation with $lookup - replaces 2 separate queries
+    const formattedReviews = await reviewsCollection.aggregate([
+      { $sort: { created_at: -1 } },
+      
+      // Lookup user details
+      {
+        $lookup: {
+          from: 'users',
+          let: { odId: '$user_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', '$$odId'] },
+                    { $eq: [{ $toString: '$_id' }, { $toString: '$$odId' }] }
+                  ]
+                }
+              }
+            },
+            { $project: { name: 1 } }
+          ],
+          as: 'userData'
+        }
+      },
+      
+      // Project final shape
+      {
+        $project: {
+          id: { $ifNull: ['$id', { $toString: '$_id' }] },
+          user_id: 1,
+          name: 1,
+          email: 1,
+          rating: 1,
+          title: 1,
+          message: 1,
+          is_approved: 1,
+          is_featured: 1,
+          created_at: 1,
+          user_name: { $ifNull: [{ $arrayElemAt: ['$userData.name', 0] }, null] }
+        }
+      }
+    ]).toArray() as any[];
     
     return NextResponse.json({ reviews: formattedReviews }, { status: 200 });
   } catch (error) {

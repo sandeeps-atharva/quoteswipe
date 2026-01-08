@@ -58,62 +58,73 @@ export async function GET(request: NextRequest) {
     }
 
     const userSavedCollection = await getCollection('user_saved');
-    const quotesCollection = await getCollection('quotes');
-    const categoriesCollection = await getCollection('categories');
 
-    // Get user's saved quote data (including custom_background)
-    const saved = await userSavedCollection
-      .find({ user_id: userId })
-      .sort({ created_at: -1 })
-      .toArray() as any[];
+    // Single aggregation with $lookup - replaces 3 separate queries
+    // Maintains order by created_at (saved order)
+    const result = await userSavedCollection.aggregate([
+      // Match user's saved quotes
+      { $match: { user_id: userId } },
+      { $sort: { created_at: -1 } },
+      
+      // Lookup quote details
+      {
+        $lookup: {
+          from: 'quotes',
+          let: { quoteId: '$quote_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', { $toObjectId: '$$quoteId' }] },
+                    { $eq: ['$id', '$$quoteId'] },
+                    { $eq: [{ $toString: '$_id' }, '$$quoteId'] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'quote'
+        }
+      },
+      { $unwind: { path: '$quote', preserveNullAndEmptyArrays: false } },
+      
+      // Lookup category details
+      {
+        $lookup: {
+          from: 'categories',
+          let: { catId: '$quote.category_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', '$$catId'] },
+                    { $eq: ['$id', { $toString: '$$catId' }] },
+                    { $eq: [{ $toString: '$_id' }, { $toString: '$$catId' }] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'category'
+        }
+      },
+      
+      // Project final shape (same as before)
+      {
+        $project: {
+          id: { $ifNull: ['$quote.id', { $toString: '$quote._id' }] },
+          text: '$quote.text',
+          author: '$quote.author',
+          category: { $ifNull: [{ $arrayElemAt: ['$category.name', 0] }, 'Unknown'] },
+          category_icon: { $ifNull: [{ $arrayElemAt: ['$category.icon', 0] }, '📚'] },
+          custom_background: { $ifNull: ['$custom_background', null] }
+        }
+      }
+    ]).toArray() as any[];
 
-    const quoteIds = saved.map((s: any) => s.quote_id);
-    
-    // Create a map of quote_id to custom_background
-    const backgroundMap = new Map(
-      saved.map((s: any) => [String(s.quote_id), s.custom_background])
-    );
-
-    if (quoteIds.length === 0) {
-      return NextResponse.json({ quotes: [] }, { status: 200 });
-    }
-
-    // Get quotes - try both string id and ObjectId matching
-    const objectIds = quoteIds.map(id => {
-      try { return toObjectId(id); } catch { return null; }
-    }).filter((id): id is any => id !== null);
-    
-    const quotes = await quotesCollection.find({
-      $or: [
-        { id: { $in: quoteIds } },
-        { _id: { $in: objectIds } }
-      ]
-    }).toArray() as any[];
-
-    // Get categories
-    const categories = await categoriesCollection.find({}).toArray() as any[];
-    const categoryMap = new Map(categories.map((c: any) => [c.id || c._id?.toString(), c]));
-
-    // Transform quotes - include custom_background from saved data
-    const result = quotes.map((q: any) => {
-      const quoteId = q.id || q._id?.toString();
-      const category = categoryMap.get(q.category_id) || categoryMap.get(String(q.category_id));
-      return {
-        id: quoteId,
-        text: q.text,
-        author: q.author,
-        category: category?.name || 'Unknown',
-        category_icon: category?.icon || '📚',
-        custom_background: backgroundMap.get(String(quoteId)) || null
-      };
-    });
-
-    // Sort result by saved order (maintain the order from user_saved)
-    const orderedResult = quoteIds.map(id => 
-      result.find(r => String(r.id) === String(id))
-    ).filter(Boolean);
-
-    return NextResponse.json({ quotes: orderedResult }, { status: 200 });
+    return NextResponse.json({ quotes: result }, { status: 200 });
   } catch (error) {
     console.error('Get saved quotes error:', error);
     return NextResponse.json(

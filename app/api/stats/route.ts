@@ -27,39 +27,51 @@ export async function GET() {
     const likesCollection = await getCollection('user_likes');
     const feedbackCollection = await getCollection('feedback');
 
-    // Get counts
-    const totalQuotes = await quotesCollection.countDocuments();
-    const totalCategories = await categoriesCollection.countDocuments();
-    const totalUsers = await usersCollection.countDocuments();
-    const totalSaved = await savedCollection.countDocuments();
-    const totalLikes = await likesCollection.countDocuments();
+    // OPTIMIZED: Run all counts in parallel using estimatedDocumentCount (faster)
+    // and aggregation for computed values
+    const [
+      totalQuotes,
+      totalCategories,
+      totalUsers,
+      totalSaved,
+      totalLikes,
+      feedbackStats
+    ] = await Promise.all([
+      quotesCollection.estimatedDocumentCount(),
+      categoriesCollection.estimatedDocumentCount(),
+      usersCollection.estimatedDocumentCount(),
+      savedCollection.estimatedDocumentCount(),
+      likesCollection.estimatedDocumentCount(),
+      // Single aggregation for feedback stats with $facet
+      feedbackCollection.aggregate([
+        {
+          $facet: {
+            avgRating: [
+              { $match: { $or: [{ is_approved: true }, { is_approved: 1 }], rating: { $exists: true } } },
+              { $group: { _id: null, avg: { $avg: '$rating' } } }
+            ],
+            testimonials: [
+              { 
+                $match: { 
+                  $and: [
+                    { $or: [{ is_testimonial: true }, { is_testimonial: 1 }] },
+                    { $or: [{ is_approved: true }, { is_approved: 1 }] }
+                  ]
+                } 
+              },
+              { $count: 'count' }
+            ]
+          }
+        }
+      ]).toArray()
+    ]);
 
-    // Get average rating from feedback - handle both boolean and number for is_approved
-    let avgRating = '5.0';
-    try {
-      const ratingResult = await feedbackCollection.aggregate([
-        { $match: { $or: [{ is_approved: true }, { is_approved: 1 }] } },
-        { $group: { _id: null, avgRating: { $avg: '$rating' } } }
-      ]).toArray() as any[];
-      if (ratingResult[0]?.avgRating) {
-        avgRating = parseFloat(ratingResult[0].avgRating).toFixed(1);
-      }
-    } catch {
-      avgRating = '5.0';
-    }
-
-    // Get total testimonials - handle both boolean and number
-    let totalTestimonials = 0;
-    try {
-      totalTestimonials = await feedbackCollection.countDocuments({
-        $and: [
-          { $or: [{ is_testimonial: true }, { is_testimonial: 1 }] },
-          { $or: [{ is_approved: true }, { is_approved: 1 }] }
-        ]
-      });
-    } catch {
-      totalTestimonials = 0;
-    }
+    // Extract feedback stats
+    const fbStats = feedbackStats[0] || {};
+    const avgRating = fbStats.avgRating?.[0]?.avg 
+      ? parseFloat(fbStats.avgRating[0].avg).toFixed(1) 
+      : '5.0';
+    const totalTestimonials = fbStats.testimonials?.[0]?.count || 0;
 
     // Format numbers
     const formatNumber = (num: number): string => {

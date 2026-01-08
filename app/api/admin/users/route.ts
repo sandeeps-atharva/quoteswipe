@@ -17,55 +17,87 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const usersCollection = await getCollection('users');
-    const likesCollection = await getCollection('user_likes');
-    const savedCollection = await getCollection('user_saved');
 
     // Build filter
-    let filter = {};
+    const matchStage: any = {};
     if (search) {
-      filter = {
-        $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } }
-        ]
-      };
+      matchStage.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
     }
 
-    // Get users
-    const users = await usersCollection
-      .find(filter)
-      .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray() as any[];
+    // Get total count first (for pagination)
+    const total = await usersCollection.countDocuments(matchStage);
 
-    // Get total count
-    const total = await usersCollection.countDocuments(filter);
-
-    // Get likes and saved counts for each user
-    const userIds = users.map((u: any) => u._id.toString());
-    
-    const likesCounts = await likesCollection.aggregate([
-      { $match: { user_id: { $in: userIds } } },
-      { $group: { _id: '$user_id', count: { $sum: 1 } } }
+    // Single aggregation with $lookup - replaces 3 separate queries
+    const formattedUsers = await usersCollection.aggregate([
+      // Match filter
+      { $match: matchStage },
+      { $sort: { created_at: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      
+      // Add string version of _id for lookups
+      { $addFields: { userIdStr: { $toString: '$_id' } } },
+      
+      // Lookup likes count
+      {
+        $lookup: {
+          from: 'user_likes',
+          let: { odId: '$_id', odIdStr: '$userIdStr' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$user_id', '$$odId'] },
+                    { $eq: ['$user_id', '$$odIdStr'] }
+                  ]
+                }
+              }
+            },
+            { $count: 'count' }
+          ],
+          as: 'likesData'
+        }
+      },
+      
+      // Lookup saved count
+      {
+        $lookup: {
+          from: 'user_saved',
+          let: { odId: '$_id', odIdStr: '$userIdStr' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$user_id', '$$odId'] },
+                    { $eq: ['$user_id', '$$odIdStr'] }
+                  ]
+                }
+              }
+            },
+            { $count: 'count' }
+          ],
+          as: 'savedData'
+        }
+      },
+      
+      // Project final shape (same as before)
+      {
+        $project: {
+          id: { $toString: '$_id' },
+          name: 1,
+          email: 1,
+          role: { $ifNull: ['$role', 'user'] },
+          created_at: 1,
+          likes_count: { $ifNull: [{ $arrayElemAt: ['$likesData.count', 0] }, 0] },
+          saved_count: { $ifNull: [{ $arrayElemAt: ['$savedData.count', 0] }, 0] }
+        }
+      }
     ]).toArray() as any[];
-    const likesMap = new Map(likesCounts.map((l: any) => [l._id, l.count]));
-
-    const savedCounts = await savedCollection.aggregate([
-      { $match: { user_id: { $in: userIds } } },
-      { $group: { _id: '$user_id', count: { $sum: 1 } } }
-    ]).toArray() as any[];
-    const savedMap = new Map(savedCounts.map((s: any) => [s._id, s.count]));
-
-    const formattedUsers = users.map((u: any) => ({
-      id: u._id.toString(),
-      name: u.name,
-      email: u.email,
-      role: u.role || 'user',
-      created_at: u.created_at,
-      likes_count: likesMap.get(u._id.toString()) || 0,
-      saved_count: savedMap.get(u._id.toString()) || 0
-    }));
 
     return NextResponse.json({
       users: formattedUsers,

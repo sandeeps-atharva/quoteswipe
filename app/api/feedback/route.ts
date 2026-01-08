@@ -63,7 +63,7 @@ function getFeedbackNotificationHtml(feedback: {
 `;
 }
 
-// GET - Get all feedback (admin only)
+// GET - Get all feedback (admin only) - Optimized with $lookup and $facet
 export async function GET(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
@@ -82,41 +82,71 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     
     const feedbackCollection = await getCollection('feedback');
-    
     const filter = status && status !== 'all' ? { status } : {};
-    const feedback = await feedbackCollection
-      .find(filter)
-      .sort({ created_at: -1 })
-      .toArray() as any[];
-    
-    // Get user names
-    const userIds = feedback.map((f: any) => f.user_id).filter(Boolean);
-    const users = userIds.length > 0 
-      ? await usersCollection.find({ _id: { $in: userIds.map(id => toObjectId(id) as any) } }).toArray() as any[]
-      : [];
-    const userMap = new Map(users.map((u: any) => [u._id.toString(), u.name]));
-    
-    const formattedFeedback = feedback.map((f: any) => ({
-      ...f,
-      id: f.id || f._id?.toString(),
-      user_name: f.user_id ? userMap.get(f.user_id.toString()) : null
-    }));
-    
-    // Get counts by status
-    const total = await feedbackCollection.countDocuments();
-    const newCount = await feedbackCollection.countDocuments({ status: 'new' });
-    const readCount = await feedbackCollection.countDocuments({ status: 'read' });
-    const repliedCount = await feedbackCollection.countDocuments({ status: 'replied' });
-    const resolvedCount = await feedbackCollection.countDocuments({ status: 'resolved' });
+
+    // Single aggregation with $lookup and $facet - replaces 7 separate queries!
+    const result = await feedbackCollection.aggregate([
+      {
+        $facet: {
+          // Get feedback with user lookup
+          feedback: [
+            { $match: filter },
+            { $sort: { created_at: -1 } },
+            {
+              $lookup: {
+                from: 'users',
+                let: { odId: '$user_id' },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $or: [
+                          { $eq: ['$_id', '$$odId'] },
+                          { $eq: [{ $toString: '$_id' }, { $toString: '$$odId' }] }
+                        ]
+                      }
+                    }
+                  },
+                  { $project: { name: 1 } }
+                ],
+                as: 'userData'
+              }
+            },
+            {
+              $project: {
+                id: { $ifNull: ['$id', { $toString: '$_id' }] },
+                user_id: 1,
+                name: 1,
+                email: 1,
+                category: 1,
+                message: 1,
+                status: 1,
+                admin_notes: 1,
+                created_at: 1,
+                user_name: { $ifNull: [{ $arrayElemAt: ['$userData.name', 0] }, null] }
+              }
+            }
+          ],
+          // Get all counts in one pass
+          totalCount: [{ $count: 'count' }],
+          newCount: [{ $match: { status: 'new' } }, { $count: 'count' }],
+          readCount: [{ $match: { status: 'read' } }, { $count: 'count' }],
+          repliedCount: [{ $match: { status: 'replied' } }, { $count: 'count' }],
+          resolvedCount: [{ $match: { status: 'resolved' } }, { $count: 'count' }]
+        }
+      }
+    ]).toArray() as any[];
+
+    const data = result[0];
     
     return NextResponse.json({ 
-      feedback: formattedFeedback,
+      feedback: data.feedback || [],
       counts: {
-        total,
-        new_count: newCount,
-        read_count: readCount,
-        replied_count: repliedCount,
-        resolved_count: resolvedCount
+        total: data.totalCount[0]?.count || 0,
+        new_count: data.newCount[0]?.count || 0,
+        read_count: data.readCount[0]?.count || 0,
+        replied_count: data.repliedCount[0]?.count || 0,
+        resolved_count: data.resolvedCount[0]?.count || 0
       }
     }, { status: 200 });
   } catch (error) {

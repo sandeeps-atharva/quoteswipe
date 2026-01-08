@@ -19,37 +19,43 @@ async function getCategoriesFromCache() {
   }
 
   const categoriesCollection = await getCollection('categories');
-  const quotesCollection = await getCollection('quotes');
 
-  // Get all categories
-  const categories = await categoriesCollection.find({}).sort({ name: 1 }).toArray() as any[];
-
-  // Get quote counts per category
-  const quoteCounts = await quotesCollection.aggregate([
-    { $group: { _id: '$category_id', count: { $sum: 1 } } }
-  ]).toArray() as any[];
-  
-  // Create count map with string keys for consistent lookup
-  // Use .toString() which works correctly for MongoDB ObjectId
-  const countMap = new Map<string, number>();
-  quoteCounts.forEach((q: any) => {
-    const key = q._id?.toString ? q._id.toString() : String(q._id);
-    countMap.set(key, q.count);
-  });
-
-  // Format categories with counts
-  const formattedCategories = categories.map((c: any) => {
-    // Convert ObjectId to string using .toString() method
-    const categoryId = c._id?.toString ? c._id.toString() : String(c._id);
-    const count = countMap.get(categoryId) || 0;
+  // OPTIMIZED: Single aggregation with $lookup - replaces 2 queries
+  const formattedCategories = await categoriesCollection.aggregate([
+    { $sort: { name: 1 } },
     
-    return {
-      id: categoryId,
-      name: c.name,
-      icon: c.icon,
-      count: count,
-    };
-  });
+    // Lookup quote counts for each category
+    {
+      $lookup: {
+        from: 'quotes',
+        let: { catId: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $or: [
+                  { $eq: ['$category_id', '$$catId'] },
+                  { $eq: ['$category_id', { $toString: '$$catId' }] }
+                ]
+              }
+            }
+          },
+          { $count: 'count' }
+        ],
+        as: 'quoteCount'
+      }
+    },
+    
+    // Project final shape
+    {
+      $project: {
+        id: { $toString: '$_id' },
+        name: 1,
+        icon: 1,
+        count: { $ifNull: [{ $arrayElemAt: ['$quoteCount.count', 0] }, 0] }
+      }
+    }
+  ]).toArray() as any[];
 
   cachedCategories = formattedCategories;
   cacheTime = Date.now();

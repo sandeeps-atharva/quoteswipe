@@ -12,42 +12,54 @@ export async function GET(request: NextRequest) {
     }
 
     const userQuotesCollection = await getCollection('user_quotes');
-    const categoriesCollection = await getCollection('categories');
 
-    // Get user's quotes
-    const quotes = await userQuotesCollection
-      .find({ user_id: userId })
-      .sort({ created_at: -1 })
-      .toArray() as any[];
-
-    // Get categories for mapping - store by multiple key formats
-    const categories = await categoriesCollection.find({}).toArray() as any[];
-    const categoryMap = new Map<string, any>();
-    categories.forEach((c: any) => {
-      if (c.id) categoryMap.set(String(c.id), c);
-      if (c._id) categoryMap.set(c._id.toString(), c);
-    });
-
-    // Transform quotes
-    const formattedQuotes = quotes.map((q: any) => {
-      const catId = q.category_id;
-      const category = catId ? (categoryMap.get(String(catId)) || categoryMap.get(catId)) : null;
-      return {
-        id: q.id || q._id?.toString(),
-        text: q.text,
-        author: q.author,
-        theme_id: q.theme_id,
-        font_id: q.font_id,
-        background_id: q.background_id,
-        is_public: q.is_public,
-        category_id: q.category_id,
-        created_at: q.created_at,
-        updated_at: q.updated_at,
-        category: category?.name || 'Personal',
-        category_icon: category?.icon || '✨',
-        custom_background: q.custom_background
-      };
-    });
+    // Single aggregation with $lookup - replaces 2 separate queries
+    const formattedQuotes = await userQuotesCollection.aggregate([
+      // Match user's quotes
+      { $match: { user_id: userId } },
+      { $sort: { created_at: -1 } },
+      
+      // Lookup category details
+      {
+        $lookup: {
+          from: 'categories',
+          let: { catId: '$category_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', '$$catId'] },
+                    { $eq: ['$id', { $toString: '$$catId' }] },
+                    { $eq: [{ $toString: '$_id' }, { $toString: '$$catId' }] }
+                  ]
+                }
+              }
+            }
+          ],
+          as: 'categoryInfo'
+        }
+      },
+      
+      // Project final shape (same as before)
+      {
+        $project: {
+          id: { $ifNull: ['$id', { $toString: '$_id' }] },
+          text: 1,
+          author: 1,
+          theme_id: 1,
+          font_id: 1,
+          background_id: 1,
+          is_public: 1,
+          category_id: 1,
+          created_at: 1,
+          updated_at: 1,
+          category: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Personal'] },
+          category_icon: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.icon', 0] }, '✨'] },
+          custom_background: { $ifNull: ['$custom_background', null] }
+        }
+      }
+    ]).toArray() as any[];
 
     return NextResponse.json({ quotes: formattedQuotes }, { status: 200 });
   } catch (error) {
