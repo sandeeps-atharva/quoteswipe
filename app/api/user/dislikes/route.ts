@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       { $match: { user_id: userId } },
       { $sort: { created_at: -1 } },
       
-      // Lookup quote details
+      // Lookup quote details - safe matching for both ObjectId and string formats
       {
         $lookup: {
           from: 'quotes',
@@ -96,9 +96,21 @@ export async function GET(request: NextRequest) {
               $match: {
                 $expr: {
                   $or: [
-                    { $eq: ['$_id', { $toObjectId: '$$quoteId' }] },
+                    // Direct ObjectId match (if quoteId is already ObjectId)
+                    { $eq: ['$_id', '$$quoteId'] },
+                    // String id field match
                     { $eq: ['$id', '$$quoteId'] },
-                    { $eq: [{ $toString: '$_id' }, '$$quoteId'] }
+                    // Convert _id to string and compare
+                    { $eq: [{ $toString: '$_id' }, { $toString: '$$quoteId' }] },
+                    // Safe ObjectId conversion with error handling
+                    { $eq: ['$_id', { 
+                      $convert: { 
+                        input: '$$quoteId', 
+                        to: 'objectId', 
+                        onError: null, 
+                        onNull: null 
+                      } 
+                    }] }
                   ]
                 }
               }
