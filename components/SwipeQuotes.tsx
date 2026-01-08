@@ -206,6 +206,7 @@ export default function SwipeQuotes() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+
   // URL restoration on navigation back - restore URL from cache immediately
   useEffect(() => {
     // Only restore if we're on root URL and have cached data
@@ -1682,6 +1683,114 @@ export default function SwipeQuotes() {
     setReelQuote(currentQuote || null);
     setShowQuoteReelModal(true);
   };
+
+  // Desktop keyboard shortcuts for navigation and undo
+  useEffect(() => {
+    // Only enable on desktop
+    if (isMobile) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle shortcuts if user is typing in an input/textarea
+      const activeElement = document.activeElement;
+      const isTyping = activeElement?.tagName === 'INPUT' || 
+                       activeElement?.tagName === 'TEXTAREA' ||
+                       activeElement?.getAttribute('contenteditable') === 'true';
+      
+      if (isTyping) return;
+      
+      // Check if any modal or view is open
+      const anyModalOpen = showAuthModal || showShareModal || showInstagramModal || 
+                          showSearchModal || showSaveQuoteModal || showCustomizationModal ||
+                          showCreateQuoteModal || showEditBackgroundModal || showQuoteReelModal ||
+                          showOnboarding || viewingUserQuote !== null || isSidebarOpen;
+      
+      // Only work in feed tab with swipe view
+      const isSwipeView = activeNavTab === 'feed' && viewMode === 'swipe';
+      
+      if (anyModalOpen || !isSwipeView) return;
+      
+      // Prevent during animations
+      if (isDragging || isAnimating || isUndoing) return;
+      
+      switch (e.key.toLowerCase()) {
+        // Undo: Z, Ctrl+Z, Backspace
+        case 'z':
+          if (swipeHistory.length > 0) {
+            e.preventDefault();
+            handleUndo();
+          }
+          break;
+        case 'backspace':
+          if (swipeHistory.length > 0) {
+            e.preventDefault();
+            handleUndo();
+          }
+          break;
+          
+        // Like: Right Arrow, D, L
+        case 'arrowright':
+        case 'd':
+        case 'l':
+          e.preventDefault();
+          handleLike();
+          break;
+          
+        // Skip/Dislike: Left Arrow, A, X
+        case 'arrowleft':
+        case 'a':
+        case 'x':
+          e.preventDefault();
+          handleDislike();
+          break;
+          
+        // Save: S
+        case 's':
+          if (!e.ctrlKey && !e.metaKey) { // Don't interfere with Ctrl+S
+            e.preventDefault();
+            handleSave();
+          }
+          break;
+          
+        // Edit Background: E
+        case 'e':
+          e.preventDefault();
+          handleEditBackground();
+          break;
+          
+        // Share: Enter or Spacebar
+        case 'enter':
+        case ' ':
+          e.preventDefault();
+          const filteredQuotes = getFilteredQuotes();
+          const currentQuote = filteredQuotes[currentIndex];
+          if (currentQuote) {
+            setShareQuote({
+              id: currentQuote.id,
+              text: currentQuote.text,
+              author: currentQuote.author,
+              category: currentQuote.category,
+              category_icon: currentQuote.category_icon,
+              isUserQuote: false,
+              custom_background: currentQuote.custom_background || undefined,
+            });
+            setShowShareModal(true);
+          }
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isMobile, 
+    showAuthModal, showShareModal, showInstagramModal, showSearchModal,
+    showSaveQuoteModal, showCustomizationModal, showCreateQuoteModal,
+    showEditBackgroundModal, showQuoteReelModal, showOnboarding,
+    viewingUserQuote, isSidebarOpen, activeNavTab, viewMode,
+    isDragging, isAnimating, isUndoing, swipeHistory, currentIndex,
+    handleUndo, handleLike, handleDislike, handleSave, handleEditBackground,
+    getFilteredQuotes
+  ]);
 
   // Handle applying new background to a specific quote
   const handleApplyBackground = useCallback((newBackground: BackgroundImage) => {
