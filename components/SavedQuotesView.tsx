@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, Bookmark, Trash2, Share2, Loader2, X, ArrowLeft, MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ThematicLoader from './ThematicLoader';
 
 interface SavedQuote {
   id: string | number;
@@ -170,14 +171,8 @@ export default function SavedQuotesView({
       >
         <div className="max-w-5xl mx-auto">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16 sm:py-20">
-              <div className="relative animate-bounce mb-3">
-                <span className="text-5xl">💬</span>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              </div>
-              <p className="text-xs sm:text-sm text-stone-500 font-medium">Loading saved quotes...</p>
+            <div className="flex items-center justify-center py-16 sm:py-20">
+              <ThematicLoader message="Loading saved quotes..." size="md" />
             </div>
           ) : quotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-4 sm:px-6 text-center">

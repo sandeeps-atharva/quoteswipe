@@ -25,6 +25,7 @@ const PROFILE_GRADIENTS = [
 import Link from 'next/link';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
+import ThematicLoader from './ThematicLoader';
 import UpdatePasswordModal from './UpdatePasswordModal';
 import { apiCache, CACHE_KEYS, CACHE_TTL } from '@/lib/api-cache';
 
@@ -366,14 +367,8 @@ export default function ProfileView({
       >
         <div className="max-w-2xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="relative animate-bounce mb-4">
-                <span className="text-5xl">💬</span>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500 font-medium">Loading profile...</p>
+            <div className="flex items-center justify-center py-20">
+              <ThematicLoader message="Loading profile..." size="md" />
             </div>
           ) : profileData ? (
             <div className="space-y-4 sm:space-y-6">

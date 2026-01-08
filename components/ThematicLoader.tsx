@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 interface ThematicLoaderProps {
   message?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -19,22 +21,22 @@ export default function ThematicLoader({
 }: ThematicLoaderProps) {
   const sizeClasses = {
     sm: {
-      container: 'p-6 gap-3',
-      emoji: 'text-4xl',
-      spinner: 'w-5 h-5',
+      container: 'gap-3',
+      logoSize: 56,
+      spinner: 'w-4 h-4 border-2',
       spinnerContainer: 'w-5 h-5',
       text: 'text-sm',
     },
     md: {
-      container: 'p-8 gap-4',
-      emoji: 'text-5xl',
+      container: 'gap-4',
+      logoSize: 80,
       spinner: 'w-4 h-4 border-2',
       spinnerContainer: 'w-6 h-6',
       text: 'text-base',
     },
     lg: {
-      container: 'p-10 gap-5',
-      emoji: 'text-6xl',
+      container: 'gap-5',
+      logoSize: 100,
       spinner: 'w-5 h-5 border-2',
       spinnerContainer: 'w-7 h-7',
       text: 'text-lg',
@@ -45,13 +47,20 @@ export default function ThematicLoader({
 
   const loaderContent = (
     <div
-      className={`bg-white dark:bg-gray-900 rounded-3xl shadow-2xl flex flex-col items-center ${s.container} animate-in fade-in zoom-in duration-200`}
+      className={`flex flex-col items-center ${s.container} animate-in fade-in zoom-in duration-200`}
     >
-      {/* Quote Bubble with spinning indicator */}
-      <div className="relative animate-bounce">
-        <span className={s.emoji}>💬</span>
+      {/* Logo with spinning indicator */}
+      <div className="relative">
+        <Image
+          src="/logo.svg"
+          alt="QuoteSwipe"
+          width={s.logoSize}
+          height={s.logoSize}
+          className="drop-shadow-xl"
+          priority
+        />
         <div
-          className={`absolute -bottom-1 -right-1 ${s.spinnerContainer} bg-gradient-to-br from-amber-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg`}
+          className={`absolute -bottom-0.5 -right-0.5 ${s.spinnerContainer} bg-gradient-to-br from-amber-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg`}
         >
           <div
             className={`${s.spinner} border-white border-t-transparent rounded-full animate-spin`}
@@ -60,7 +69,7 @@ export default function ThematicLoader({
       </div>
 
       {/* Message */}
-      <p className={`text-gray-700 dark:text-gray-300 font-medium ${s.text}`}>
+      <p className={`text-gray-600 dark:text-gray-300 font-medium ${s.text}`}>
         {message}
       </p>
     </div>
@@ -111,18 +120,25 @@ export function NavigationLoader() {
 export function AppLoader() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 flex items-center justify-center">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
-        {/* Quote Bubble with spinning indicator */}
-        <div className="relative animate-bounce">
-          <span className="text-6xl">💬</span>
-          <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-gradient-to-br from-amber-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
+      <div className="flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
+        {/* Logo with spinning indicator */}
+        <div className="relative">
+          <Image
+            src="/logo.svg"
+            alt="QuoteSwipe"
+            width={100}
+            height={100}
+            className="drop-shadow-xl"
+            priority
+          />
+          <div className="absolute -bottom-0.5 -right-0.5 w-7 h-7 bg-gradient-to-br from-amber-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
 
         {/* App name */}
         <div className="text-center">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
             QuoteSwipe
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -133,4 +149,3 @@ export function AppLoader() {
     </div>
   );
 }
-

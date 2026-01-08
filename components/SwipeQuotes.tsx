@@ -2170,7 +2170,26 @@ export default function SwipeQuotes() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 flex overflow-hidden">
+    <div className="min-h-screen flex overflow-hidden relative">
+      {/* Animated Gradient Background */}
+      <div className="gradient-bg" aria-hidden="true" />
+      
+      {/* Floating Orbs */}
+      <div className="orb orb-1" aria-hidden="true" />
+      <div className="orb orb-2" aria-hidden="true" />
+      <div className="orb orb-3" aria-hidden="true" />
+      
+      {/* Floating Particles - Pure CSS */}
+      <div className="particles-container" aria-hidden="true">
+        <div className="particle" /><div className="particle" /><div className="particle" />
+        <div className="particle" /><div className="particle" /><div className="particle" />
+        <div className="particle" /><div className="particle" /><div className="particle" />
+        <div className="particle" /><div className="particle" /><div className="particle" />
+        <div className="particle" /><div className="particle" /><div className="particle" />
+        <div className="particle" /><div className="particle" /><div className="particle" />
+        <div className="particle" /><div className="particle" /><div className="particle" />
+        <div className="particle" /><div className="particle" /><div className="particle" />
+      </div>
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}

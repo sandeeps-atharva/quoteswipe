@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, Heart, Share2, Loader2, X, ArrowLeft, MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ThematicLoader from './ThematicLoader';
 
 interface LikedQuote {
   id: string | number;
@@ -149,14 +150,8 @@ export default function LikedQuotesView({
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-4">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="relative animate-bounce mb-4">
-                <span className="text-5xl">💬</span>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              </div>
-              <p className="text-stone-500 font-medium">Loading liked quotes...</p>
+            <div className="flex items-center justify-center py-16">
+              <ThematicLoader message="Loading liked quotes..." size="md" />
             </div>
           ) : quotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
