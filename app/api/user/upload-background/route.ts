@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { getCollection } from '@/lib/db';
+import sharp from 'sharp';
 
 // Maximum file size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -8,8 +9,12 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 // Maximum custom backgrounds per user (synced with frontend CardCustomization.tsx)
 const MAX_BACKGROUNDS = 100;
-// Maximum Base64 size (approximately 7MB to allow for Base64 overhead)
-const MAX_BASE64_SIZE = 7 * 1024 * 1024;
+// Maximum Base64 size (approximately 500KB after compression)
+const MAX_BASE64_SIZE = 500 * 1024;
+// Compression settings
+const MAX_WIDTH = 1200;
+const MAX_HEIGHT = 1600;
+const COMPRESSION_QUALITY = 80;
 
 interface CustomBackground {
   id: string;
@@ -18,20 +23,75 @@ interface CustomBackground {
   createdAt: number;
 }
 
-// Compress image using canvas (run on server with node-canvas or send to client)
+/**
+ * Compress image using sharp
+ * - Resizes to max 1200x1600
+ * - Converts to WebP (smallest size) or JPEG
+ * - Uses 80% quality
+ * - Returns Base64 data URL
+ */
 async function compressImageToBase64(buffer: Buffer, mimeType: string): Promise<string> {
-  // Convert buffer to base64
-  const base64 = buffer.toString('base64');
-  const dataUrl = `data:${mimeType};base64,${base64}`;
-  
-  // If already small enough, return as-is
-  if (base64.length <= MAX_BASE64_SIZE) {
+  try {
+    // Get image metadata
+    const metadata = await sharp(buffer).metadata();
+    const originalWidth = metadata.width || 0;
+    const originalHeight = metadata.height || 0;
+    
+    // Calculate new dimensions (maintain aspect ratio)
+    let width = originalWidth;
+    let height = originalHeight;
+    
+    if (width > MAX_WIDTH) {
+      height = Math.round((height * MAX_WIDTH) / width);
+      width = MAX_WIDTH;
+    }
+    if (height > MAX_HEIGHT) {
+      width = Math.round((width * MAX_HEIGHT) / height);
+      height = MAX_HEIGHT;
+    }
+    
+    // Try WebP first (smaller file size)
+    let compressedBuffer: Buffer;
+    let outputMimeType: string;
+    
+    try {
+      compressedBuffer = await sharp(buffer)
+        .resize(width, height, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({ quality: COMPRESSION_QUALITY })
+        .toBuffer();
+      outputMimeType = 'image/webp';
+    } catch {
+      // Fallback to JPEG if WebP fails
+      compressedBuffer = await sharp(buffer)
+        .resize(width, height, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality: COMPRESSION_QUALITY })
+        .toBuffer();
+      outputMimeType = 'image/jpeg';
+    }
+    
+    // Convert to Base64
+    const base64 = compressedBuffer.toString('base64');
+    const dataUrl = `data:${outputMimeType};base64,${base64}`;
+    
+    // Log compression results
+    const originalKB = (buffer.length / 1024).toFixed(1);
+    const compressedKB = (compressedBuffer.length / 1024).toFixed(1);
+    const reduction = (((buffer.length - compressedBuffer.length) / buffer.length) * 100).toFixed(0);
+    console.log(`[Server] Image compressed: ${originalKB}KB → ${compressedKB}KB (${reduction}% smaller)`);
+    
     return dataUrl;
+  } catch (error) {
+    console.error('Server compression error:', error);
+    // Fallback: return original as Base64
+    const base64 = buffer.toString('base64');
+    return `data:${mimeType};base64,${base64}`;
   }
-  
-  // For server-side compression, we'd need sharp or similar
-  // For now, return the image but it may be rejected if too large
-  return dataUrl;
 }
 
 // POST - Upload a new background image (stored as Base64 in database)
