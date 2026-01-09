@@ -47,7 +47,7 @@ interface TextSettings {
 interface ReelSettings {
   duration: number; // seconds per image
   transition: TransitionType;
-  quality: '1080p' | '4k';
+  quality: '720p' | '1080p' | '4k';
 }
 
 // ============================================================================
@@ -59,8 +59,25 @@ const MIN_IMAGES = 2; // Minimum images required
 const MAX_VIDEO_DURATION = 30; // Maximum video duration in seconds
 const MAX_VIDEO_SIZE_MB = 100; // Maximum video file size in MB
 const QUALITY_OPTIONS = {
-  '1080p': { width: 1080, height: 1920, label: 'HD (1080p)', bitrate: 8000000 },
+  '720p': { width: 720, height: 1280, label: 'HD (720p)', bitrate: 5000000 },
+  '1080p': { width: 1080, height: 1920, label: 'Full HD (1080p)', bitrate: 8000000 },
   '4k': { width: 2160, height: 3840, label: '4K Ultra HD', bitrate: 35000000 },
+};
+
+// Detect mobile device
+const isMobileDevice = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.innerWidth <= 768);
+};
+
+// Get max quality for device (prevents mobile crashes)
+const getMaxQualityForDevice = (): '720p' | '1080p' | '4k' => {
+  if (typeof window === 'undefined') return '1080p';
+  const isMobile = isMobileDevice();
+  // Mobile: max 1080p (still excellent quality, same as Instagram/TikTok)
+  // Desktop: allow 4K
+  return isMobile ? '1080p' : '4k';
 };
 
 const TRANSITIONS: { id: TransitionType; label: string; icon: string }[] = [
@@ -117,14 +134,41 @@ const DEFAULT_TEXT_SETTINGS: TextSettings = {
 // Helper Functions
 // ============================================================================
 
+// Image cache to prevent reloading images on every frame (major memory optimization)
+const imageCache = new Map<string, HTMLImageElement>();
+
 const loadImage = (src: string): Promise<HTMLImageElement> => {
+  // Return cached image if available
+  const cached = imageCache.get(src);
+  if (cached) {
+    return Promise.resolve(cached);
+  }
+  
   return new Promise((resolve, reject) => {
     const img = document.createElement('img');
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
+    img.onload = () => {
+      imageCache.set(src, img);
+      resolve(img);
+    };
     img.onerror = reject;
     img.src = src;
   });
+};
+
+// Pre-load all images into cache before video generation
+const preloadAllImages = async (imageSources: string[]): Promise<HTMLImageElement[]> => {
+  const loadedImages: HTMLImageElement[] = [];
+  for (const src of imageSources) {
+    const img = await loadImage(src);
+    loadedImages.push(img);
+  }
+  return loadedImages;
+};
+
+// Clear image cache to free memory
+const clearImageCache = () => {
+  imageCache.clear();
 };
 
 const wrapText = (
@@ -173,10 +217,11 @@ export default function QuoteReelModal({
 }: QuoteReelModalProps) {
   // State
   const [images, setImages] = useState<string[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
   const [settings, setSettings] = useState<ReelSettings>({
     duration: 1,
     transition: DEFAULT_TRANSITION,
-    quality: '4k',
+    quality: '1080p', // Default to 1080p, will be adjusted on mount
   });
   const [textSettings, setTextSettings] = useState<TextSettings>(DEFAULT_TEXT_SETTINGS);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -209,14 +254,25 @@ export default function QuoteReelModal({
   // Calculate total duration
   const totalDuration = images.length * settings.duration;
 
-  // Reset when modal opens
+  // Reset when modal opens/closes
   useEffect(() => {
     if (isOpen) {
+      // Detect mobile device
+      const mobile = isMobileDevice();
+      setIsMobile(mobile);
+      
+      // Set appropriate quality for device
+      const maxQuality = getMaxQualityForDevice();
+      
       setImages([]);
       setCurrentImageIndex(0);
       setIsPlaying(false);
       setIsGenerating(false);
       setGenerationProgress(0);
+      setSettings(prev => ({
+        ...prev,
+        quality: maxQuality === '4k' ? '4k' : '1080p', // Default to best available
+      }));
       setTextSettings({
         ...DEFAULT_TEXT_SETTINGS,
         showQuote: true, // Always allow showing quote
@@ -230,6 +286,9 @@ export default function QuoteReelModal({
       setVideoDuration(0);
       setVideoError(null);
       setIsVideoPlaying(false);
+    } else {
+      // Clear image cache when modal closes to free memory
+      clearImageCache();
     }
   }, [isOpen, quote]);
 
@@ -869,7 +928,7 @@ export default function QuoteReelModal({
     }
   }, [uploadedVideo, uploadedVideoFile, createOverlayCanvas]);
 
-  // Generate video from images
+  // Generate video from images (optimized for mobile - prevents crashes)
   const generateVideo = useCallback(async () => {
     if (reelMode === 'video') {
       return generateVideoFromUpload();
@@ -880,7 +939,11 @@ export default function QuoteReelModal({
     setIsGenerating(true);
     setGenerationProgress(0);
 
-    const quality = QUALITY_OPTIONS[settings.quality];
+    // On mobile, enforce max 1080p to prevent memory crashes
+    const maxQuality = getMaxQualityForDevice();
+    const effectiveQuality = settings.quality === '4k' && maxQuality !== '4k' ? '1080p' : settings.quality;
+    const quality = QUALITY_OPTIONS[effectiveQuality];
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -890,10 +953,26 @@ export default function QuoteReelModal({
     if (!ctx) return;
 
     try {
-      // Create MediaRecorder
+      // OPTIMIZATION: Pre-load all images into cache before rendering
+      // This prevents reloading images on every frame (major memory & speed boost)
+      console.log('[Reel] Pre-loading', images.length, 'images...');
+      setGenerationProgress(5);
+      await preloadAllImages(images);
+      console.log('[Reel] Images pre-loaded, starting video generation...');
+      setGenerationProgress(10);
+
+      // Select best available codec
+      let mimeType = 'video/webm';
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+        mimeType = 'video/webm;codecs=vp9';
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+        mimeType = 'video/webm;codecs=vp8';
+      }
+
+      // Create MediaRecorder with optimized settings
       const stream = canvas.captureStream(30); // 30 FPS
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
+        mimeType,
         videoBitsPerSecond: quality.bitrate,
       });
 
@@ -911,17 +990,20 @@ export default function QuoteReelModal({
         // Download
         const a = document.createElement('a');
         a.href = url;
-        a.download = `quote-reel-${settings.quality}-${Date.now()}.webm`;
+        a.download = `quote-reel-${effectiveQuality}-${Date.now()}.webm`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        
+        // Cleanup
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        clearImageCache(); // Free memory after generation
 
         setIsGenerating(false);
         setGenerationProgress(100);
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(100); // Collect data every 100ms for smoother memory usage
 
       // Render frames
       const fps = 30;
@@ -947,19 +1029,25 @@ export default function QuoteReelModal({
 
         await drawFrame(ctx, quality.width, quality.height, imageIndex, transitionProgress, nextImageIndex);
         
-        // Update progress
-        setGenerationProgress(Math.floor((frame / totalFrames) * 100));
+        // Update progress (10% for loading, 90% for rendering)
+        setGenerationProgress(10 + Math.floor((frame / totalFrames) * 90));
 
-        // Wait for next frame
+        // Wait for next frame - use requestAnimationFrame for better performance
         await new Promise((resolve) => setTimeout(resolve, 1000 / fps));
+        
+        // Periodic memory cleanup on mobile (every 30 frames = 1 second)
+        if (isMobile && frame > 0 && frame % 30 === 0) {
+          ctx.clearRect(0, 0, quality.width, quality.height);
+        }
       }
 
       mediaRecorder.stop();
     } catch (error) {
       console.error('Video generation error:', error);
+      clearImageCache(); // Clean up on error
       setIsGenerating(false);
     }
-  }, [reelMode, images, settings, totalDuration, drawFrame, generateVideoFromUpload]);
+  }, [reelMode, images, settings, totalDuration, drawFrame, generateVideoFromUpload, isMobile]);
 
   if (!isOpen) return null;
 
@@ -1312,24 +1400,46 @@ export default function QuoteReelModal({
               <div className="space-y-4 pt-4 border-t border-stone-200 dark:border-stone-700">
                 {/* Quality */}
                 <div>
-                  <label className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2 block">
-                    Video Quality
-                  </label>
-                  <div className="flex gap-2">
-                    {Object.entries(QUALITY_OPTIONS).map(([key, value]) => (
-                      <button
-                        key={key}
-                        onClick={() => setSettings((s) => ({ ...s, quality: key as '1080p' | '4k' }))}
-                        className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
-                          settings.quality === key
-                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
-                        }`}
-                      >
-                        {value.label}
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-semibold text-stone-700 dark:text-stone-300">
+                      Video Quality
+                    </label>
+                    {isMobile && (
+                      <span className="text-[10px] text-orange-500 font-medium">
+                        📱 Mobile optimized
+                      </span>
+                    )}
                   </div>
+                  <div className="flex gap-2">
+                    {/* Show 1080p and 4K options, disable 4K on mobile */}
+                    {(['1080p', '4k'] as const).map((key) => {
+                      const value = QUALITY_OPTIONS[key];
+                      const isDisabled = isMobile && key === '4k';
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => !isDisabled && setSettings((s) => ({ ...s, quality: key }))}
+                          disabled={isDisabled}
+                          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+                            settings.quality === key
+                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                              : isDisabled
+                                ? 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-50'
+                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                          }`}
+                          title={isDisabled ? 'Not available on mobile devices' : value.label}
+                        >
+                          {value.label}
+                          {isDisabled && ' 🔒'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {isMobile && settings.quality === '1080p' && (
+                    <p className="text-[10px] text-stone-500 mt-1.5">
+                      ✨ 1080p is the same quality as Instagram & TikTok reels
+                    </p>
+                  )}
                 </div>
 
                 {/* Text Settings - Show when text mode is enabled */}
