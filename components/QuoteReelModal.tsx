@@ -1402,8 +1402,8 @@ export default function QuoteReelModal({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-                      Video Quality
-                    </label>
+                    Video Quality
+                  </label>
                     {isMobile && (
                       <span className="text-[10px] text-orange-500 font-medium">
                         📱 Mobile optimized
@@ -1416,22 +1416,22 @@ export default function QuoteReelModal({
                       const value = QUALITY_OPTIONS[key];
                       const isDisabled = isMobile && key === '4k';
                       return (
-                        <button
-                          key={key}
+                      <button
+                        key={key}
                           onClick={() => !isDisabled && setSettings((s) => ({ ...s, quality: key }))}
                           disabled={isDisabled}
-                          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
-                            settings.quality === key
-                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                        className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+                          settings.quality === key
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
                               : isDisabled
                                 ? 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-50'
-                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
-                          }`}
+                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                        }`}
                           title={isDisabled ? 'Not available on mobile devices' : value.label}
-                        >
-                          {value.label}
+                      >
+                        {value.label}
                           {isDisabled && ' 🔒'}
-                        </button>
+                      </button>
                       );
                     })}
                   </div>

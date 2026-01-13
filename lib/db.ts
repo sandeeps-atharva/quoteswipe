@@ -28,31 +28,43 @@ const POOL_CONFIG = {
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 let connectionPromise: Promise<{ client: MongoClient; db: Db }> | null = null;
+let lastValidated = 0;
+const VALIDATION_INTERVAL = 30_000; // Validate every 30s, not every request
 
 // Declare global for development
 declare global {
   var _mongoClient: MongoClient | undefined;
   var _mongoDb: Db | undefined;
   var _mongoConnectionPromise: Promise<{ client: MongoClient; db: Db }> | undefined;
+  var _mongoLastValidated: number | undefined;
 }
 
 /**
  * Connect to MongoDB and return database instance
- * Uses connection promise to prevent duplicate connections during concurrent requests
+ * OPTIMIZED: Removed blocking ping on every request
+ * Uses lazy validation (ping every 30s in background, not blocking)
  */
 export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db }> {
-  // Return cached connection if available
+  // Fast path: return cached connection without blocking ping
   if (cachedClient && cachedDb) {
-    // Verify connection is still alive
-    try {
-      await cachedDb.command({ ping: 1 });
+    const now = Date.now();
+    
+    // Only validate periodically, not on every request (saves 50-100ms)
+    if (now - lastValidated < VALIDATION_INTERVAL) {
       return { client: cachedClient, db: cachedDb };
-    } catch {
-      // Connection lost, reset cache
+    }
+    
+    // Background validation - don't block the request
+    lastValidated = now;
+    cachedDb.command({ ping: 1 }).catch(() => {
+      // Connection dead, reset for next request
       cachedClient = null;
       cachedDb = null;
       connectionPromise = null;
-    }
+      lastValidated = 0;
+    });
+    
+    return { client: cachedClient, db: cachedDb };
   }
 
   // Development: check global cache
@@ -60,6 +72,7 @@ export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db
     if (global._mongoClient && global._mongoDb) {
       cachedClient = global._mongoClient;
       cachedDb = global._mongoDb;
+      lastValidated = global._mongoLastValidated || Date.now();
       return { client: cachedClient, db: cachedDb };
     }
     
@@ -93,11 +106,13 @@ export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db
     // Cache the connection
     cachedClient = client;
     cachedDb = db;
+    lastValidated = Date.now();
 
     // Development: cache in global
     if (process.env.NODE_ENV === 'development') {
       global._mongoClient = client;
       global._mongoDb = db;
+      global._mongoLastValidated = lastValidated;
     }
 
     const elapsed = Date.now() - startTime;
@@ -170,6 +185,36 @@ export function isValidObjectId(id: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Normalize any ID to string format
+ * IMPORTANT: Use this when storing references to ensure consistent querying
+ */
+export function normalizeId(id: unknown): string {
+  if (id === null || id === undefined) return '';
+  if (id instanceof ObjectId) return id.toString();
+  if (typeof id === 'object' && '_id' in id) {
+    return normalizeId((id as { _id: unknown })._id);
+  }
+  return String(id);
+}
+
+/**
+ * Build a flexible ID match query for lookups
+ * Handles both ObjectId and string formats
+ */
+export function buildIdMatch(fieldName: string, id: string | ObjectId): Record<string, any> {
+  const stringId = normalizeId(id);
+  if (isValidObjectId(stringId)) {
+    return {
+      $or: [
+        { [fieldName]: new ObjectId(stringId) },
+        { [fieldName]: stringId }
+      ]
+    };
+  }
+  return { [fieldName]: stringId };
 }
 
 // Export ObjectId and types

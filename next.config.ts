@@ -10,7 +10,10 @@ const nextConfig: NextConfig = {
   // Optimize for production
   reactStrictMode: false, // Disable strict mode to prevent double renders
   
-  // Reduce memory usage
+  // Enable gzip/brotli compression for responses
+  compress: true,
+  
+  // Reduce memory usage & optimize packages
   experimental: {
     optimizePackageImports: ['lucide-react', 'react-hot-toast'],
   },
@@ -29,6 +32,26 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+  },
+
+  // Performance headers for API routes
+  async headers() {
+    return [
+      {
+        // API routes - enable caching
+        source: '/api/:path*',
+        headers: [
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+        ],
+      },
+      {
+        // Public data endpoints - aggressive caching
+        source: '/api/(quotes|categories|initial-data)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=60, stale-while-revalidate=300' },
+        ],
+      },
+    ];
   },
 };
 

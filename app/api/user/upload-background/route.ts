@@ -78,7 +78,7 @@ async function compressImageToBase64(buffer: Buffer, mimeType: string): Promise<
     // Convert to Base64
     const base64 = compressedBuffer.toString('base64');
     const dataUrl = `data:${outputMimeType};base64,${base64}`;
-    
+  
     // Log compression results
     const originalKB = (buffer.length / 1024).toFixed(1);
     const compressedKB = (compressedBuffer.length / 1024).toFixed(1);

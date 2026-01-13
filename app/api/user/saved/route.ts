@@ -135,8 +135,6 @@ export async function GET(request: NextRequest) {
         }
       }
     ]).toArray() as any[];
-    console.log("result",result);
-    
 
     return NextResponse.json({ quotes: result }, { status: 200 });
   } catch (error) {

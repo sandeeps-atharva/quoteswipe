@@ -190,8 +190,9 @@
 // }
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection, ObjectId } from '@/lib/db';
+import { getCollection, ObjectId, normalizeId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { recordMetric, startTimer } from '@/lib/perf';
 
 // ============================================================================
 // OPTIMIZED QUOTES API
@@ -207,6 +208,7 @@ import { getUserIdFromRequest } from '@/lib/auth';
 // Enhanced cache with separate storage for different data types
 interface QuoteCache {
   data: any[];
+  shuffledData: any[];  // Pre-shuffled version for faster responses
   timestamp: number;
 }
 
@@ -220,6 +222,16 @@ const quotesCache = new Map<string, QuoteCache>();
 const userDataCache = new Map<string, UserDataCache>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const USER_DATA_CACHE_DURATION = 30 * 1000; // 30 seconds for user-specific data
+
+// Fisher-Yates shuffle - O(n) in-place shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
 
 /**
  * Optimized function to fetch all quotes with minimal database queries
@@ -336,27 +348,30 @@ async function getOptimizedQuotes(categoriesParam: string | null): Promise<any[]
   // ========================================================================
   // FAST LOOKUPS: Create maps for O(1) lookups instead of O(n) searches
   // ========================================================================
-  const categoryMap = new Map(
-    allCategories.map((c: any) => [
-      c.id || c._id?.toString(),
-      { name: c.name, icon: c.icon }
-    ])
-  );
+  const categoryMap = new Map<string, { name: string; icon: string }>();
+  allCategories.forEach((c: any) => {
+    const id = normalizeId(c._id);
+    const legacyId = c.id ? String(c.id) : null;
+    const data = { name: c.name, icon: c.icon };
+    if (id) categoryMap.set(id, data);
+    if (legacyId) categoryMap.set(legacyId, data);
+  });
 
   const likeCountMap = new Map(
-    likeCounts.map((l: any) => [String(l._id), l.count])
+    likeCounts.map((l: any) => [normalizeId(l._id), l.count])
   );
 
   const dislikeCountMap = new Map(
-    dislikeCounts.map((d: any) => [String(d._id), d.count])
+    dislikeCounts.map((d: any) => [normalizeId(d._id), d.count])
   );
 
   // ========================================================================
   // TRANSFORM DATA: Single-pass transformation for efficiency
   // ========================================================================
   const formattedQuotes = regularQuotes.map((q: any) => {
-    const quoteId = q.id || q._id?.toString();
-    const category = categoryMap.get(q.category_id) || categoryMap.get(String(q.category_id));
+    const quoteId = normalizeId(q.id || q._id);
+    const catId = normalizeId(q.category_id);
+    const category = categoryMap.get(catId);
     
     return {
       id: quoteId,
@@ -365,8 +380,8 @@ async function getOptimizedQuotes(categoriesParam: string | null): Promise<any[]
       category: category?.name || 'General',
       category_icon: category?.icon || '💭',
       category_id: q.category_id,
-      likes_count: likeCountMap.get(String(quoteId)) || 0,
-      dislikes_count: dislikeCountMap.get(String(quoteId)) || 0,
+      likes_count: likeCountMap.get(quoteId) || 0,
+      dislikes_count: dislikeCountMap.get(quoteId) || 0,
       quote_type: 'regular',
       creator_id: null,
       creator_name: null,
@@ -374,10 +389,11 @@ async function getOptimizedQuotes(categoriesParam: string | null): Promise<any[]
   });
 
   const formattedUserQuotes = publicUserQuotes.map((uq: any) => {
-    const category = categoryMap.get(uq.category_id) || categoryMap.get(String(uq.category_id));
+    const catId = normalizeId(uq.category_id);
+    const category = categoryMap.get(catId);
     
     return {
-      id: `user_${uq.id || uq._id}`,
+      id: `user_${normalizeId(uq.id || uq._id)}`,
       text: uq.text,
       author: uq.author,
       category: category?.name || 'Personal',
@@ -393,20 +409,13 @@ async function getOptimizedQuotes(categoriesParam: string | null): Promise<any[]
     };
   });
 
-  // Combine and shuffle efficiently
-  const allQuotes = [...formattedQuotes, ...formattedUserQuotes];
-  
-  // Fisher-Yates shuffle (more efficient than sort with random)
-  for (let i = allQuotes.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [allQuotes[i], allQuotes[j]] = [allQuotes[j], allQuotes[i]];
-  }
-
-  return allQuotes;
+  // Combine quotes (don't shuffle here - shuffle once when caching)
+  return [...formattedQuotes, ...formattedUserQuotes];
 }
 
 /**
  * Optimized function to get user-specific data (likes and saves)
+ * Uses indexed queries with projection for minimal data transfer
  */
 async function getUserSpecificData(userId: string): Promise<UserDataCache> {
   // Check cache first
@@ -415,24 +424,26 @@ async function getUserSpecificData(userId: string): Promise<UserDataCache> {
     return cached;
   }
 
-  const likesCollection = await getCollection('user_likes');
-  const savedCollection = await getCollection('user_saved');
+  const [likesCollection, savedCollection] = await Promise.all([
+    getCollection('user_likes'),
+    getCollection('user_saved')
+  ]);
 
-  // Fetch user likes and saves in parallel
+  // Fetch user likes and saves in parallel with index hints
   const [userLikes, userSaves] = await Promise.all([
     likesCollection
       .find({ user_id: userId })
-      .project({ quote_id: 1 })
+      .project({ quote_id: 1, _id: 0 })  // Exclude _id for smaller response
       .toArray(),
     savedCollection
       .find({ user_id: userId })
-      .project({ quote_id: 1 })
+      .project({ quote_id: 1, _id: 0 })
       .toArray()
   ]);
 
   const userData: UserDataCache = {
-    likes: new Set(userLikes.map((l: any) => String(l.quote_id))),
-    saves: new Set(userSaves.map((s: any) => String(s.quote_id))),
+    likes: new Set(userLikes.map((l: any) => normalizeId(l.quote_id))),
+    saves: new Set(userSaves.map((s: any) => normalizeId(s.quote_id))),
     timestamp: Date.now()
   };
 
@@ -443,6 +454,8 @@ async function getUserSpecificData(userId: string): Promise<UserDataCache> {
 }
 
 export async function GET(request: NextRequest) {
+  const endTimer = startTimer();
+  
   try {
     const { searchParams } = new URL(request.url);
     const categoriesParam = searchParams.get('categories');
@@ -451,6 +464,7 @@ export async function GET(request: NextRequest) {
     // PAGINATION SUPPORT
     const limit = parseInt(searchParams.get('limit') || '0', 10); // 0 = no limit (legacy)
     const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const cursor = searchParams.get('cursor'); // Support cursor-based pagination
     const paginated = limit > 0;
 
     // Create cache key based on categories
@@ -460,21 +474,40 @@ export async function GET(request: NextRequest) {
     // CACHING STRATEGY: Check cache first for base quotes
     // ========================================================================
     let quotes: any[];
+    let fromCache = false;
     const cached = quotesCache.get(cacheKey);
     
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      quotes = cached.data;
+      // Use pre-shuffled data from cache
+      quotes = cached.shuffledData;
+      fromCache = true;
     } else {
       // Cache miss - fetch fresh data
-      quotes = await getOptimizedQuotes(categoriesParam);
-      quotesCache.set(cacheKey, { data: quotes, timestamp: Date.now() });
+      const rawQuotes = await getOptimizedQuotes(categoriesParam);
+      // Shuffle once when caching
+      const shuffled = shuffleArray(rawQuotes);
+      quotesCache.set(cacheKey, { 
+        data: rawQuotes, 
+        shuffledData: shuffled,
+        timestamp: Date.now() 
+      });
+      quotes = shuffled;
     }
 
     const totalQuotes = quotes.length;
 
+    // Apply cursor-based pagination if cursor is provided
+    let startIdx = offset;
+    if (cursor) {
+      const cursorIdx = quotes.findIndex(q => q.id === cursor);
+      if (cursorIdx >= 0) {
+        startIdx = cursorIdx + 1;
+      }
+    }
+
     // Apply pagination if requested
     if (paginated) {
-      quotes = quotes.slice(offset, offset + limit);
+      quotes = quotes.slice(startIdx, startIdx + limit);
     }
 
     // ========================================================================
@@ -486,9 +519,9 @@ export async function GET(request: NextRequest) {
       // Single-pass merge of user data with quotes
       quotes = quotes.map((q: any) => ({
         ...q,
-        is_liked: userData.likes.has(String(q.id)) ? 1 : 0,
-        is_saved: userData.saves.has(String(q.id)) ? 1 : 0,
-        is_own_quote: q.quote_type === 'user' && String(q.creator_id) === String(userId) ? 1 : 0,
+        is_liked: userData.likes.has(q.id) ? 1 : 0,
+        is_saved: userData.saves.has(q.id) ? 1 : 0,
+        is_own_quote: q.quote_type === 'user' && normalizeId(q.creator_id) === userId ? 1 : 0,
       }));
     } else {
       // For non-authenticated users, add default values
@@ -500,17 +533,35 @@ export async function GET(request: NextRequest) {
       }));
     }
 
+    const duration = endTimer();
+    
+    // Record performance metrics
+    recordMetric('/api/quotes', duration, fromCache, userId || undefined);
+
+    // Calculate next cursor for cursor-based pagination
+    const nextCursor = paginated && quotes.length === limit 
+      ? quotes[quotes.length - 1]?.id 
+      : null;
+
     // Return with pagination info
     const response = NextResponse.json({ 
       quotes,
       pagination: paginated ? {
         total: totalQuotes,
         limit,
-        offset,
-        hasMore: offset + limit < totalQuotes,
+        offset: startIdx,
+        hasMore: startIdx + limit < totalQuotes,
+        nextCursor,
       } : undefined,
+      _meta: { responseTime: duration, cached: fromCache }
     }, { status: 200 });
-    response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+
+    // Aggressive caching headers
+    if (userId) {
+      response.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+    } else {
+      response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    }
 
     return response;
   } catch (error) {
