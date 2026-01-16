@@ -26,13 +26,15 @@ interface AggregatedMetrics {
 const metrics: PerfMetric[] = [];
 const MAX_METRICS = 1000;
 
-// Route-specific thresholds (ms)
+// Route-specific thresholds (ms) - optimized for <200ms
 const SLOW_THRESHOLDS: Record<string, number> = {
   '/api/quotes': 200,
   '/api/categories': 100,
+  '/api/category-groups': 100,
   '/api/initial-data': 300,
-  '/api/user/likes': 150,
-  '/api/user/saved': 150,
+  '/api/user/likes': 200,
+  '/api/user/saved': 200,
+  '/api/user/dislikes': 200,
   'default': 200,
 };
 

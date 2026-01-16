@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCollection, toObjectId } from '@/lib/db';
+import { getCollection, toObjectId, normalizeId } from '@/lib/db';
 import { getUserIdFromRequest } from '@/lib/auth';
+import { startTimer, recordMetric } from '@/lib/perf';
+
+/**
+ * OPTIMIZED: Uses parallel queries with proper ID handling
+ */
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,14 +25,12 @@ export async function POST(request: NextRequest) {
     const userDislikesCollection = await getCollection('user_dislikes');
     const userLikesCollection = await getCollection('user_likes');
 
-    // Check if user already disliked this quote
     const existingDislike: any = await userDislikesCollection.findOne({
       user_id: userId,
       quote_id: quoteId
     });
 
     if (existingDislike) {
-      // Update background if provided and different
       if (customBackground && existingDislike.custom_background !== customBackground) {
         await userDislikesCollection.updateOne(
           { _id: existingDislike._id },
@@ -46,7 +49,6 @@ export async function POST(request: NextRequest) {
       quote_id: quoteId
     });
 
-    // Insert dislike with custom background
     await userDislikesCollection.insertOne({
       user_id: userId,
       quote_id: quoteId,
@@ -56,7 +58,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: 'Quote disliked' }, { status: 200 });
   } catch (error: any) {
-    // Handle duplicate key error
     if (error.code === 11000) {
       return NextResponse.json(
         { message: 'Quote already disliked', alreadyDisliked: true },
@@ -72,91 +73,111 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const endTimer = startTimer();
+  
   try {
     const userId = getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userDislikesCollection = await getCollection('user_dislikes');
+    // Get all collections in parallel
+    const [userDislikesCollection, quotesCollection, categoriesCollection] = await Promise.all([
+      getCollection('user_dislikes'),
+      getCollection('quotes'),
+      getCollection('categories')
+    ]);
 
-    // Single aggregation with $lookup - replaces 3 separate queries
-    const result = await userDislikesCollection.aggregate([
-      // Match user's dislikes
-      { $match: { user_id: userId } },
-      { $sort: { created_at: -1 } },
+    // Step 1: Get user's dislikes - handle both string and ObjectId user_id formats
+    const userObjId = toObjectId(userId);
+    const userDislikes = await userDislikesCollection
+      .find({ 
+        $or: [
+          { user_id: userId },
+          { user_id: userObjId }
+        ]
+      })
+      .project({ quote_id: 1, custom_background: 1, created_at: 1, _id: 0 })
+      .sort({ created_at: -1 })
+      .toArray();
+
+    if (userDislikes.length === 0) {
+      const duration = endTimer();
+      recordMetric('/api/user/dislikes', duration, false, userId);
+      return NextResponse.json({ quotes: [], _meta: { responseTime: duration } }, { status: 200 });
+    }
+
+    // Step 2: Build quote ID queries - handle multiple formats
+    const quoteQueries: any[] = [];
+    const bgMap = new Map<string, any>();
+    
+    for (const dislike of userDislikes) {
+      const qid = dislike.quote_id;
+      const normalizedId = normalizeId(qid);
+      bgMap.set(normalizedId, dislike.custom_background);
       
-      // Lookup quote details - safe matching for both ObjectId and string formats
-      {
-        $lookup: {
-          from: 'quotes',
-          let: { quoteId: '$quote_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    // Direct ObjectId match (if quoteId is already ObjectId)
-                    { $eq: ['$_id', '$$quoteId'] },
-                    // String id field match
-                    { $eq: ['$id', '$$quoteId'] },
-                    // Convert _id to string and compare
-                    { $eq: [{ $toString: '$_id' }, { $toString: '$$quoteId' }] },
-                    // Safe ObjectId conversion with error handling
-                    { $eq: ['$_id', { 
-                      $convert: { 
-                        input: '$$quoteId', 
-                        to: 'objectId', 
-                        onError: null, 
-                        onNull: null 
-                      } 
-                    }] }
-                  ]
-                }
-              }
-            }
-          ],
-          as: 'quote'
+      if (typeof qid === 'string') {
+        try {
+          const objId = toObjectId(qid);
+          quoteQueries.push({ _id: objId });
+        } catch {
+          quoteQueries.push({ _id: qid });
         }
-      },
-      { $unwind: { path: '$quote', preserveNullAndEmptyArrays: false } },
-      
-      // Lookup category details
-      {
-        $lookup: {
-          from: 'categories',
-          let: { catId: '$quote.category_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $eq: ['$_id', '$$catId'] },
-                    { $eq: ['$id', { $toString: '$$catId' }] },
-                    { $eq: [{ $toString: '$_id' }, { $toString: '$$catId' }] }
-                  ]
-                }
-              }
-            }
-          ],
-          as: 'category'
-        }
-      },
-      
-      // Project final shape (same as before)
-      {
-        $project: {
-          id: { $ifNull: ['$quote.id', { $toString: '$quote._id' }] },
-          text: '$quote.text',
-          author: '$quote.author',
-          category: { $ifNull: [{ $arrayElemAt: ['$category.name', 0] }, 'Unknown'] },
-          category_icon: { $ifNull: [{ $arrayElemAt: ['$category.icon', 0] }, '📚'] },
-          custom_background: { $ifNull: ['$custom_background', null] }
-        }
+      } else {
+        quoteQueries.push({ _id: qid });
       }
-    ]).toArray() as any[];
+    }
 
-    return NextResponse.json({ quotes: result }, { status: 200 });
+    // Step 3: Fetch quotes and categories in parallel
+    const [quotes, categories] = await Promise.all([
+      quotesCollection
+        .find({ $or: quoteQueries })
+        .project({ _id: 1, text: 1, author: 1, category_id: 1 })
+        .toArray(),
+      categoriesCollection
+        .find({})
+        .project({ _id: 1, name: 1, icon: 1 })
+        .toArray()
+    ]);
+
+    // Step 4: Create lookup maps
+    const quoteMap = new Map<string, any>();
+    for (const q of quotes) {
+      quoteMap.set(normalizeId(q._id), q);
+    }
+    
+    const categoryMap = new Map<string, any>();
+    for (const c of categories) {
+      categoryMap.set(normalizeId(c._id), c);
+    }
+
+    // Step 5: Transform maintaining original order
+    const result: any[] = [];
+    for (const dislike of userDislikes) {
+      const qid = normalizeId(dislike.quote_id);
+      const quote = quoteMap.get(qid);
+      if (!quote) continue;
+      
+      const catId = normalizeId(quote.category_id);
+      const category = categoryMap.get(catId);
+      
+      result.push({
+        id: normalizeId(quote._id),
+        text: quote.text,
+        author: quote.author,
+        category: category?.name || 'Unknown',
+        category_icon: category?.icon || '📚',
+        custom_background: bgMap.get(qid) || null
+      });
+    }
+
+    const duration = endTimer();
+    recordMetric('/api/user/dislikes', duration, duration < 50, userId);
+
+    return NextResponse.json({ 
+      quotes: result,
+      _meta: { responseTime: duration, count: result.length }
+    }, { status: 200 });
   } catch (error) {
     console.error('Get disliked quotes error:', error);
     return NextResponse.json(
@@ -166,7 +187,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// DELETE handler for removing a dislike (used by undo functionality)
 export async function DELETE(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
@@ -184,7 +204,6 @@ export async function DELETE(request: NextRequest) {
 
     const userDislikesCollection = await getCollection('user_dislikes');
 
-    // Remove the dislike
     const result = await userDislikesCollection.deleteOne({
       user_id: userId,
       quote_id: quoteId
