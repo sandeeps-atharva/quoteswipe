@@ -68,6 +68,7 @@ interface PreviewCardProps {
   isBold?: boolean; // Bold text
   isItalic?: boolean; // Italic text
   isUnderline?: boolean; // Underline text
+  containerWidth?: number; // Container width percentage (50-100)
 }
 
 interface ShareButtonProps {
@@ -335,6 +336,7 @@ function PreviewCard({
   isBold = false,
   isItalic = false,
   isUnderline = false,
+  containerWidth = 100,
 }: PreviewCardProps) {
   const textLength = quote.text.length;
   const hasBackgroundImage = !!(backgroundImage?.url || customBackground);
@@ -464,14 +466,15 @@ function PreviewCard({
             top: `calc(50% + ${verticalOffset * 2}px)`,
             left: `calc(50% + ${horizontalOffset * 2}px)`,
             transform: `translate(-50%, -50%)`,
+            width: `${(containerWidth / 100) * (format.width - 32)}px`,
             maxWidth: `${format.width - 32}px`,
-            width: 'max-content',
           }}
         >
           {/* Text container */}
           <div 
             style={{
               textAlign: textAlign,
+              width: '100%',
             }}
           >
             {/* Quote text */}
@@ -1601,6 +1604,115 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
 }
 
 // ============================================================================
+// Container Size Control Component (Width Only)
+// ============================================================================
+
+const CONTAINER_WIDTH_MIN = 50;
+const CONTAINER_WIDTH_MAX = 100;
+const CONTAINER_SIZE_STEP = 5;
+
+interface ContainerSizeControlProps {
+  width: number;
+  onWidthChange: (value: number) => void;
+  onReset: () => void;
+}
+
+function ContainerSizeControl({ 
+  width, 
+  onWidthChange, 
+  onReset,
+}: ContainerSizeControlProps) {
+  const widthPresets = [
+    { label: '60%', value: 60 },
+    { label: '70%', value: 70 },
+    { label: '80%', value: 80 },
+    { label: '90%', value: 90 },
+    { label: '100%', value: 100 },
+  ];
+
+  return (
+    <div className="mt-3 p-3 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-xl border border-violet-200/50 dark:border-violet-800/50">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold text-violet-700 dark:text-violet-400 flex items-center gap-1.5">
+          <Square size={12} />
+          Quote Container Width
+        </span>
+        <button
+          onClick={onReset}
+          className="text-[9px] px-2 py-0.5 bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-md hover:bg-stone-100 dark:hover:bg-stone-600 transition-colors flex items-center gap-1"
+        >
+          <RotateCcw size={10} />
+          Reset
+        </button>
+      </div>
+      
+      {/* Width Control */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[9px] text-stone-500 dark:text-stone-400 flex items-center gap-1">
+            ↔ Width
+          </span>
+          <span className="text-[10px] font-mono text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-1.5 py-0.5 rounded">
+            {width}%
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onWidthChange(Math.max(CONTAINER_WIDTH_MIN, width - CONTAINER_SIZE_STEP))}
+            disabled={width <= CONTAINER_WIDTH_MIN}
+            className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Minus size={12} className="text-violet-600 dark:text-violet-400" />
+          </button>
+          
+          <input
+            type="range"
+            min={CONTAINER_WIDTH_MIN}
+            max={CONTAINER_WIDTH_MAX}
+            step={1}
+            value={width}
+            onChange={(e) => onWidthChange(Number(e.target.value))}
+            className="flex-1 h-2 bg-violet-200 dark:bg-violet-800 rounded-lg appearance-none cursor-pointer accent-violet-500"
+          />
+          
+          <button
+            onClick={() => onWidthChange(Math.min(CONTAINER_WIDTH_MAX, width + CONTAINER_SIZE_STEP))}
+            disabled={width >= CONTAINER_WIDTH_MAX}
+            className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Plus size={12} className="text-violet-600 dark:text-violet-400" />
+          </button>
+        </div>
+        
+        {/* Width Presets */}
+        <div className="flex items-center justify-center gap-1.5 mt-2">
+          {widthPresets.map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => onWidthChange(preset.value)}
+              className={`px-2 py-1 rounded-lg text-[9px] font-medium transition-colors ${
+                width === preset.value
+                  ? 'bg-violet-500 text-white'
+                  : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-violet-100 dark:hover:bg-stone-600'
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Info Text */}
+      <p className="text-[8px] text-stone-400 dark:text-stone-500 mt-3 text-center">
+        Tip: Adjust width to control line wrapping.
+      </p>
+    </div>
+  );
+}
+
+// ============================================================================
 // Text Format Control Component (Bold, Italic, Underline)
 // ============================================================================
 
@@ -1993,6 +2105,10 @@ export default function ShareModal({
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   
+  // Container size state
+  const [containerWidth, setContainerWidth] = useState(100);
+  const [showContainerSizeControl, setShowContainerSizeControl] = useState(false);
+  
   // Reel modal state
   const [showReelModal, setShowReelModal] = useState(false);
   const [showTextFormatControl, setShowTextFormatControl] = useState(false);
@@ -2031,6 +2147,10 @@ export default function ShareModal({
   const handleResetTextPosition = useCallback(() => {
     setVerticalOffset(0);
     setHorizontalOffset(0);
+  }, []);
+  
+  const handleResetContainerSize = useCallback(() => {
+    setContainerWidth(100);
   }, []);
   
   const handleResetText = useCallback(() => {
@@ -2103,12 +2223,14 @@ export default function ShareModal({
     setShowTextColorControl(false);
     setShowLineHeightControl(false);
     setShowTextFormatControl(false);
+    setShowContainerSizeControl(false);
     setSelectedFontStyle(fontStyle);
     setCustomTextColor(null);
     setCustomLineHeight(0);
     setIsBold(false);
     setIsItalic(false);
     setIsUnderline(false);
+    setContainerWidth(100);
     setSelectedFormat(DEFAULT_FORMAT);
   }, [isOpen, quote.id, fontStyle]);
 
@@ -2393,6 +2515,7 @@ export default function ShareModal({
                     isBold={isBold}
                     isItalic={isItalic}
                     isUnderline={isUnderline}
+                    containerWidth={containerWidth}
                   />
                 </div>
               </div>
@@ -2414,6 +2537,7 @@ export default function ShareModal({
                       setShowTextColorControl(false);
                       setShowLineHeightControl(false);
                       setShowTextFormatControl(false);
+                      setShowContainerSizeControl(false);
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
@@ -2439,6 +2563,7 @@ export default function ShareModal({
                       setShowTextColorControl(false);
                       setShowLineHeightControl(false);
                       setShowTextFormatControl(false);
+                      setShowContainerSizeControl(false);
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
@@ -2464,6 +2589,7 @@ export default function ShareModal({
                       setShowTextColorControl(false);
                       setShowLineHeightControl(false);
                       setShowTextFormatControl(false);
+                      setShowContainerSizeControl(false);
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
@@ -2495,6 +2621,7 @@ export default function ShareModal({
                         setShowTextColorControl(false);
                         setShowLineHeightControl(false);
                         setShowTextFormatControl(false);
+                        setShowContainerSizeControl(false);
                       }
                     }}
                     className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
@@ -2524,6 +2651,7 @@ export default function ShareModal({
                       setShowTextColorControl(false);
                       setShowLineHeightControl(false);
                       setShowTextFormatControl(false);
+                      setShowContainerSizeControl(false);
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
@@ -2552,6 +2680,7 @@ export default function ShareModal({
                       setShowTextColorControl(false);
                       setShowLineHeightControl(false);
                       setShowTextFormatControl(false);
+                      setShowContainerSizeControl(false);
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
@@ -2577,6 +2706,7 @@ export default function ShareModal({
                       setShowFontStyleControl(false);
                       setShowLineHeightControl(false);
                       setShowTextFormatControl(false);
+                      setShowContainerSizeControl(false);
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
@@ -2608,6 +2738,7 @@ export default function ShareModal({
                       setShowFontStyleControl(false);
                       setShowTextColorControl(false);
                       setShowTextFormatControl(false);
+                      setShowContainerSizeControl(false);
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
@@ -2633,6 +2764,7 @@ export default function ShareModal({
                       setShowFontStyleControl(false);
                       setShowTextColorControl(false);
                       setShowLineHeightControl(false);
+                      setShowContainerSizeControl(false);
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
@@ -2648,6 +2780,37 @@ export default function ShareModal({
                       {isBold && <span className="text-[8px] font-bold">B</span>}
                       {isItalic && <span className="text-[8px] italic">I</span>}
                       {isUnderline && <span className="text-[8px] underline">U</span>}
+                    </span>
+                  )}
+                </button>
+                
+                {/* Container Size Toggle */}
+                <button
+                  onClick={() => {
+                    setShowContainerSizeControl(!showContainerSizeControl);
+                    if (!showContainerSizeControl) {
+                      setShowPositionControl(false);
+                      setShowFontSizeControl(false);
+                      setShowAlignmentControl(false);
+                      setShowZoomControl(false);
+                      setShowTextEditor(false);
+                      setShowFontStyleControl(false);
+                      setShowTextColorControl(false);
+                      setShowLineHeightControl(false);
+                      setShowTextFormatControl(false);
+                    }
+                  }}
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
+                    showContainerSizeControl 
+                      ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' 
+                      : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                  }`}
+                >
+                  <Square size={12} />
+                  <span className="hidden sm:inline">Width</span>
+                  {containerWidth !== 100 && (
+                    <span className="text-[8px] bg-violet-500 text-white px-1 rounded">
+                      {containerWidth}%
                     </span>
                   )}
                 </button>
@@ -2748,6 +2911,15 @@ export default function ShareModal({
                 onBoldChange={setIsBold}
                 onItalicChange={setIsItalic}
                 onUnderlineChange={setIsUnderline}
+              />
+            )}
+            
+            {/* Container Size Control Panel */}
+            {showContainerSizeControl && (
+              <ContainerSizeControl
+                width={containerWidth}
+                onWidthChange={setContainerWidth}
+                onReset={handleResetContainerSize}
               />
             )}
             </div>
