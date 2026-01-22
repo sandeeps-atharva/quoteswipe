@@ -148,6 +148,7 @@ interface AllPreferencesResponse {
   fontId: string;
   backgroundId: string;
   customBackgrounds: CustomBackground[];
+  viewMode?: 'swipe' | 'feed';
 }
 
 // ============================================================================
@@ -160,6 +161,7 @@ const DEFAULTS: AllPreferencesResponse = {
   fontId: 'elegant',
   backgroundId: 'none',
   customBackgrounds: [],
+  viewMode: 'swipe',
 };
 
 // ============================================================================
@@ -202,6 +204,7 @@ export async function GET(request: NextRequest) {
           card_font_id: 1,
           card_background_id: 1,
           custom_backgrounds: 1,
+          view_mode: 1,
           _id: 0 // Exclude _id for smaller payload
         }
       }
@@ -219,6 +222,7 @@ export async function GET(request: NextRequest) {
       fontId: prefs.card_font_id || DEFAULTS.fontId,
       backgroundId: prefs.card_background_id || DEFAULTS.backgroundId,
       customBackgrounds: parseJsonField(prefs.custom_backgrounds),
+      viewMode: (prefs.view_mode === 'swipe' || prefs.view_mode === 'feed') ? prefs.view_mode : DEFAULTS.viewMode,
     };
 
     return NextResponse.json(response);
@@ -241,7 +245,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { selectedCategories, themeId, fontId, backgroundId, markOnboardingComplete } = body;
+    const { selectedCategories, themeId, fontId, backgroundId, viewMode, markOnboardingComplete } = body;
 
     // Validate early
     if (selectedCategories !== undefined && !Array.isArray(selectedCategories)) {
@@ -255,6 +259,12 @@ export async function POST(request: NextRequest) {
     if (themeId !== undefined) updates.card_theme_id = themeId;
     if (fontId !== undefined) updates.card_font_id = fontId;
     if (backgroundId !== undefined) updates.card_background_id = backgroundId || 'none';
+    if (viewMode !== undefined) {
+      // Validate viewMode
+      if (viewMode === 'swipe' || viewMode === 'feed') {
+        updates.view_mode = viewMode;
+      }
+    }
 
     const collection = await getCollection('user_preferences');
 

@@ -91,7 +91,16 @@ export default function SwipeQuotes() {
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('swipe');
+  // Load viewMode from cache or default to 'swipe'
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = getFromCache<ViewMode>('viewMode', 60 * 60 * 1000);
+      if (cached === 'swipe' || cached === 'feed') {
+        return cached;
+      }
+    }
+    return 'swipe';
+  });
   const [feedTargetQuoteId, setFeedTargetQuoteId] = useState<string | number | null>(null);
   const [feedTargetQuoteBackground, setFeedTargetQuoteBackground] = useState<BackgroundImage | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -324,6 +333,12 @@ export default function SwipeQuotes() {
             const font = FONT_STYLES.find(f => f.id === data.preferences.fontId);
             setCardTheme(theme || CARD_THEMES[0]);
             setFontStyle(font || FONT_STYLES[0]);
+            
+            // Apply view mode preference
+            if (data.preferences.viewMode && (data.preferences.viewMode === 'swipe' || data.preferences.viewMode === 'feed')) {
+              setViewMode(data.preferences.viewMode);
+              setToCache('viewMode', data.preferences.viewMode);
+            }
             
             // Resolve background
             const bgId = data.preferences.backgroundId;
@@ -735,15 +750,30 @@ export default function SwipeQuotes() {
 
 
   // Save category preferences (uses combined API)
-  const saveUserPreferences = async (categories: string[]) => {
+  const saveUserPreferences = async (
+    categories?: string[], 
+    themeId?: string, 
+    fontId?: string, 
+    backgroundId?: string, 
+    markOnboardingComplete?: boolean,
+    viewMode?: ViewMode
+  ) => {
     if (!isAuthenticated || isLoadingPreferences.current) return;
     
     try {
+      const body: Record<string, unknown> = {};
+      if (categories !== undefined) body.selectedCategories = categories;
+      if (themeId !== undefined) body.themeId = themeId;
+      if (fontId !== undefined) body.fontId = fontId;
+      if (backgroundId !== undefined) body.backgroundId = backgroundId;
+      if (markOnboardingComplete !== undefined) body.markOnboardingComplete = markOnboardingComplete;
+      if (viewMode !== undefined) body.viewMode = viewMode;
+      
       await fetch('/api/user/all-preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ selectedCategories: categories }),
+        body: JSON.stringify(body),
       });
     } catch (error) {
       console.error('Save user preferences error:', error);
@@ -1262,7 +1292,9 @@ export default function SwipeQuotes() {
       setFontStyle(FONT_STYLES[0]);
       setBackgroundImage(BACKGROUND_IMAGES[0]); // Reset to 'none' so random BGs are used
       setSavedQuoteBackgrounds({}); // Clear saved quote backgrounds
-      setViewMode('swipe'); // Reset to swipe mode on logout
+      // Preserve view mode preference from cache on logout (or default to swipe)
+      const cachedViewMode = getFromCache<ViewMode>('viewMode', 60 * 60 * 1000);
+      setViewMode(cachedViewMode === 'feed' ? 'feed' : 'swipe');
       
       // ✅ Fetch guest data in BACKGROUND (non-blocking)
       // Using .then() instead of await so it doesn't block
@@ -2330,6 +2362,12 @@ export default function SwipeQuotes() {
         onViewModeChange={(mode) => {
           setViewMode(mode);
           setIsSidebarOpen(false);
+          // Save view mode preference to cache (for unauthenticated users)
+          setToCache('viewMode', mode);
+          // Save to database if authenticated
+          if (isAuthenticated && preferencesLoaded) {
+            saveUserPreferences(undefined, undefined, undefined, undefined, undefined, mode);
+          }
         }}
       />
 
