@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Sparkles, Heart, Cloud, Zap, AlertCircle, HeartCrack, Moon, Sun, Star, Target, Brain, Lightbulb, Waves, Rocket, BookOpen, Smile, Droplet, Shield, HelpCircle, Coffee, ArrowRight } from 'lucide-react';
+import { X, Sparkles, Heart, Cloud, Zap, AlertCircle, HeartCrack, Moon, Sun, Star, Target, Brain, Lightbulb, Waves, Rocket, BookOpen, Smile, Droplet, Shield, HelpCircle, Coffee, ArrowRight, Quote } from 'lucide-react';
 import { useMoodSense, Emotion, EmotionalIntensity } from '@/contexts/MoodSenseContext';
+import GenerateQuotesModal from './GenerateQuotesModal';
 
 interface MoodOption {
   emotion: Emotion;
@@ -49,6 +50,7 @@ interface MoodSelectorProps {
   onMoodSet?: () => void;
   categories?: Array<{ id: string; name: string; icon: string }>;
   onCategoriesSuggested?: (categories: string[]) => void;
+  onQuoteGenerated?: (quote: { text: string; author: string; category?: string }) => void;
 }
 
 export default function MoodSelector({ 
@@ -57,6 +59,7 @@ export default function MoodSelector({
   onMoodSet,
   categories = [],
   onCategoriesSuggested,
+  onQuoteGenerated,
 }: MoodSelectorProps) {
   const { setMood, currentMood, suggestCategories } = useMoodSense();
   const [selectedEmotion, setSelectedEmotion] = useState<Emotion | null>(currentMood?.emotion || null);
@@ -68,6 +71,7 @@ export default function MoodSelector({
   const [isAnimating, setIsAnimating] = useState(false);
   const [moodInputMode, setMoodInputMode] = useState<'select' | 'type'>('select'); // New: 'select' or 'type'
   const [typedMood, setTypedMood] = useState(''); // New: for free-text mood input
+  const [showGenerateQuotesModal, setShowGenerateQuotesModal] = useState(false);
 
   // Handle escape key
   useEffect(() => {
@@ -176,7 +180,7 @@ export default function MoodSelector({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
       onClick={(e) => e.target === e.currentTarget && !showIntensity && onClose()}
     >
       {/* Backdrop with warm gradient */}
@@ -186,8 +190,8 @@ export default function MoodSelector({
       
       {/* Modal */}
       <div className={`
-        relative bg-white dark:bg-stone-900 rounded-3xl shadow-2xl shadow-stone-900/30 dark:shadow-black/50
-        max-w-3xl w-full max-h-[90vh] overflow-hidden
+        relative bg-white dark:bg-stone-900 rounded-2xl sm:rounded-3xl shadow-2xl shadow-stone-900/30 dark:shadow-black/50
+        max-w-3xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden
         border border-stone-200/50 dark:border-stone-700/50
         animate-in zoom-in-95 fade-in duration-300
         ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} transition-all duration-200
@@ -200,30 +204,30 @@ export default function MoodSelector({
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
 
         {/* Header */}
-        <div className="sticky top-0 bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50 px-6 py-5 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
-              <Sparkles className="text-white" size={24} />
+        <div className="sticky top-0 bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between z-10 gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-amber-500/30 flex-shrink-0">
+              <Sparkles className="text-white" size={20} />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-white flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-white flex items-center gap-2">
                 MoodSense
               </h2>
-              <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+              <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
                 {showIntensity ? 'Choose intensity' : 'How are you feeling right now?'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 group"
+            className="p-2 sm:p-2.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 group flex-shrink-0"
           >
-            <X size={20} className="text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 transition-colors" />
+            <X size={18} className="sm:w-5 sm:h-5 text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 transition-colors" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] scrollbar-hide">
+        <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-140px)] scrollbar-hide">
           {!showIntensity ? (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
               {/* Mode Toggle: Select vs Type */}
@@ -258,19 +262,19 @@ export default function MoodSelector({
 
               {moodInputMode === 'type' ? (
                 /* Free-text mood input */
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold text-stone-900 dark:text-white mb-2">
                       How are you feeling?
                     </h3>
-                    <p className="text-sm text-stone-500 dark:text-stone-400 mb-4">
+                    <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mb-3 sm:mb-4">
                       Describe your mood in your own words. AI will understand and suggest relevant categories.
                     </p>
                     <textarea
                       value={typedMood}
                       onChange={(e) => setTypedMood(e.target.value)}
                       placeholder="e.g., Feeling overwhelmed with work, excited about a new opportunity, missing someone special..."
-                      className="w-full px-4 py-3 bg-stone-50 dark:bg-stone-800/50 border-2 border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-900 dark:text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all resize-none"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-stone-50 dark:bg-stone-800/50 border-2 border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-900 dark:text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all resize-none"
                       rows={4}
                       autoFocus
                     />
@@ -284,13 +288,13 @@ export default function MoodSelector({
               ) : (
                 /* Emotion Selection */
                 <div>
-                  <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-4 flex items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-stone-900 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
                     <span>Select your mood</span>
                     {selectedEmotion && (
-                      <ArrowRight className="text-amber-500 animate-in slide-in-from-right-2" size={18} />
+                      <ArrowRight className="text-amber-500 animate-in slide-in-from-right-2 hidden sm:block" size={18} />
                     )}
                   </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                   {MOOD_OPTIONS.map((mood, index) => {
                     const Icon = mood.icon;
                     const isSelected = selectedEmotion === mood.emotion;
@@ -299,7 +303,7 @@ export default function MoodSelector({
                         key={mood.emotion}
                         onClick={() => handleEmotionSelect(mood.emotion)}
                         className={`
-                          group relative p-4 rounded-2xl border-2 transition-all duration-200
+                          group relative p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200
                           ${isSelected
                             ? `${mood.bgColor} border-${mood.color.split('-')[1]}-500 dark:border-${mood.color.split('-')[1]}-400 shadow-lg shadow-${mood.color.split('-')[1]}-500/20 scale-105`
                             : 'bg-stone-50 dark:bg-stone-800/50 border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:scale-105'
@@ -310,12 +314,12 @@ export default function MoodSelector({
                       >
                         {/* Selected gradient overlay */}
                         {isSelected && (
-                          <div className={`absolute inset-0 bg-gradient-to-br ${mood.gradient} opacity-10 rounded-2xl`} />
+                          <div className={`absolute inset-0 bg-gradient-to-br ${mood.gradient} opacity-10 rounded-xl sm:rounded-2xl`} />
                         )}
                         <Icon
-                          size={28}
+                          size={24}
                           className={`
-                            mx-auto mb-2 transition-all duration-200
+                            mx-auto mb-1.5 sm:mb-2 transition-all duration-200
                             ${isSelected 
                               ? `${mood.color} scale-110` 
                               : 'text-stone-400 dark:text-stone-500 group-hover:text-stone-600 dark:group-hover:text-stone-400'
@@ -323,7 +327,7 @@ export default function MoodSelector({
                           `}
                         />
                         <p className={`
-                          text-sm font-semibold transition-colors
+                          text-xs sm:text-sm font-semibold transition-colors
                           ${isSelected
                             ? 'text-stone-900 dark:text-white'
                             : 'text-stone-600 dark:text-stone-400 group-hover:text-stone-900 dark:group-hover:text-white'
@@ -338,15 +342,15 @@ export default function MoodSelector({
 
                 {/* Optional User Input */}
                 {selectedEmotion && (
-                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 mt-4">
-                    <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 mt-3 sm:mt-4">
+                    <label className="block text-xs sm:text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
                       Tell us more (optional)
                     </label>
                     <textarea
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
                       placeholder="What's on your mind? We'll use this to find the perfect quote..."
-                      className="w-full px-4 py-3 bg-stone-50 dark:bg-stone-800/50 border-2 border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-900 dark:text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all resize-none"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-stone-50 dark:bg-stone-800/50 border-2 border-stone-200 dark:border-stone-700 rounded-xl text-sm text-stone-900 dark:text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all resize-none"
                       rows={3}
                     />
                   </div>
@@ -359,20 +363,21 @@ export default function MoodSelector({
               {/* Back button */}
               <button
                 onClick={() => setShowIntensity(false)}
-                className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 mb-2 flex items-center gap-2 transition-colors group"
+                className="text-xs sm:text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 mb-2 flex items-center gap-2 transition-colors group"
               >
-                <ArrowRight className="rotate-180 group-hover:-translate-x-1 transition-transform" size={16} />
-                Back to emotions
+                <ArrowRight className="rotate-180 group-hover:-translate-x-1 transition-transform" size={14} />
+                <span className="hidden sm:inline">Back to emotions</span>
+                <span className="sm:hidden">Back</span>
               </button>
 
               {/* Selected emotion preview */}
               {selectedMoodOption && (
-                <div className={`p-4 rounded-2xl ${selectedMoodOption.bgColor} border-2 border-${selectedMoodOption.color.split('-')[1]}-500/30 dark:border-${selectedMoodOption.color.split('-')[1]}-400/30 flex items-center gap-3 mb-4`}>
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${selectedMoodOption.gradient} flex items-center justify-center shadow-lg`}>
-                    <selectedMoodOption.icon className="text-white" size={24} />
+                <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl ${selectedMoodOption.bgColor} border-2 border-${selectedMoodOption.color.split('-')[1]}-500/30 dark:border-${selectedMoodOption.color.split('-')[1]}-400/30 flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4`}>
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br ${selectedMoodOption.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                    <selectedMoodOption.icon className="text-white" size={20} />
                   </div>
-                  <div>
-                    <p className="font-semibold text-stone-900 dark:text-white">{selectedMoodOption.label}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm sm:text-base text-stone-900 dark:text-white">{selectedMoodOption.label}</p>
                     <p className="text-xs text-stone-600 dark:text-stone-400">Your current mood</p>
                   </div>
                 </div>
@@ -380,10 +385,10 @@ export default function MoodSelector({
 
               {/* Intensity Selection */}
               <div>
-                <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-stone-900 dark:text-white mb-3 sm:mb-4">
                   Choose intensity
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
                   {INTENSITY_OPTIONS.map((intensity, index) => {
                     const Icon = intensity.icon;
                     const isSelected = selectedIntensity === intensity.value;
@@ -392,7 +397,7 @@ export default function MoodSelector({
                         key={intensity.value}
                         onClick={() => setSelectedIntensity(intensity.value)}
                         className={`
-                          group relative p-5 rounded-2xl border-2 text-left transition-all duration-200
+                          group relative p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 text-left transition-all duration-200
                           ${isSelected
                             ? 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-amber-500 dark:border-amber-400 shadow-lg shadow-amber-500/20 scale-105'
                             : 'bg-stone-50 dark:bg-stone-800/50 border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 hover:scale-105'
@@ -402,19 +407,19 @@ export default function MoodSelector({
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {isSelected && (
-                          <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
-                            <Icon className="text-white" size={14} />
+                          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+                            <Icon className="text-white" size={12} />
                           </div>
                         )}
-                        <div className={`w-10 h-10 rounded-xl mb-3 flex items-center justify-center transition-all ${
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl mb-2 sm:mb-3 flex items-center justify-center transition-all ${
                           isSelected 
                             ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg' 
                             : 'bg-stone-200 dark:bg-stone-700 group-hover:bg-stone-300 dark:group-hover:bg-stone-600'
                         }`}>
-                          <Icon className={isSelected ? 'text-white' : 'text-stone-500 dark:text-stone-400'} size={20} />
+                          <Icon className={isSelected ? 'text-white' : 'text-stone-500 dark:text-stone-400'} size={18} />
                         </div>
                         <p className={`
-                          font-bold mb-1 text-base transition-colors
+                          font-bold mb-1 text-sm sm:text-base transition-colors
                           ${isSelected
                             ? 'text-amber-600 dark:text-amber-400'
                             : 'text-stone-700 dark:text-stone-300 group-hover:text-stone-900 dark:group-hover:text-white'
@@ -435,34 +440,70 @@ export default function MoodSelector({
         </div>
 
         {/* Action Buttons */}
-        <div className="sticky bottom-0 bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border-t border-stone-200/50 dark:border-stone-800/50 px-6 py-4 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-5 py-3 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-xl font-semibold hover:bg-stone-200 dark:hover:bg-stone-700 transition-all duration-200 hover:scale-105 active:scale-95"
-          >
-            Cancel
-          </button>
+        <div className="sticky bottom-0 bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border-t border-stone-200/50 dark:border-stone-800/50 px-4 sm:px-6 py-3 sm:py-4 flex flex-col gap-2 sm:gap-3">
+          {/* Generate Quotes Button - Show when mood is set */}
           {(showIntensity || (moodInputMode === 'type' && typedMood.trim())) && (
             <button
-              onClick={handleSetMood}
-              disabled={isLoadingSuggestions || (moodInputMode === 'type' && !typedMood.trim())}
-              className="flex-1 px-5 py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white rounded-xl font-bold hover:opacity-90 transition-all duration-200 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              onClick={() => {
+                const moodText = moodInputMode === 'type' ? typedMood.trim() : (selectedEmotion ? MOOD_OPTIONS.find(m => m.emotion === selectedEmotion)?.label || selectedEmotion : '');
+                if (moodText) {
+                  setShowGenerateQuotesModal(true);
+                }
+              }}
+              className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white rounded-xl font-bold hover:opacity-90 transition-all duration-200 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-sm sm:text-base"
             >
-              {isLoadingSuggestions ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Analyzing mood...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={18} />
-                  <span>Set Mood</span>
-                </>
-              )}
+              <Quote size={16} />
+              <span>Generate AI Quotes</span>
             </button>
           )}
+          
+          <div className="flex gap-2 sm:gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 sm:px-5 py-2.5 sm:py-3 bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 rounded-xl font-semibold hover:bg-stone-200 dark:hover:bg-stone-700 transition-all duration-200 hover:scale-105 active:scale-95 text-sm sm:text-base"
+            >
+              Cancel
+            </button>
+            {(showIntensity || (moodInputMode === 'type' && typedMood.trim())) && (
+              <button
+                onClick={handleSetMood}
+                disabled={isLoadingSuggestions || (moodInputMode === 'type' && !typedMood.trim())}
+                className="flex-1 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white rounded-xl font-bold hover:opacity-90 transition-all duration-200 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+              >
+                {isLoadingSuggestions ? (
+                  <>
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="hidden sm:inline">Analyzing mood...</span>
+                    <span className="sm:hidden">Analyzing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    <span>Set Mood</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Generate Quotes Modal */}
+      {showGenerateQuotesModal && (
+        <GenerateQuotesModal
+          isOpen={showGenerateQuotesModal}
+          onClose={() => setShowGenerateQuotesModal(false)}
+          mood={moodInputMode === 'type' ? typedMood.trim() : (selectedEmotion ? MOOD_OPTIONS.find(m => m.emotion === selectedEmotion)?.label || selectedEmotion : '')}
+          intensity={selectedIntensity}
+          userInput={moodInputMode === 'type' ? undefined : userInput.trim() || undefined}
+          onQuoteSelect={(quote) => {
+            onQuoteGenerated?.(quote);
+            setShowGenerateQuotesModal(false);
+            // Close MoodSelector modal when quote is selected
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 }

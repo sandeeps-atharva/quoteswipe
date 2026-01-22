@@ -9,11 +9,13 @@ import toast from 'react-hot-toast';
 interface MoodSenseIndicatorProps {
   categories?: Array<{ id: string; name: string; icon: string }>;
   onCategoriesSuggested?: (categories: string[]) => void;
+  onQuoteGenerated?: (quote: { text: string; author: string; category?: string }) => void;
 }
 
 export default function MoodSenseIndicator({ 
   categories = [],
   onCategoriesSuggested,
+  onQuoteGenerated,
 }: MoodSenseIndicatorProps) {
   const { currentMood, isMoodSenseActive, toggleMoodSense, getEmotionalInsight, shouldSuggestReflection } = useMoodSense();
   const [showMoodSelector, setShowMoodSelector] = useState(false);
@@ -101,9 +103,9 @@ export default function MoodSenseIndicator({
       <button
         onClick={handleToggle}
         className={`
-          fixed right-4 bottom-24 z-40 
+          fixed right-3 sm:right-4 bottom-20 sm:bottom-24 z-40 
           flex items-center justify-center
-          w-14 h-14 rounded-2xl
+          w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl
           transition-all duration-300 
           hover:scale-105 active:scale-95
           group
@@ -119,9 +121,9 @@ export default function MoodSenseIndicator({
         <div className="relative flex items-center justify-center w-full h-full">
           {/* Main sparkle icon */}
           <Sparkles 
-            size={24} 
+            size={20}
             className={`
-              transition-all duration-300 relative z-10
+              sm:w-6 sm:h-6 transition-all duration-300 relative z-10
               ${isMoodSenseActive && currentMood 
                 ? 'text-white' 
                 : 'text-amber-500 dark:text-amber-400'
@@ -191,6 +193,7 @@ export default function MoodSenseIndicator({
         }}
         categories={categories}
         onCategoriesSuggested={onCategoriesSuggested}
+        onQuoteGenerated={onQuoteGenerated}
       />
     </>
   );

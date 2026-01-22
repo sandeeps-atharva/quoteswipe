@@ -762,6 +762,38 @@ export default function SwipeQuotes() {
     }
   }, []);
 
+  // Handle generated quote from MoodSense
+  const handleQuoteGenerated = useCallback((generatedQuote: { text: string; author: string; category?: string }) => {
+    console.log('[SwipeQuotes] handleQuoteGenerated called with:', generatedQuote);
+    
+    // Create a Quote object from the generated quote
+    const newQuote: Quote = {
+      id: `generated_${Date.now()}`, // Unique ID for generated quote
+      text: generatedQuote.text,
+      author: generatedQuote.author,
+      category: generatedQuote.category || 'AI Generated',
+      category_icon: '✨',
+      likes_count: 0,
+      dislikes_count: 0,
+    };
+
+    // Add quote to the beginning of the quotes array
+    setQuotes(prev => [newQuote, ...prev]);
+    
+    // Navigate to the new quote (index 0)
+    setCurrentIndex(0);
+    
+    // Update URL
+    const quoteId = newQuote.id;
+    window.history.pushState({ quoteId, index: 0 }, '', `/quote/${quoteId}`);
+    
+    // Show success toast
+    toast.success('Quote added to your feed! ✨', {
+      icon: '✨',
+      duration: 2000,
+    });
+  }, []);
+
   // Apply suggested categories
   const handleApplySuggestedCategories = useCallback(async (categoriesToAdd: string[]) => {
     const merged = [...new Set([...selectedCategories, ...categoriesToAdd])];
@@ -2961,6 +2993,7 @@ export default function SwipeQuotes() {
           <MoodSenseIndicator 
             categories={categories.map(c => ({ id: String(c.id), name: c.name, icon: c.icon }))}
             onCategoriesSuggested={handleCategoriesSuggested}
+            onQuoteGenerated={handleQuoteGenerated}
           />
         </Suspense>
       )}
