@@ -2815,6 +2815,8 @@ export default function SwipeQuotes() {
             onLoginRequired={() => setShowAuthModal(true)}
             targetQuoteId={feedTargetQuoteId}
             targetQuoteBackground={feedTargetQuoteBackground}
+            hasMoreQuotes={hasMoreQuotes}
+            onFetchMore={fetchMoreQuotes}
           />
         )}
       </div>

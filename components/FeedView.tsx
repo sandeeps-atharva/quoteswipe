@@ -137,6 +137,8 @@ interface FeedViewProps {
   onLoginRequired: () => void;
   targetQuoteId?: string | number | null;
   targetQuoteBackground?: BackgroundImage | null;
+  hasMoreQuotes?: boolean; // Whether more quotes are available from API
+  onFetchMore?: () => void; // Callback to fetch more quotes from API
 }
 
 export default function FeedView({
@@ -156,6 +158,8 @@ export default function FeedView({
   onLoginRequired,
   targetQuoteId,
   targetQuoteBackground,
+  hasMoreQuotes = false,
+  onFetchMore,
 }: FeedViewProps) {
   const [copiedId, setCopiedId] = useState<string | number | null>(null);
   const [doubleTapId, setDoubleTapId] = useState<string | number | null>(null);
@@ -182,7 +186,22 @@ export default function FeedView({
     return uniqueQuotes.slice(0, visibleCount);
   }, [uniqueQuotes, visibleCount]);
 
-  // Infinite scroll
+  // Infinite scroll with fetch-more support (same as SwipeQuotes)
+  const PREFETCH_THRESHOLD = 10; // Fetch when 10 quotes remain (same as swipe view)
+  
+  useEffect(() => {
+    // Check if we need to fetch more quotes from API
+    if (onFetchMore && hasMoreQuotes) {
+      const remainingQuotes = uniqueQuotes.length - visibleCount;
+      
+      // Trigger fetch when within threshold (same logic as SwipeQuotes)
+      if (remainingQuotes <= PREFETCH_THRESHOLD) {
+        onFetchMore();
+      }
+    }
+  }, [visibleCount, uniqueQuotes.length, hasMoreQuotes, onFetchMore]);
+  
+  // Intersection observer for showing more from already-loaded quotes
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -318,7 +337,10 @@ export default function FeedView({
     <div 
       ref={containerRef}
       className="fixed inset-0 top-16 bottom-16 overflow-y-auto overscroll-contain bg-gradient-to-b from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900"
-      style={{ WebkitOverflowScrolling: 'touch' }}
+      style={{ 
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'pan-y', // Allow vertical scrolling
+      }}
     >
       {/* Feed Container - Mobile Optimized */}
       <div className="max-w-[500px] mx-auto px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6 space-y-3 sm:space-y-4 md:space-y-6">
@@ -347,7 +369,8 @@ export default function FeedView({
             >
               {/* Main Card Content */}
               <div 
-                className="relative aspect-[4/5] cursor-pointer select-none overflow-hidden touch-none"
+                className="relative aspect-[4/5] cursor-pointer select-none overflow-hidden"
+                style={{ touchAction: 'pan-y' }} // Allow vertical scrolling, prevent horizontal dragging
                 onClick={() => handleDoubleTap(quote)}
               >
                 {/* Background */}
