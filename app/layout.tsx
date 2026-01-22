@@ -27,6 +27,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { BackgroundsProvider } from "@/contexts/BackgroundsContext";
 import { UserProvider } from "@/contexts/UserContext";
+import { MoodSenseProvider } from "@/contexts/MoodSenseContext";
 import CustomToaster from "@/components/CustomToaster";
 import CookieConsent from "@/components/CookieConsent";
 import InstallAppModal from "@/components/InstallAppModal";
@@ -689,10 +690,12 @@ export default function RootLayout({
           <LanguageProvider>
             <UserProvider>
               <BackgroundsProvider>
-                <CustomToaster />
-                {children}
-                <CookieConsent />
-                <InstallAppModal />
+                <MoodSenseProvider>
+                  <CustomToaster />
+                  {children}
+                  <CookieConsent />
+                  <InstallAppModal />
+                </MoodSenseProvider>
               </BackgroundsProvider>
             </UserProvider>
           </LanguageProvider>

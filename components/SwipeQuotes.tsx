@@ -22,6 +22,7 @@ import { useVisitorTracking } from '@/hooks/useVisitorTracking';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCacheSync } from '@/hooks/useCacheSync';
 import { useBackgroundsSafe } from '@/contexts/BackgroundsContext';
+import { useMoodSense } from '@/contexts/MoodSenseContext';
 
 // Constants & Utilities
 import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage, getRandomBackgroundForQuote } from '@/lib/constants';
@@ -55,6 +56,8 @@ const MyQuotesView = lazy(() => import('./MyQuotesView'));
 const LikedQuotesView = lazy(() => import('./LikedQuotesView'));
 const SkippedQuotesView = lazy(() => import('./SkippedQuotesView'));
 const ProfileView = lazy(() => import('./ProfileView'));
+const MoodSenseIndicator = lazy(() => import('./MoodSenseIndicator'));
+const CategorySuggestionModal = lazy(() => import('./CategorySuggestionModal'));
 
 // Cache duration constants (imported from cache-utils)
 const QUOTES_CACHE_DURATION = CACHE_DURATIONS.QUOTES;
@@ -79,6 +82,13 @@ export default function SwipeQuotes() {
   // Backgrounds context for prefetching after login
   const backgroundsContext = useBackgroundsSafe();
   
+  // MoodSense tracking
+  const { trackSwipe, isMoodSenseActive } = useMoodSense();
+  
+  // Track time spent on current quote
+  const quoteStartTimeRef = useRef<number>(Date.now());
+  const currentQuoteIdRef = useRef<string | number | null>(null);
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('swipe');
@@ -101,6 +111,8 @@ export default function SwipeQuotes() {
   const [activeNavTab, setActiveNavTab] = useState<NavTab>('feed'); // Bottom nav active tab
   const [swipeCount, setSwipeCount] = useState(0); // For unauthenticated users
   const [authenticatedSwipeCount, setAuthenticatedSwipeCount] = useState(0); // For authenticated users
+  const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
+  const [showCategorySuggestionModal, setShowCategorySuggestionModal] = useState(false);
   // Restore quotes, categories, and index from cache for instant display
   const [quotes, setQuotes] = useState<Quote[]>(() => {
     const cached = getFromCache<Quote[]>('swipeQuotes', 60 * 60 * 1000);
@@ -738,6 +750,30 @@ export default function SwipeQuotes() {
     }
   };
 
+  // Handle category suggestions from MoodSense
+  const handleCategoriesSuggested = useCallback((suggested: string[]) => {
+    console.log('[SwipeQuotes] handleCategoriesSuggested called with:', suggested);
+    if (suggested.length > 0) {
+      setSuggestedCategories(suggested);
+      setShowCategorySuggestionModal(true);
+      console.log('[SwipeQuotes] Modal should now be visible');
+    } else {
+      console.log('[SwipeQuotes] No suggestions provided');
+    }
+  }, []);
+
+  // Apply suggested categories
+  const handleApplySuggestedCategories = useCallback(async (categoriesToAdd: string[]) => {
+    const merged = [...new Set([...selectedCategories, ...categoriesToAdd])];
+    setSelectedCategories(merged);
+    await saveUserPreferences(merged);
+    // Trigger quote refresh with new categories
+    setIsChangingCategories(true);
+    setTimeout(() => {
+      fetchQuotes(true);
+    }, 100);
+  }, [selectedCategories, saveUserPreferences]);
+
   // Shuffle array function (Fisher-Yates algorithm)
   const shuffleArray = <T,>(array: T[]): T[] => {
     const shuffled = [...array];
@@ -1308,6 +1344,12 @@ export default function SwipeQuotes() {
       // Check if user already liked this quote
       const alreadyLiked = likedQuotes.some(q => q.id === currentQuote.id);
       
+      // Track MoodSense behavior
+      if (isMoodSenseActive && currentQuoteIdRef.current === currentQuote.id) {
+        const timeSpent = Date.now() - quoteStartTimeRef.current;
+        trackSwipe('like', currentQuote.id, timeSpent);
+      }
+      
       if (!alreadyLiked) {
         setLastLikedQuote(currentQuote);
         
@@ -1342,6 +1384,11 @@ export default function SwipeQuotes() {
         setLastLikedQuote(currentQuote);
       }
     } else if (direction === 'left' && currentQuote) {
+      // Track MoodSense behavior
+      if (isMoodSenseActive && currentQuoteIdRef.current === currentQuote.id) {
+        const timeSpent = Date.now() - quoteStartTimeRef.current;
+        trackSwipe('dislike', currentQuote.id, timeSpent);
+      }
       // Check if user already disliked this quote
       const alreadyDisliked = dislikedQuotes.some(q => q.id === currentQuote.id);
       
@@ -1594,6 +1641,12 @@ export default function SwipeQuotes() {
   const handleConfirmSave = useCallback((customBackground: string | null, fontId?: string) => {
     if (!quoteToSave) return;
     
+    // Track MoodSense behavior
+    if (isMoodSenseActive && currentQuoteIdRef.current === quoteToSave.id) {
+      const timeSpent = Date.now() - quoteStartTimeRef.current;
+      trackSwipe('save', quoteToSave.id, timeSpent);
+    }
+    
     // OPTIMISTIC UPDATE: Update UI immediately
     setSavedQuotes(prev => [...prev, quoteToSave]);
     
@@ -1644,7 +1697,7 @@ export default function SwipeQuotes() {
     } else {
       toast.success('Quote saved! 🔖');
     }
-  }, [quoteToSave, isAuthenticated, handleSwipe, viewMode]);
+  }, [quoteToSave, isAuthenticated, handleSwipe, viewMode, isMoodSenseActive, trackSwipe, currentQuoteIdRef]);
 
   const handleShare = () => {
     const filteredQuotes = getFilteredQuotes();
@@ -2157,6 +2210,16 @@ export default function SwipeQuotes() {
       setSwipeDirection(null);
     }
   }, [showAuthModal, showInstagramModal]);
+
+  // Track quote changes for MoodSense
+  useEffect(() => {
+    const filteredQuotes = getFilteredQuotes();
+    const quote = filteredQuotes[currentIndex];
+    if (quote && quote.id !== currentQuoteIdRef.current) {
+      currentQuoteIdRef.current = quote.id;
+      quoteStartTimeRef.current = Date.now();
+    }
+  }, [currentIndex]);
 
   const filteredQuotes = getFilteredQuotes();
   const currentQuote = filteredQuotes[currentIndex];
@@ -2891,6 +2954,31 @@ export default function SwipeQuotes() {
 
       {/* Navigation Loading Overlay */}
       {isNavigatingToQuote && <NavigationLoader />}
+
+      {/* MoodSense Indicator */}
+      {isAuthenticated && (
+        <Suspense fallback={null}>
+          <MoodSenseIndicator 
+            categories={categories.map(c => ({ id: String(c.id), name: c.name, icon: c.icon }))}
+            onCategoriesSuggested={handleCategoriesSuggested}
+          />
+        </Suspense>
+      )}
+
+      {/* Category Suggestion Modal */}
+      {showCategorySuggestionModal && (
+        <Suspense fallback={null}>
+          <CategorySuggestionModal
+            isOpen={showCategorySuggestionModal}
+            onClose={() => setShowCategorySuggestionModal(false)}
+            suggestedCategories={suggestedCategories}
+            allCategories={categories.map(c => ({ id: String(c.id), name: c.name, icon: c.icon }))}
+            currentSelected={selectedCategories}
+            onApply={handleApplySuggestedCategories}
+            onSkip={() => setShowCategorySuggestionModal(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

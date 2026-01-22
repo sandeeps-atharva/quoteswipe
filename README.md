@@ -115,6 +115,28 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_TRANSLATE_API_KEY=your-google-translate-api-key
 
 # ================================
+# AI API KEYS (Optional - for MoodSense category suggestions)
+# ================================
+# At least one AI provider is recommended for intelligent category suggestions
+# If not configured, the system will use rule-based fallback (still works great!)
+# Priority order: Google Gemini → OpenAI → Anthropic → Fallback
+
+# Google Gemini (Recommended - Free tier available)
+# Get from: https://aistudio.google.com/app/apikey
+GOOGLE_GEMINI_API_KEY=your-google-gemini-api-key
+GOOGLE_GEMINI_MODEL=gemini-2.5-flash  # Optional: gemini-2.5-pro, etc.
+
+# OpenAI (ChatGPT) - Alternative
+# Get from: https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-your-openai-api-key
+OPENAI_MODEL=gpt-3.5-turbo  # Optional: gpt-4, gpt-4-turbo, etc.
+
+# Anthropic (Claude) - Alternative
+# Get from: https://console.anthropic.com/
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key
+ANTHROPIC_MODEL=claude-3-haiku-20240307  # Optional: claude-3-opus, claude-3-sonnet, etc.
+
+# ================================
 # EMAIL CONFIGURATION (Optional)
 # ================================
 EMAIL_HOST=smtp.gmail.com
