@@ -25,10 +25,17 @@ MoodSense now supports AI-powered category suggestions using Google Gemini, Chat
 2. **Add to `.env`:**
    ```bash
    GOOGLE_GEMINI_API_KEY=your-api-key-here
-   GOOGLE_GEMINI_MODEL=gemini-2.5-flash  # Optional: gemini-2.5-pro
+   GOOGLE_GEMINI_MODEL=gemini-1.5-flash  # Recommended: Higher free tier limits (15 req/min = ~1,000+ per day)
+   # Alternative: gemini-2.5-flash (only 20 requests/day on free tier)
    ```
 
-3. **Cost:** FREE tier available (60 requests/minute), then pay-as-you-go
+3. **Cost:** FREE tier available with different limits per model:
+   
+   - **gemini-1.5-flash** (Recommended): **15 requests/minute** = **~1,000+ requests/day** ✅
+   - **gemini-2.5-flash**: **20 requests/day** (very limited) ⚠️
+   - **gemini-1.5-pro**: Higher limits but may have costs
+   
+   **💡 Tip:** Use `gemini-1.5-flash` for the best free tier experience with ~1,000+ requests per day!
 
 ### Option 2: OpenAI (ChatGPT)
 

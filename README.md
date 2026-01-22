@@ -124,7 +124,8 @@ GOOGLE_TRANSLATE_API_KEY=your-google-translate-api-key
 # Google Gemini (Recommended - Free tier available)
 # Get from: https://aistudio.google.com/app/apikey
 GOOGLE_GEMINI_API_KEY=your-google-gemini-api-key
-GOOGLE_GEMINI_MODEL=gemini-2.5-flash  # Optional: gemini-2.5-pro, etc.
+GOOGLE_GEMINI_MODEL=gemini-1.5-flash  # Recommended: ~1,000+ requests/day on free tier
+# Alternative: gemini-2.5-flash (only 20 requests/day on free tier)
 
 # OpenAI (ChatGPT) - Alternative
 # Get from: https://platform.openai.com/api-keys

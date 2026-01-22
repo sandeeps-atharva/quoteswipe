@@ -82,7 +82,9 @@ Return ONLY the JSON array, nothing else.`;
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for quote generation
 
     // Google Gemini API endpoint
-    const model = process.env.GOOGLE_GEMINI_MODEL || 'gemini-2.5-flash';
+    // Use gemini-1.5-flash for higher free tier limits (15 req/min = ~1,000+ per day)
+    // gemini-2.5-flash only has 20 requests/day on free tier
+    const model = process.env.GOOGLE_GEMINI_MODEL || 'gemini-1.5-flash';
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     // Build request body - include image if provided
@@ -126,8 +128,21 @@ Return ONLY the JSON array, nothing else.`;
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error('[AI] Google Gemini API error:', response.status, error);
+      const errorText = await response.text();
+      console.error('[AI] Google Gemini API error:', response.status, errorText);
+      
+      // Handle quota exceeded (429) error
+      if (response.status === 429) {
+        try {
+          const errorData = JSON.parse(errorText);
+          const retryDelay = errorData.error?.details?.find((d: any) => d['@type'] === 'type.googleapis.com/google.rpc.RetryInfo')?.retryDelay || '12s';
+          console.error('[AI] Quota exceeded. Retry after:', retryDelay);
+          throw new Error(`API quota exceeded. Free tier allows 20 requests/day. Please try again later or upgrade your plan.`);
+        } catch {
+          throw new Error('API quota exceeded. Free tier allows 20 requests/day. Please try again later.');
+        }
+      }
+      
       return null;
     }
 
@@ -237,8 +252,10 @@ export async function POST(request: NextRequest) {
     );
 
     if (!quotes || quotes.length === 0) {
+      // Check if it was a quota error
+      const errorMessage = quotes === null ? 'API quota exceeded. Free tier allows 20 requests/day.' : 'Failed to generate quotes. Please try again.';
       return NextResponse.json(
-        { error: 'Failed to generate quotes. Please try again.' },
+        { error: errorMessage },
         { status: 500 }
       );
     }

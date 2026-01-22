@@ -149,7 +149,17 @@ export default function GenerateQuotesModal({
       setHasGenerated(true);
     } catch (error: any) {
       console.error('[GenerateQuotesModal] Error generating quotes:', error);
-      toast.error(error.message || 'Failed to generate quotes. Please try again.');
+      const errorMessage = error.message || 'Failed to generate quotes. Please try again.';
+      
+      // Show specific message for quota errors
+      if (errorMessage.includes('quota') || errorMessage.includes('20 requests')) {
+        toast.error('API quota exceeded. Free tier allows 20 requests/day. Quotes are cached - try again tomorrow!', {
+          duration: 5000,
+          icon: '⚠️',
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsGenerating(false);
     }

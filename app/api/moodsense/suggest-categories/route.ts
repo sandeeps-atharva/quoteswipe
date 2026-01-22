@@ -168,7 +168,9 @@ Based on this mood and context, suggest exactly 6 category names from the availa
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
     // Google Gemini API endpoint
-    const model = process.env.GOOGLE_GEMINI_MODEL || 'gemini-2.5-flash';
+    // Use gemini-1.5-flash for higher free tier limits (15 req/min = ~1,000+ per day)
+    // gemini-2.5-flash only has 20 requests/day on free tier
+    const model = process.env.GOOGLE_GEMINI_MODEL || 'gemini-1.5-flash';
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
