@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Sparkles, Heart, Cloud, Zap, AlertCircle, HeartCrack, Moon, Sun, Star, Target, Brain, Lightbulb, Waves, Rocket, BookOpen, Smile, Droplet, Shield, HelpCircle, Coffee, ArrowRight, Quote } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Sparkles, Heart, Cloud, Zap, AlertCircle, HeartCrack, Moon, Sun, Star, Target, Brain, Lightbulb, Waves, Rocket, BookOpen, Smile, Droplet, Shield, HelpCircle, Coffee, ArrowRight, Quote, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useMoodSense, Emotion, EmotionalIntensity } from '@/contexts/MoodSenseContext';
 import GenerateQuotesModal from './GenerateQuotesModal';
+import toast from 'react-hot-toast';
 
 interface MoodOption {
   emotion: Emotion;
@@ -69,9 +70,14 @@ export default function MoodSelector({
   const [suggestedCategories, setSuggestedCategories] = useState<string[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [moodInputMode, setMoodInputMode] = useState<'select' | 'type'>('select'); // New: 'select' or 'type'
+  const [moodInputMode, setMoodInputMode] = useState<'select' | 'type' | 'image'>('select'); // New: 'select', 'type', or 'image'
   const [typedMood, setTypedMood] = useState(''); // New: for free-text mood input
   const [showGenerateQuotesModal, setShowGenerateQuotesModal] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null); // Base64 image
+  const [imageMimeType, setImageMimeType] = useState<string>(''); // Image MIME type
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [imageSentiment, setImageSentiment] = useState<{ mood: string; intensity?: string; description: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle escape key
   useEffect(() => {
@@ -230,14 +236,16 @@ export default function MoodSelector({
         <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-140px)] scrollbar-hide">
           {!showIntensity ? (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-              {/* Mode Toggle: Select vs Type */}
-              <div className="flex gap-2 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
+              {/* Mode Toggle: Select vs Type vs Image */}
+              <div className="flex gap-1.5 sm:gap-2 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
                 <button
                   onClick={() => {
                     setMoodInputMode('select');
                     setTypedMood('');
+                    setUploadedImage(null);
+                    setImageSentiment(null);
                   }}
-                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                  className={`flex-1 px-2 sm:px-4 py-2 rounded-lg font-medium transition-all text-xs sm:text-sm ${
                     moodInputMode === 'select'
                       ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm'
                       : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
@@ -249,18 +257,172 @@ export default function MoodSelector({
                   onClick={() => {
                     setMoodInputMode('type');
                     setSelectedEmotion(null);
+                    setUploadedImage(null);
+                    setImageSentiment(null);
                   }}
-                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                  className={`flex-1 px-2 sm:px-4 py-2 rounded-lg font-medium transition-all text-xs sm:text-sm ${
                     moodInputMode === 'type'
                       ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm'
                       : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
                   }`}
                 >
-                  Type Your Mood
+                  Type
+                </button>
+                <button
+                  onClick={() => {
+                    setMoodInputMode('image');
+                    setSelectedEmotion(null);
+                    setTypedMood('');
+                    fileInputRef.current?.click();
+                  }}
+                  className={`flex-1 px-2 sm:px-4 py-2 rounded-lg font-medium transition-all text-xs sm:text-sm ${
+                    moodInputMode === 'image'
+                      ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-sm'
+                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span className="hidden sm:inline">Upload Image</span>
+                  <span className="sm:hidden">Image</span>
                 </button>
               </div>
 
-              {moodInputMode === 'type' ? (
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  // Validate file type
+                  if (!file.type.startsWith('image/')) {
+                    toast.error('Please select an image file');
+                    return;
+                  }
+
+                  // Validate file size (max 5MB)
+                  if (file.size > 5 * 1024 * 1024) {
+                    toast.error('Image must be less than 5MB');
+                    return;
+                  }
+
+                  setIsAnalyzingImage(true);
+                  setMoodInputMode('image');
+
+                  try {
+                    // Convert to base64
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                      const base64 = event.target?.result as string;
+                      setUploadedImage(base64);
+                      setImageMimeType(file.type);
+
+                      // Set image data and auto-open quote generation modal
+                      setImageSentiment({
+                        mood: 'analyzing',
+                        intensity: 'moderate',
+                        description: 'Analyzing image...'
+                      });
+                      setIsAnalyzingImage(false);
+                      
+                      // Auto-open quote generation modal with image
+                      setTimeout(() => {
+                        setShowGenerateQuotesModal(true);
+                      }, 300);
+                    };
+                    reader.onerror = () => {
+                      toast.error('Failed to read image');
+                      setIsAnalyzingImage(false);
+                    };
+                    reader.readAsDataURL(file);
+                  } catch (error) {
+                    console.error('[MoodSelector] Error uploading image:', error);
+                    toast.error('Failed to upload image');
+                    setIsAnalyzingImage(false);
+                  }
+                }}
+              />
+
+              {moodInputMode === 'image' ? (
+                /* Image upload and analysis */
+                <div className="space-y-3 sm:space-y-4">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-stone-900 dark:text-white mb-2">
+                      Upload Image for Sentiment Analysis
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mb-3 sm:mb-4">
+                      Upload an image and AI will analyze its emotional sentiment to generate personalized quotes.
+                    </p>
+                    
+                    {isAnalyzingImage ? (
+                      <div className="flex flex-col items-center justify-center py-12 sm:py-16 border-2 border-dashed border-stone-300 dark:border-stone-700 rounded-xl bg-stone-50 dark:bg-stone-800/50">
+                        <Loader2 className="w-8 h-8 sm:w-10 sm:h-10 text-amber-500 animate-spin mb-3" />
+                        <p className="text-sm sm:text-base font-medium text-stone-900 dark:text-white mb-1">
+                          Analyzing image...
+                        </p>
+                        <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400">
+                          AI is detecting the mood and sentiment
+                        </p>
+                      </div>
+                    ) : uploadedImage ? (
+                      <div className="space-y-3 sm:space-y-4">
+                        {/* Image Preview */}
+                        <div className="relative rounded-xl overflow-hidden border-2 border-stone-200 dark:border-stone-700">
+                          <img
+                            src={uploadedImage}
+                            alt="Uploaded"
+                            className="w-full h-auto max-h-64 sm:max-h-80 object-cover"
+                          />
+                          <button
+                            onClick={() => {
+                              setUploadedImage(null);
+                              setImageSentiment(null);
+                              setImageMimeType('');
+                            }}
+                            className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-lg transition-all"
+                          >
+                            <X className="text-white" size={16} />
+                          </button>
+                        </div>
+
+                        {/* Image ready indicator */}
+                        {uploadedImage && (
+                          <div className="p-4 sm:p-5 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl sm:rounded-2xl border-2 border-purple-500/30 dark:border-purple-400/30">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg flex-shrink-0">
+                                <ImageIcon className="text-white" size={20} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm sm:text-base font-semibold text-stone-900 dark:text-white mb-1">
+                                  Image Ready
+                                </p>
+                                <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">
+                                  Click "Generate AI Quotes" to create quotes based on this image
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-stone-300 dark:border-stone-700 rounded-xl bg-stone-50 dark:bg-stone-800/50 p-8 sm:p-12 text-center cursor-pointer hover:border-amber-500 dark:hover:border-amber-400 transition-all hover:bg-stone-100 dark:hover:bg-stone-800"
+                      >
+                        <ImageIcon className="w-12 h-12 sm:w-16 sm:h-16 text-stone-400 mx-auto mb-3 sm:mb-4" />
+                        <p className="text-sm sm:text-base font-medium text-stone-900 dark:text-white mb-1">
+                          Click to upload image
+                        </p>
+                        <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400">
+                          JPEG, PNG, WebP (max 5MB)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : moodInputMode === 'type' ? (
                 /* Free-text mood input */
                 <div className="space-y-3 sm:space-y-4">
                   <div>
@@ -441,19 +603,16 @@ export default function MoodSelector({
 
         {/* Action Buttons */}
         <div className="sticky bottom-0 bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border-t border-stone-200/50 dark:border-stone-800/50 px-4 sm:px-6 py-3 sm:py-4 flex flex-col gap-2 sm:gap-3">
-          {/* Generate Quotes Button - Show when mood is set */}
-          {(showIntensity || (moodInputMode === 'type' && typedMood.trim())) && (
+          {/* Generate Quotes Button - Show when mood is set or image uploaded */}
+          {(showIntensity || (moodInputMode === 'type' && typedMood.trim()) || (moodInputMode === 'image' && uploadedImage)) && (
             <button
               onClick={() => {
-                const moodText = moodInputMode === 'type' ? typedMood.trim() : (selectedEmotion ? MOOD_OPTIONS.find(m => m.emotion === selectedEmotion)?.label || selectedEmotion : '');
-                if (moodText) {
-                  setShowGenerateQuotesModal(true);
-                }
+                setShowGenerateQuotesModal(true);
               }}
               className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 text-white rounded-xl font-bold hover:opacity-90 transition-all duration-200 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <Quote size={16} />
-              <span>Generate AI Quotes</span>
+              <span>{moodInputMode === 'image' ? 'Generate Quotes from Image' : 'Generate AI Quotes'}</span>
             </button>
           )}
           
@@ -464,7 +623,7 @@ export default function MoodSelector({
             >
               Cancel
             </button>
-            {(showIntensity || (moodInputMode === 'type' && typedMood.trim())) && (
+            {(showIntensity || (moodInputMode === 'type' && typedMood.trim()) || (moodInputMode === 'image' && uploadedImage)) && (
               <button
                 onClick={handleSetMood}
                 disabled={isLoadingSuggestions || (moodInputMode === 'type' && !typedMood.trim())}
@@ -493,9 +652,23 @@ export default function MoodSelector({
         <GenerateQuotesModal
           isOpen={showGenerateQuotesModal}
           onClose={() => setShowGenerateQuotesModal(false)}
-          mood={moodInputMode === 'type' ? typedMood.trim() : (selectedEmotion ? MOOD_OPTIONS.find(m => m.emotion === selectedEmotion)?.label || selectedEmotion : '')}
+          mood={
+            moodInputMode === 'image'
+              ? 'Image Analysis'
+              : moodInputMode === 'type'
+              ? typedMood.trim()
+              : selectedEmotion
+              ? MOOD_OPTIONS.find(m => m.emotion === selectedEmotion)?.label || selectedEmotion
+              : ''
+          }
           intensity={selectedIntensity}
-          userInput={moodInputMode === 'type' ? undefined : userInput.trim() || undefined}
+          userInput={
+            moodInputMode === 'type'
+              ? undefined
+              : userInput.trim() || undefined
+          }
+          imageBase64={moodInputMode === 'image' ? uploadedImage || undefined : undefined}
+          imageMimeType={moodInputMode === 'image' ? imageMimeType || undefined : undefined}
           onQuoteSelect={(quote) => {
             onQuoteGenerated?.(quote);
             setShowGenerateQuotesModal(false);

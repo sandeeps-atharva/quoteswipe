@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 interface GenerateQuotesRequest {
-  mood: string; // User's typed mood or emotion
+  mood?: string; // User's typed mood or emotion (optional if image provided)
   intensity?: string;
   userInput?: string;
+  imageBase64?: string; // Base64 encoded image
+  imageMimeType?: string; // Image MIME type
 }
 
 interface GeneratedQuote {
@@ -13,12 +15,14 @@ interface GeneratedQuote {
 }
 
 /**
- * Generate quotes using Google Gemini API
+ * Generate quotes using Google Gemini API (with optional image support)
  */
 async function generateQuotesWithGemini(
-  mood: string,
+  mood?: string,
   intensity?: string,
-  userInput?: string
+  userInput?: string,
+  imageBase64?: string,
+  imageMimeType?: string
 ): Promise<GeneratedQuote[] | null> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!apiKey) {
@@ -27,9 +31,35 @@ async function generateQuotesWithGemini(
   }
 
   try {
-    const prompt = `You are an emotion-aware AI assistant for a quote app called "MoodSense". Generate exactly 10 short, powerful, and relatable quotes based on the user's mood.
+    // Build prompt based on whether image is provided
+    let prompt: string;
+    if (imageBase64 && imageMimeType) {
+      // Image-based quote generation
+      prompt = `You are an emotion-aware AI assistant for a quote app called "MoodSense". Analyze this image and generate exactly 10 short, powerful, and relatable quotes based on the image's emotional sentiment, mood, colors, composition, and atmosphere.
 
-User's mood: "${mood}"${intensity ? ` (${intensity} intensity)` : ''}${userInput ? `. Additional context: "${userInput}"` : ''}
+${mood ? `User mentioned mood: "${mood}"` : ''}${intensity ? ` (${intensity} intensity)` : ''}${userInput ? `. Additional context: "${userInput}"` : ''}
+
+Requirements:
+- Analyze the image's emotional tone, colors, lighting, composition, and overall atmosphere
+- Generate exactly 10 quotes that capture the essence and sentiment of the image
+- Each quote should be short (under 150 characters), powerful, and swipe-friendly
+- Match the emotional depth and tone visible in the image
+- Avoid clichés and overused phrases
+- Make quotes relatable and emotionally precise
+- Include an author name for each quote (can be "Anonymous" or a meaningful name)
+- Format: Return as JSON array with this exact structure:
+[
+  {"text": "Quote text here", "author": "Author name"},
+  {"text": "Quote text here", "author": "Author name"},
+  ...
+]
+
+Return ONLY the JSON array, nothing else.`;
+    } else {
+      // Text-based quote generation
+      prompt = `You are an emotion-aware AI assistant for a quote app called "MoodSense". Generate exactly 10 short, powerful, and relatable quotes based on the user's mood.
+
+User's mood: "${mood || 'general'}"${intensity ? ` (${intensity} intensity)` : ''}${userInput ? `. Additional context: "${userInput}"` : ''}
 
 Requirements:
 - Generate exactly 10 quotes
@@ -46,6 +76,7 @@ Requirements:
 ]
 
 Return ONLY the JSON array, nothing else.`;
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for quote generation
@@ -54,22 +85,41 @@ Return ONLY the JSON array, nothing else.`;
     const model = process.env.GOOGLE_GEMINI_MODEL || 'gemini-2.5-flash';
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
+    // Build request body - include image if provided
+    const requestBody: any = {
+      contents: [{
+        parts: []
+      }],
+      generationConfig: {
+        temperature: 0.8, // Higher temperature for more creative quotes
+        maxOutputTokens: 2000, // Enough for 10 quotes
+      },
+    };
+
+    // Add text prompt
+    requestBody.contents[0].parts.push({ text: prompt });
+
+    // Add image if provided
+    if (imageBase64 && imageMimeType) {
+      // Remove data URL prefix if present
+      const base64Data = imageBase64.includes(',') 
+        ? imageBase64.split(',')[1] 
+        : imageBase64;
+      
+      requestBody.contents[0].parts.push({
+        inline_data: {
+          mime_type: imageMimeType,
+          data: base64Data
+        }
+      });
+    }
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.8, // Higher temperature for more creative quotes
-          maxOutputTokens: 2000, // Enough for 10 quotes
-        },
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
 
@@ -165,19 +215,26 @@ Return ONLY the JSON array, nothing else.`;
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateQuotesRequest = await request.json();
-    const { mood, intensity, userInput } = body;
+    const { mood, intensity, userInput, imageBase64, imageMimeType } = body;
 
-    console.log('[API] generate-quotes called - mood:', mood?.substring(0, 50));
+    console.log('[API] generate-quotes called - mood:', mood?.substring(0, 50), 'hasImage:', !!imageBase64);
 
-    if (!mood || !mood.trim()) {
+    // Either mood or image must be provided
+    if (!mood && !imageBase64) {
       return NextResponse.json(
-        { error: 'Mood is required' },
+        { error: 'Either mood or image is required' },
         { status: 400 }
       );
     }
 
-    // Generate quotes using Gemini
-    const quotes = await generateQuotesWithGemini(mood.trim(), intensity, userInput);
+    // Generate quotes using Gemini (with image if provided)
+    const quotes = await generateQuotesWithGemini(
+      mood?.trim(), 
+      intensity, 
+      userInput,
+      imageBase64,
+      imageMimeType
+    );
 
     if (!quotes || quotes.length === 0) {
       return NextResponse.json(
@@ -188,9 +245,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       quotes,
-      mood: mood.trim(),
+      mood: mood?.trim() || 'image-based',
       count: quotes.length,
-      aiUsed: 'gemini',
+      aiUsed: imageBase64 ? 'gemini-vision' : 'gemini',
     });
   } catch (error) {
     console.error('[API] generate-quotes error:', error);

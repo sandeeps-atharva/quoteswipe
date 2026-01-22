@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Sparkles, Loader2, Quote, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -16,6 +16,8 @@ interface GenerateQuotesModalProps {
   mood: string;
   intensity?: string;
   userInput?: string;
+  imageBase64?: string; // Base64 encoded image
+  imageMimeType?: string; // Image MIME type
   onQuoteSelect: (quote: GeneratedQuote) => void;
 }
 
@@ -25,6 +27,8 @@ export default function GenerateQuotesModal({
   mood,
   intensity,
   userInput,
+  imageBase64,
+  imageMimeType,
   onQuoteSelect,
 }: GenerateQuotesModalProps) {
   const [quotes, setQuotes] = useState<GeneratedQuote[]>([]);
@@ -32,10 +36,15 @@ export default function GenerateQuotesModal({
   const [hasGenerated, setHasGenerated] = useState(false);
   const [selectedQuotes, setSelectedQuotes] = useState<Set<number>>(new Set()); // Track which quotes were added
 
-  // Generate cache key based on mood
+  // Generate cache key based on mood or image
   const getCacheKey = useCallback(() => {
+    if (imageBase64) {
+      // Use a hash of the image for caching (first 50 chars of base64)
+      const imageHash = imageBase64.substring(0, 50).replace(/[^a-zA-Z0-9]/g, '');
+      return `generated_quotes_image_${imageHash}`;
+    }
     return `generated_quotes_${mood.trim().toLowerCase()}_${intensity || 'moderate'}`;
-  }, [mood, intensity]);
+  }, [mood, intensity, imageBase64]);
 
   // Load cached quotes
   const loadCachedQuotes = useCallback(() => {
@@ -84,9 +93,10 @@ export default function GenerateQuotesModal({
     
     setIsGenerating(true);
     setHasGenerated(false);
-    if (forceRegenerate) {
-      setQuotes([]);
-    }
+    // Don't clear quotes when regenerating - we'll append new ones
+    // if (forceRegenerate) {
+    //   setQuotes([]);
+    // }
 
     try {
       const response = await fetch('/api/moodsense/generate-quotes', {
@@ -95,9 +105,11 @@ export default function GenerateQuotesModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          mood,
+          mood: imageBase64 ? undefined : mood, // Don't send mood if image is provided
           intensity,
           userInput,
+          imageBase64,
+          imageMimeType,
         }),
       });
 
@@ -108,37 +120,75 @@ export default function GenerateQuotesModal({
 
       const data = await response.json();
       const generatedQuotes = data.quotes || [];
-      setQuotes(generatedQuotes);
-      setHasGenerated(true);
       
-      // Save to cache
-      saveToCache(generatedQuotes);
-      
-      if (generatedQuotes.length > 0) {
-        toast.success(`Generated ${generatedQuotes.length} quotes! ✨`);
+      // Append new quotes to existing ones if regenerating
+      if (forceRegenerate && quotes.length > 0) {
+        // Filter out duplicates by text (case-insensitive)
+        const existingTexts = new Set(quotes.map(q => q.text.toLowerCase().trim()));
+        const uniqueNewQuotes = generatedQuotes.filter(
+          (q: GeneratedQuote) => !existingTexts.has(q.text.toLowerCase().trim())
+        );
+        
+        if (uniqueNewQuotes.length > 0) {
+          setQuotes(prev => [...prev, ...uniqueNewQuotes]);
+          toast.success(`Added ${uniqueNewQuotes.length} new quotes! ✨`);
+        } else {
+          toast('All quotes are duplicates. Try again!', { icon: '🔄' });
+        }
+      } else {
+        // First generation - replace quotes
+        setQuotes(generatedQuotes);
+        // Save to cache only on first generation
+        saveToCache(generatedQuotes);
+        
+        if (generatedQuotes.length > 0) {
+          toast.success(`Generated ${generatedQuotes.length} quotes! ✨`);
+        }
       }
+      
+      setHasGenerated(true);
     } catch (error: any) {
       console.error('[GenerateQuotesModal] Error generating quotes:', error);
       toast.error(error.message || 'Failed to generate quotes. Please try again.');
     } finally {
       setIsGenerating(false);
     }
-  }, [mood, intensity, userInput, isGenerating, loadCachedQuotes, saveToCache]);
+  }, [mood, intensity, userInput, imageBase64, imageMimeType, isGenerating, quotes, loadCachedQuotes, saveToCache]);
 
+  // Track if modal has been initialized to prevent infinite loops
+  const isInitializedRef = useRef(false);
+  const lastMoodRef = useRef<string>('');
+  const lastImageRef = useRef<string | null>(null);
+  
   // Load quotes when modal opens
   useEffect(() => {
-    if (isOpen && mood.trim()) {
+    if (!isOpen) {
+      // Reset when modal closes
+      isInitializedRef.current = false;
+      return;
+    }
+    
+    // Check if mood/image changed
+    const moodChanged = mood !== lastMoodRef.current;
+    const imageChanged = imageBase64 !== lastImageRef.current;
+    
+    if (!isInitializedRef.current || moodChanged || imageChanged) {
+      isInitializedRef.current = true;
+      lastMoodRef.current = mood;
+      lastImageRef.current = imageBase64 || null;
+      
       // Try to load from cache first
       const cached = loadCachedQuotes();
       if (cached && cached.length > 0) {
         setQuotes(cached);
         setHasGenerated(true);
-      } else if (!hasGenerated && !isGenerating) {
+      } else if (mood.trim() || imageBase64) {
         // Only auto-generate if no cache exists
         handleGenerate(false);
       }
     }
-  }, [isOpen, mood, hasGenerated, isGenerating, handleGenerate, loadCachedQuotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, mood, imageBase64]); // Depend on isOpen, mood, and imageBase64 only
 
   // Reset selected quotes when modal closes
   useEffect(() => {
@@ -187,7 +237,11 @@ export default function GenerateQuotesModal({
                 AI-Generated Quotes
               </h2>
               <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5 truncate">
-                Based on: <span className="font-semibold text-amber-600 dark:text-amber-400">{mood}</span>
+                {imageBase64 ? (
+                  <>Based on: <span className="font-semibold text-amber-600 dark:text-amber-400">Image Analysis</span></>
+                ) : (
+                  <>Based on: <span className="font-semibold text-amber-600 dark:text-amber-400">{mood}</span></>
+                )}
               </p>
             </div>
           </div>
@@ -216,7 +270,7 @@ export default function GenerateQuotesModal({
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                   <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">
-                    {quotes.length} quotes generated
+                    {quotes.length} quotes {quotes.length > 10 ? 'total' : 'generated'}
                   </p>
                   {selectedQuotes.size > 0 && (
                     <span className="px-2 py-1 text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg">
@@ -228,7 +282,7 @@ export default function GenerateQuotesModal({
                   onClick={() => handleGenerate(true)}
                   className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all w-full sm:w-auto"
                 >
-                  Regenerate
+                  Generate More
                 </button>
               </div>
               
