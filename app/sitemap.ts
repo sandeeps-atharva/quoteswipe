@@ -12,10 +12,24 @@ async function getQuoteIds(): Promise<{ id: string; updated_at: Date }[]> {
       .project({ id: 1, _id: 1, updated_at: 1, created_at: 1 })
       .toArray();
     
-    return quotes.map(q => ({
-      id: q.id || q._id?.toString(),
-      updated_at: q.updated_at || q.created_at || new Date()
-    }));
+    return quotes
+      .map(q => {
+        // Ensure we have a valid ID
+        const id = q.id || q._id?.toString();
+        if (!id) return null; // Skip invalid entries
+        
+        // Ensure valid date
+        let date = q.updated_at || q.created_at;
+        if (!date || !(date instanceof Date)) {
+          date = new Date();
+        }
+        
+        return {
+          id: String(id), // Ensure it's a string
+          updated_at: date instanceof Date ? date : new Date(),
+        };
+      })
+      .filter((q): q is { id: string; updated_at: Date } => q !== null); // Remove null entries
   } catch (error) {
     console.error('Error fetching quote IDs for sitemap:', error);
     return [];
@@ -31,10 +45,21 @@ async function getCategories(): Promise<{ slug: string; name: string }[]> {
       .project({ slug: 1, name: 1 })
       .toArray();
     
-    return categories.map(c => ({
-      slug: c.slug || c.name.toLowerCase().replace(/\s+/g, '-'),
-      name: c.name
-    }));
+    return categories
+      .map(c => {
+        // Ensure we have a valid slug
+        let slug = c.slug;
+        if (!slug && c.name) {
+          slug = c.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        }
+        if (!slug) return null; // Skip invalid entries
+        
+        return {
+          slug: String(slug),
+          name: c.name || '',
+        };
+      })
+      .filter((c): c is { slug: string; name: string } => c !== null); // Remove null entries
   } catch (error) {
     console.error('Error fetching categories for sitemap:', error);
     return [];
@@ -44,71 +69,62 @@ async function getCategories(): Promise<{ slug: string; name: string }[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quoteswipe.com';
   
+  // Ensure baseUrl doesn't have trailing slash
+  const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+  
   // Static pages - Core
   const staticPages: MetadataRoute.Sitemap = [
     {
-      url: baseUrl,
+      url: cleanBaseUrl,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 1,
     },
     {
-      url: `${baseUrl}/about`,
+      url: `${cleanBaseUrl}/about`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/photo-quotes`,
+      url: `${cleanBaseUrl}/photo-quotes`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/contact`,
+      url: `${cleanBaseUrl}/contact`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/feedback`,
+      url: `${cleanBaseUrl}/feedback`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/review`,
+      url: `${cleanBaseUrl}/review`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     // Legal pages
     {
-      url: `${baseUrl}/privacy`,
+      url: `${cleanBaseUrl}/privacy-policy`,
       lastModified: new Date(),
       changeFrequency: 'yearly',
       priority: 0.4,
     },
     {
-      url: `${baseUrl}/terms`,
+      url: `${cleanBaseUrl}/terms-of-service`,
       lastModified: new Date(),
       changeFrequency: 'yearly',
       priority: 0.4,
     },
     {
-      url: `${baseUrl}/privacy-policy`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.4,
-    },
-    {
-      url: `${baseUrl}/terms-of-service`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.4,
-    },
-    {
-      url: `${baseUrl}/cookie-policy`,
+      url: `${cleanBaseUrl}/cookie-policy`,
       lastModified: new Date(),
       changeFrequency: 'yearly',
       priority: 0.4,
@@ -119,31 +135,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let quotePages: MetadataRoute.Sitemap = [];
   try {
     const quotes = await getQuoteIds();
-    quotePages = quotes.map((quote) => ({
-      url: `${baseUrl}/quote/${quote.id}`,
-      lastModified: new Date(quote.updated_at),
-      changeFrequency: 'weekly' as const,
-      priority: 0.6,
-    }));
+    quotePages = quotes
+      .filter((quote) => quote.id && quote.id !== 'undefined' && quote.id !== 'null')
+      .map((quote) => ({
+        url: `${cleanBaseUrl}/quote/${encodeURIComponent(quote.id)}`,
+        lastModified: quote.updated_at instanceof Date ? quote.updated_at : new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.6,
+      }));
   } catch (error) {
     console.error('Error generating quote sitemap entries:', error);
   }
 
-  // Category pages (if you have category detail pages)
+  // Category pages
   let categoryPages: MetadataRoute.Sitemap = [];
   try {
     const categories = await getCategories();
-    categoryPages = categories.map((category) => ({
-      url: `${baseUrl}/category/${category.slug}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    }));
+    categoryPages = categories
+      .filter((category) => category.slug && category.slug !== 'undefined' && category.slug !== 'null')
+      .map((category) => ({
+        url: `${cleanBaseUrl}/category/${encodeURIComponent(category.slug)}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      }));
   } catch (error) {
     console.error('Error generating category sitemap entries:', error);
   }
 
-  return [...staticPages, ...categoryPages, ...quotePages];
+  // Combine all pages
+  const allPages = [...staticPages, ...categoryPages, ...quotePages];
+  
+  // Log for debugging
+  console.log(`[Sitemap] Generated ${allPages.length} URLs (${staticPages.length} static, ${categoryPages.length} categories, ${quotePages.length} quotes)`);
+  
+  return allPages;
 }
 
 // Enable dynamic generation with revalidation
