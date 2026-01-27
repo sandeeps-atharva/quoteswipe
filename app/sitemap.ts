@@ -71,13 +71,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Google Search Console requires sitemap URLs to match the verified property domain
   // Set NEXT_PUBLIC_SITE_URL to your production domain in Vercel environment variables
   
-  let baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quoteswipe.com';
+  let baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quoteswipe.in';
   
   // Force production domain - never use Vercel preview URLs or localhost in sitemap
   // This ensures Google Search Console can validate the sitemap
   if (baseUrl.includes('vercel.app') || baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
-    // Use your actual production domain here
-    baseUrl = process.env.SITEMAP_DOMAIN || 'https://quoteswipe.com';
+    // Use your actual production domain here (.in domain)
+    baseUrl = process.env.SITEMAP_DOMAIN || 'https://quoteswipe.in';
   }
   
   // Ensure baseUrl doesn't have trailing slash
