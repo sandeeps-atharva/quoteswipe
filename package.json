@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "video-worker": "ts-node scripts/video-worker.ts"
   },
   "dependencies": {
     "@google-cloud/translate": "^9.3.0",
@@ -38,7 +39,9 @@
     "react-swipeable": "^7.0.2",
     "sharp": "^0.34.5",
     "slick-carousel": "^1.8.1",
-    "zustand": "^5.0.9"
+    "zustand": "^5.0.9",
+    "@aws-sdk/client-s3": "^3.500.0",
+    "@aws-sdk/s3-request-presigner": "^3.500.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

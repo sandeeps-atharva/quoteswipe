@@ -769,8 +769,7 @@ export default function QuoteReelModal({
     return overlayCanvas;
   }, [textSettings, customQuoteText]);
 
-  // CLIENT-SIDE VIDEO PROCESSING: Works everywhere (Vercel, mobile, desktop)
-  // Optimized for maximum quality with pre-rendered overlay
+  // SERVER-SIDE VIDEO PROCESSING: Uses FFmpeg on server for best quality and performance
   const generateVideoFromUpload = useCallback(async () => {
     if (!uploadedVideo || !uploadedVideoFile) return;
 
@@ -779,154 +778,118 @@ export default function QuoteReelModal({
     setVideoError(null);
 
     try {
-      // Step 1: Load source video
-      const sourceVideo = document.createElement('video');
-      sourceVideo.src = uploadedVideo;
-      sourceVideo.muted = true;
-      sourceVideo.playsInline = true;
-      sourceVideo.crossOrigin = 'anonymous';
-      
-      await new Promise<void>((resolve, reject) => {
-        sourceVideo.oncanplaythrough = () => resolve();
-        sourceVideo.onerror = () => reject(new Error('Failed to load video'));
-        sourceVideo.load();
-      });
+      setGenerationProgress(5);
 
-      const videoWidth = sourceVideo.videoWidth || 1080;
-      const videoHeight = sourceVideo.videoHeight || 1920;
-      const duration = sourceVideo.duration;
+      // Step 1: Upload video to server
+      const formData = new FormData();
+      formData.append('video', uploadedVideoFile);
+      
+      if (textSettings.showQuote && customQuoteText.trim()) {
+        formData.append('quoteText', customQuoteText.trim());
+        formData.append('textSettings', JSON.stringify({
+          position: {
+            x: textSettings.offsetX,
+            y: textSettings.position, // 'top' | 'center' | 'bottom'
+          },
+          fontSize: textSettings.fontSize,
+          fontFamily: textSettings.fontFamily,
+          color: textSettings.textColor,
+          alignment: textSettings.alignment,
+          shadowEnabled: textSettings.shadowEnabled,
+          isBold: textSettings.isBold,
+          isItalic: textSettings.isItalic,
+          isUnderline: textSettings.isUnderline,
+        }));
+      }
+
+      formData.append('quality', settings.quality);
 
       setGenerationProgress(10);
 
-      // Step 2: PRE-RENDER overlay once (text + logo) - huge performance boost!
-      const overlayCanvas = createOverlayCanvas(videoWidth, videoHeight);
-
-      setGenerationProgress(15);
-
-      // Step 3: Create main canvas for compositing
-      const mainCanvas = document.createElement('canvas');
-      mainCanvas.width = videoWidth;
-      mainCanvas.height = videoHeight;
-      const ctx = mainCanvas.getContext('2d', { 
-        alpha: false,
-        desynchronized: true // Better performance
-      })!;
-
-      // Step 4: Setup MediaRecorder with BEST quality settings
-      // Try codecs in order of quality: VP9 > VP8 > default
-      let mimeType = 'video/webm';
-      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-        mimeType = 'video/webm;codecs=vp9';
-      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-        mimeType = 'video/webm;codecs=vp8';
-      }
-
-      // Maximum bitrate for best quality (scales with resolution)
-      const bitrate = Math.min(25000000, videoWidth * videoHeight * 12); // Up to 25 Mbps
-      
-      const stream = mainCanvas.captureStream(30);
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType,
-        videoBitsPerSecond: bitrate,
+      // Upload video and create processing job
+      const uploadResponse = await fetch('/api/video/upload', {
+        method: 'POST',
+        body: formData,
       });
 
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json();
+        throw new Error(error.error || 'Failed to upload video');
+      }
+
+      const uploadData = await uploadResponse.json();
+      const jobId = uploadData.jobId;
 
       setGenerationProgress(20);
 
-      // Step 5: Process video frame by frame
-      await new Promise<void>((resolve, reject) => {
-        mediaRecorder.onstop = () => {
-          try {
-            const blob = new Blob(chunks, { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            
+      // Step 2: Poll for job status
+      const pollStatus = async (): Promise<void> => {
+        const maxAttempts = 300; // 5 minutes max (1 second intervals)
+        let attempts = 0;
+
+        const poll = async (): Promise<void> => {
+          attempts++;
+
+          const statusResponse = await fetch(`/api/video/status/${jobId}`);
+          if (!statusResponse.ok) {
+            throw new Error('Failed to check job status');
+          }
+
+          const statusData = await statusResponse.json();
+
+          if (statusData.state === 'completed') {
+            setGenerationProgress(95);
+
+            // Get download URL
+            const downloadResponse = await fetch(`/api/video/download/${jobId}`);
+            if (!downloadResponse.ok) {
+              throw new Error('Failed to get download URL');
+            }
+
+            const downloadData = await downloadResponse.json();
+            const downloadUrl = downloadData.downloadUrl;
+
+            // Trigger download
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `quote-reel-${Date.now()}.webm`;
+            a.href = downloadUrl;
+            a.download = `quote-reel-${Date.now()}.mp4`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            resolve();
-          } catch (err) {
-            reject(err);
+
+            setGenerationProgress(100);
+            setIsGenerating(false);
+            return;
+          }
+
+          if (statusData.state === 'failed') {
+            throw new Error(statusData.error || 'Video processing failed');
+          }
+
+          // Update progress
+          if (statusData.progress !== undefined) {
+            setGenerationProgress(20 + Math.floor(statusData.progress * 0.75));
+          }
+
+          // Continue polling
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 1000); // Poll every second
+          } else {
+            throw new Error('Processing timeout. Please try again.');
           }
         };
 
-        mediaRecorder.onerror = () => reject(new Error('Recording failed'));
+        await poll();
+      };
 
-        // Optimized frame drawing - only 2 drawImage calls per frame
-        const drawFrame = () => {
-          ctx.drawImage(sourceVideo, 0, 0, videoWidth, videoHeight);
-          ctx.drawImage(overlayCanvas, 0, 0);
-        };
-
-        let isRecording = true;
-        let lastTime = 0;
-        
-        // Use requestVideoFrameCallback if available (Chrome/Edge) for better sync
-        // Otherwise fallback to requestAnimationFrame
-        const hasVideoFrameCallback = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
-
-        const updateProgress = () => {
-          const progress = 20 + Math.floor((sourceVideo.currentTime / duration) * 75);
-          setGenerationProgress(Math.min(95, progress));
-        };
-
-        if (hasVideoFrameCallback) {
-          // Best quality: frame-perfect sync
-          const onVideoFrame = (now: number, metadata: { mediaTime: number }) => {
-            if (!isRecording) return;
-            drawFrame();
-            updateProgress();
-            (sourceVideo as HTMLVideoElement & { requestVideoFrameCallback: (cb: (now: number, metadata: { mediaTime: number }) => void) => void }).requestVideoFrameCallback(onVideoFrame);
-          };
-          (sourceVideo as HTMLVideoElement & { requestVideoFrameCallback: (cb: (now: number, metadata: { mediaTime: number }) => void) => void }).requestVideoFrameCallback(onVideoFrame);
-        } else {
-          // Fallback: requestAnimationFrame (still good quality)
-          const renderLoop = () => {
-            if (!isRecording) return;
-            
-            // Only draw if time has changed (avoid duplicate frames)
-            if (sourceVideo.currentTime !== lastTime) {
-              drawFrame();
-              lastTime = sourceVideo.currentTime;
-              updateProgress();
-            }
-            requestAnimationFrame(renderLoop);
-          };
-          renderLoop();
-        }
-
-        sourceVideo.onended = () => {
-          isRecording = false;
-          drawFrame(); // Capture final frame
-          setTimeout(() => {
-            mediaRecorder.stop();
-          }, 100);
-        };
-
-        // Start recording and play video at normal speed for best quality
-        mediaRecorder.start(100); // Collect data every 100ms
-        sourceVideo.currentTime = 0;
-        sourceVideo.playbackRate = 1.0; // Normal speed = best frame capture
-        sourceVideo.play().catch(reject);
-      });
-
-      setIsGenerating(false);
-      setGenerationProgress(100);
+      await pollStatus();
 
     } catch (error) {
       console.error('Video generation error:', error);
       setIsGenerating(false);
       setVideoError(error instanceof Error ? error.message : 'Failed to generate video');
     }
-  }, [uploadedVideo, uploadedVideoFile, createOverlayCanvas]);
+  }, [uploadedVideo, uploadedVideoFile, textSettings, customQuoteText, settings.quality]);
 
   // Generate video from images (optimized for mobile - prevents crashes)
   const generateVideo = useCallback(async () => {
