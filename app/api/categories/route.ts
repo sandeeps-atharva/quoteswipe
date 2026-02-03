@@ -37,7 +37,7 @@ async function getCategoriesFromCache() {
       .project({ _id: 1, id: 1, name: 1, icon: 1 })
       .sort({ name: 1 })
       .toArray(),
-    
+
     // Aggregation uses category_id index for grouping
     quotesCollection.aggregate([
       { $group: { _id: '$category_id', count: { $sum: 1 } } }
@@ -56,7 +56,7 @@ async function getCategoriesFromCache() {
   const formattedCategories = categories.map((c: any) => {
     const categoryId = normalizeId(c._id);
     const legacyId = c.id ? String(c.id) : null;
-    
+
     return {
       id: categoryId,
       name: c.name,
@@ -73,32 +73,29 @@ async function getCategoriesFromCache() {
 
 export async function GET(request: NextRequest) {
   const endTimer = startTimer();
-  
+
   try {
     const userId = getUserIdFromRequest(request);
     const isAuthenticated = !!userId;
-    
+
     // Check for force refresh
     const { searchParams } = new URL(request.url);
     if (searchParams.get('refresh') === 'true') {
       invalidateCategoriesCache();
     }
-    
+
     // Check if this is for onboarding (show all categories even for guests)
     const isOnboarding = searchParams.get('onboarding') === 'true';
 
     const categories = await getCategoriesFromCache();
     const totalCategories = categories.length;
 
-    // For non-authenticated users, limit to only 1 category (unless onboarding)
-    let limitedCategories = categories;
-    if (!isAuthenticated && !isOnboarding) {
-      limitedCategories = categories.slice(6, 7);
-    }
+    // All users can access all categories (no authentication restriction)
+    const limitedCategories = categories;
 
     const duration = endTimer();
     const cached = duration < 50;
-    
+
     // Record performance metric
     recordMetric('/api/categories', duration, cached, userId || undefined);
 
@@ -106,7 +103,7 @@ export async function GET(request: NextRequest) {
       {
         categories: limitedCategories,
         totalCategories: totalCategories,
-        isLimited: !isAuthenticated && !isOnboarding && totalCategories > 1,
+        isLimited: false,
         _meta: { responseTime: duration, cached }
       },
       { status: 200 }

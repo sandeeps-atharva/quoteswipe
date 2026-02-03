@@ -27,9 +27,9 @@ const CACHE_DURATIONS = {
 
 // Global caches
 const categoriesCache: CacheEntry<any[]> = { data: [], timestamp: 0 };
-const quotesCache: CacheEntry<{ quotes: any[]; total: number }> = { 
-  data: { quotes: [], total: 0 }, 
-  timestamp: 0 
+const quotesCache: CacheEntry<{ quotes: any[]; total: number }> = {
+  data: { quotes: [], total: 0 },
+  timestamp: 0
 };
 // Per-category quote caches
 const categoryQuotesCache = new Map<string, CacheEntry<{ quotes: any[]; total: number }>>();
@@ -39,7 +39,7 @@ const categoryQuotesCache = new Map<string, CacheEntry<{ quotes: any[]; total: n
 // ============================================================================
 async function getCachedCategories(): Promise<any[]> {
   const now = Date.now();
-  
+
   if (categoriesCache.data.length > 0 && now - categoriesCache.timestamp < CACHE_DURATIONS.categories) {
     return categoriesCache.data;
   }
@@ -73,7 +73,7 @@ async function getCachedCategories(): Promise<any[]> {
 
   categoriesCache.data = formattedCategories;
   categoriesCache.timestamp = now;
-  
+
   return formattedCategories;
 }
 
@@ -88,7 +88,7 @@ async function getQuotesWithCachedCounts(
 ): Promise<{ quotes: any[]; total: number }> {
   const cacheKey = categoryIds ? categoryIds.sort().join(',') : 'all';
   const now = Date.now();
-  
+
   // Check cache
   const cached = categoryIds ? categoryQuotesCache.get(cacheKey) : quotesCache;
   if (cached && cached.data.quotes.length > 0 && now - cached.timestamp < CACHE_DURATIONS.quotesWithCounts) {
@@ -119,20 +119,20 @@ async function getQuotesWithCachedCounts(
   const [quotes, totalCount, allCategories] = await Promise.all([
     quotesCollection
       .find(filter)
-      .project({ 
-        id: 1, 
-        text: 1, 
-        author: 1, 
+      .project({
+        id: 1,
+        text: 1,
+        author: 1,
         category_id: 1,
         likes_count: 1,  // Use denormalized field if available
         dislikes_count: 1,
-        _id: 1 
+        _id: 1
       })
       .limit(500) // Fetch more for caching, paginate from cache
       .toArray(),
-    
+
     quotesCollection.estimatedDocumentCount(), // Much faster than countDocuments
-    
+
     // Categories are likely cached, this is fast
     getCachedCategories()
   ]);
@@ -150,7 +150,7 @@ async function getQuotesWithCachedCounts(
     const quoteId = q.id || q._id?.toString();
     const categoryIdStr = q.category_id?.toString() || String(q.category_id);
     const category = categoryMap.get(categoryIdStr);
-    
+
     return {
       id: quoteId,
       text: q.text,
@@ -199,7 +199,7 @@ async function getUserDataFast(userId: string): Promise<{
   const preferencesCollection = await getCollection('user_preferences');
 
   // Build user query
-  const userQuery = ObjectId.isValid(userId) 
+  const userQuery = ObjectId.isValid(userId)
     ? { $or: [{ _id: new ObjectId(userId) }, { id: userId }] as any }
     : { id: userId };
 
@@ -207,13 +207,13 @@ async function getUserDataFast(userId: string): Promise<{
   // Likes/dislikes/saved are fetched separately in background
   const [user, preferences] = await Promise.all([
     usersCollection.findOne(userQuery, {
-      projection: { 
-        name: 1, 
-        email: 1, 
-        role: 1, 
-        profile_picture: 1, 
+      projection: {
+        name: 1,
+        email: 1,
+        role: 1,
+        profile_picture: 1,
         google_id: 1,
-        onboarding_complete: 1 
+        onboarding_complete: 1
       }
     }),
     preferencesCollection.findOne({ user_id: userId })
@@ -221,7 +221,7 @@ async function getUserDataFast(userId: string): Promise<{
 
   const userDoc = user as any;
   const prefsDoc = preferences as any;
-  
+
   return {
     user: userDoc ? {
       id: userDoc._id.toString(),
@@ -247,13 +247,13 @@ async function getUserDataFast(userId: string): Promise<{
 // ============================================================================
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     const { searchParams } = new URL(request.url);
     const categoriesParam = searchParams.get('categories');
     const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
-    
+
     const userId = getUserIdFromRequest(request);
     const isAuthenticated = !!userId;
 
@@ -279,12 +279,9 @@ export async function GET(request: NextRequest) {
       isAuthenticated && userId ? getUserDataFast(userId) : Promise.resolve(null)
     ]);
 
-    // For non-authenticated users, limit categories shown
-    let limitedCategories = categories;
-    let totalCategories = categories.length;
-    if (!isAuthenticated) {
-      limitedCategories = categories.slice(0, 1);
-    }
+    // All users can access all categories (no authentication restriction)
+    const limitedCategories = categories;
+    const totalCategories = categories.length;
 
     // Quotes already have default like counts, no need to merge user data here
     // User's likes/dislikes/saved will be fetched by client in background
@@ -296,7 +293,7 @@ export async function GET(request: NextRequest) {
     }));
 
     const responseTime = Date.now() - startTime;
-    
+
     // Log slow responses for debugging
     if (responseTime > 500) {
       console.warn(`[initial-data] SLOW: ${responseTime}ms (auth: ${isAuthenticated})`);
@@ -307,12 +304,12 @@ export async function GET(request: NextRequest) {
       isAuthenticated,
       user: userData?.user || null,
       onboardingComplete: userData?.onboardingComplete ?? true,
-      
+
       // Categories
       categories: limitedCategories,
       totalCategories,
-      isLimited: !isAuthenticated && totalCategories > 1,
-      
+      isLimited: false,
+
       // Quotes with pagination info
       quotes: finalQuotes,
       pagination: {
@@ -321,10 +318,10 @@ export async function GET(request: NextRequest) {
         offset,
         hasMore: offset + limit < quotesData.total,
       },
-      
+
       // User preferences (if authenticated)
       preferences: userData?.preferences || null,
-      
+
       // Performance metrics
       _meta: {
         responseTime,
@@ -340,7 +337,7 @@ export async function GET(request: NextRequest) {
       // Public pages can be cached more aggressively
       response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     }
-    
+
     return response;
   } catch (error) {
     console.error('[initial-data] Error:', error);
