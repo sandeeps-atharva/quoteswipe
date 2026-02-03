@@ -103,88 +103,12 @@ const COPY_FEEDBACK_DURATION = 2000;
 // Hashtag & Caption Generator
 // ============================================================================
 
-// Default hashtags (always included)
-const DEFAULT_HASHTAGS = ['#reelsindia', '#quoteswipe', '#quote_swipe'];
+// Fixed hashtags for all quotes
+const FIXED_HASHTAGS = ['#quoteswipe', '#reelsindia', '#foryou', '#trendingreel', '#quote'];
 
-// Category-based hashtags
-const CATEGORY_HASHTAGS: Record<string, string[]> = {
-  'motivation': ['#motivation', '#motivationalquotes', '#successmindset'],
-  'love': ['#lovequotes', '#love', '#relationshipgoals'],
-  'love story': ['#lovestory', '#romanticquotes', '#truelove', '#couplegoals', '#loveparagraph'],
-  'romantic meeting': ['#howwemet', '#lovestory', '#romanticmoments', '#meetcute', '#firstmeeting'],
-  'deep emotional': ['#deepfeelings', '#emotionalquotes', '#rawemotions', '#heartfelt', '#feelings'],
-  'long distance love': ['#longdistance', '#ldr', '#longdistancerelationship', '#missingyou', '#distancelove'],
-  'marriage & forever': ['#marriagegoals', '#forevermine', '#couplesgoals', '#marriedlife', '#husband'],
-  'healing journey': ['#healingjourney', '#secondchance', '#movingon', '#selflove', '#healing'],
-  'poetic love': ['#poetrylove', '#lovepoetry', '#romanticpoetry', '#poeticquotes', '#aesthetic'],
-  'love confessions': ['#loveconfession', '#iloveyou', '#confession', '#truelove', '#myfeeling'],
-  'soulmate stories': ['#soulmate', '#twinflame', '#destined', '#meantobe', '#fate'],
-  'realistic love': ['#realcouple', '#relationshipgoals', '#couplelife', '#realationship', '#together'],
-  'viral love reels': ['#viralreels', '#trending', '#reelsviral', '#loversreels', '#couplegoals'],
-  'vulnerable & raw': ['#vulnerable', '#rawfeelings', '#deepthoughts', '#honestfeelings', '#truth'],
-  'hope & future': ['#forever', '#ourfuture', '#futuretogether', '#growingoldtogether', '#hopeful'],
-  'bollywood dialogues': ['#bollywood', '#bollywoodquotes', '#hindiquotes', '#filmy', '#ddlj', '#srk', '#bollywoodlove'],
-  'hollywood romance': ['#hollywood', '#moviequotes', '#romanticmovies', '#titanic', '#thenotebook', '#filmquotes', '#movielines'],
-  'modern bollywood': ['#modernbollywood', '#yjhd', '#aedilhaimushkil', '#tamasha', '#bollywood2020s', '#hindimovies', '#bollywoodfeels'],
-  'success': ['#success', '#entrepreneur', '#mindset'],
-  'life': ['#lifequotes', '#lifelessons', '#wisdom'],
-  'inspirational': ['#inspiration', '#inspired', '#positivevibes'],
-  'friendship': ['#friendship', '#bestfriends', '#friendshipgoals'],
-  'happiness': ['#happiness', '#behappy', '#positivity'],
-  'wisdom': ['#wisdom', '#wise', '#knowledge'],
-  'attitude': ['#attitude', '#savage', '#bossmindset'],
-  'spiritual': ['#spiritual', '#spirituality', '#innerpeace'],
-  'sad': ['#sadquotes', '#feelings', '#emotions'],
-  'funny': ['#funny', '#humor', '#laughing'],
-  'default': ['#quotes', '#dailyquotes', '#quoteoftheday'],
-};
-
-// Famous author hashtags
-const AUTHOR_HASHTAGS: Record<string, string> = {
-  'steve jobs': '#stevejobs',
-  'elon musk': '#elonmusk',
-  'albert einstein': '#einstein',
-  'mahatma gandhi': '#gandhi',
-  'buddha': '#buddha',
-  'rumi': '#rumi',
-  'confucius': '#confucius',
-  'aristotle': '#aristotle',
-  'plato': '#plato',
-  'shakespeare': '#shakespeare',
-  'mark twain': '#marktwain',
-  'oscar wilde': '#oscarwilde',
-  'nelson mandela': '#nelsonmandela',
-  'martin luther king': '#mlk',
-  'oprah winfrey': '#oprah',
-  'warren buffett': '#warrenbuffett',
-  'bill gates': '#billgates',
-  'apj abdul kalam': '#abdulkalam',
-  'swami vivekananda': '#vivekananda',
-};
-
-/** Generate hashtags based on quote category and author */
+/** Generate hashtags - returns fixed 5 hashtags for all quotes */
 function generateHashtags(category: string, author: string): string[] {
-  const hashtags: string[] = [];
-  
-  // 1. Add category-based hashtags (pick 2-3)
-  const categoryKey = category.toLowerCase().replace(/\s+/g, '');
-  const categoryTags = CATEGORY_HASHTAGS[categoryKey] || CATEGORY_HASHTAGS['default'];
-  hashtags.push(...categoryTags.slice(0, 3));
-  
-  // 2. Add author hashtag if famous
-  const authorLower = author.toLowerCase();
-  for (const [name, tag] of Object.entries(AUTHOR_HASHTAGS)) {
-    if (authorLower.includes(name)) {
-      hashtags.push(tag);
-      break;
-    }
-  }
-  
-  // 3. Add default hashtags
-  hashtags.push(...DEFAULT_HASHTAGS);
-  
-  // Remove duplicates and limit to 7
-  return [...new Set(hashtags)].slice(0, 7);
+  return FIXED_HASHTAGS;
 }
 
 /** Generate shareable caption with quote, author, and hashtags */
