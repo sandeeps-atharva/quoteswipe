@@ -102,22 +102,19 @@ export default function EditBackgroundModal({
   return (
     <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center">
       {/* Backdrop with violet gradient */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-md"
-        onClick={onClose}
-      >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={onClose}>
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 via-transparent to-fuchsia-500/10" />
       </div>
-      
+
       {/* Modal */}
       <div className="relative w-full sm:max-w-lg mx-0 sm:mx-4 bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-stone-200/50 dark:border-stone-700/50">
         {/* Decorative gradient orbs */}
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-violet-400/20 to-purple-400/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-fuchsia-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none" />
-        
+
         {/* Gradient top bar */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500" />
-        
+
         {/* Handle bar (mobile) */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-8 h-1 bg-stone-300 dark:bg-stone-700 rounded-full" />
@@ -152,19 +149,28 @@ export default function EditBackgroundModal({
         <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5 space-y-4 custom-scrollbar relative">
           {/* Preview Card */}
           <div className="bg-stone-50 dark:bg-stone-800/50 rounded-2xl p-4">
-            <p className="text-xs text-stone-500 dark:text-stone-400 text-center mb-3 font-medium">Preview</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400 text-center mb-3 font-medium">
+              Preview
+            </p>
             <div
               className="mx-auto w-40 sm:w-52 aspect-[4/5] rounded-xl sm:rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 sm:p-5 relative overflow-hidden border border-white/20 transition-all duration-500"
-              style={{ background: selectedBackground.id === 'none' ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #d946ef 100%)' : undefined }}
+              style={{
+                background:
+                  selectedBackground.id === 'none'
+                    ? 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #d946ef 100%)'
+                    : undefined,
+              }}
             >
               {/* Background Image with smooth transition */}
               {selectedBackground.id !== 'none' && selectedBackground.url && (
                 <>
-                  <div 
+                  <div
                     className="absolute inset-0 bg-cover bg-center transition-all duration-500"
-                    style={{ backgroundImage: `url(${selectedBackground.thumbnail || selectedBackground.url})` }}
+                    style={{
+                      backgroundImage: `url(${selectedBackground.thumbnail || selectedBackground.url})`,
+                    }}
                   />
-                  <div 
+                  <div
                     className="absolute inset-0 transition-all duration-500"
                     style={{ background: selectedBackground.overlay }}
                   />
@@ -176,7 +182,8 @@ export default function EditBackgroundModal({
                   className="text-xs sm:text-sm leading-relaxed line-clamp-4 font-medium"
                   style={{
                     color: previewColors.textColor,
-                    textShadow: selectedBackground.id !== 'none' ? '0 2px 8px rgba(0,0,0,0.4)' : 'none',
+                    textShadow:
+                      selectedBackground.id !== 'none' ? '0 2px 8px rgba(0,0,0,0.4)' : 'none',
                   }}
                 >
                   &ldquo;{quote.text}&rdquo;
@@ -184,9 +191,10 @@ export default function EditBackgroundModal({
                 {quote.author && (
                   <p
                     className="text-[10px] sm:text-xs mt-2 sm:mt-3 font-medium"
-                    style={{ 
+                    style={{
                       color: previewColors.authorColor,
-                      textShadow: selectedBackground.id !== 'none' ? '0 1px 4px rgba(0,0,0,0.4)' : 'none',
+                      textShadow:
+                        selectedBackground.id !== 'none' ? '0 1px 4px rgba(0,0,0,0.4)' : 'none',
                     }}
                   >
                     — {quote.author}
@@ -201,7 +209,9 @@ export default function EditBackgroundModal({
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles size={14} className="text-violet-500" />
-                <p className="text-xs text-stone-600 dark:text-stone-400 uppercase tracking-wider font-semibold">Your Photos ({userBackgroundsCount})</p>
+                <p className="text-xs text-stone-600 dark:text-stone-400 uppercase tracking-wider font-semibold">
+                  Your Photos ({userBackgroundsCount})
+                </p>
               </div>
               <ImageUploader
                 selectedCustomBackground={selectedCustomBgUrl}
@@ -215,12 +225,14 @@ export default function EditBackgroundModal({
               />
             </div>
           )}
-          
+
           {/* Preset Backgrounds */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <ImageIcon size={14} className="text-fuchsia-500" />
-              <p className="text-xs text-stone-600 dark:text-stone-400 uppercase tracking-wider font-semibold">Preset Backgrounds</p>
+              <p className="text-xs text-stone-600 dark:text-stone-400 uppercase tracking-wider font-semibold">
+                Preset Backgrounds
+              </p>
             </div>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5">
               {BACKGROUND_IMAGES.map((bg) => (
@@ -263,7 +275,7 @@ export default function EditBackgroundModal({
             </div>
           </div>
         </div>
-        
+
         {/* Footer */}
         <div className="px-5 py-4 sm:px-6 sm:py-5 border-t border-stone-100 dark:border-stone-800 shrink-0 bg-white dark:bg-stone-900 relative">
           {/* Info note */}

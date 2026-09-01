@@ -23,9 +23,9 @@ async function getQuote(id: string): Promise<Quote | null> {
     const categoriesCollection = await getCollection('categories');
 
     // Find quote by id or _id
-    const quote = await quotesCollection.findOne({
-      $or: [{ id: id }, { _id: toObjectId(id) as any }]
-    }) as any;
+    const quote = (await quotesCollection.findOne({
+      $or: [{ id: id }, { _id: toObjectId(id) as any }],
+    })) as any;
 
     if (!quote) {
       return null;
@@ -34,9 +34,9 @@ async function getQuote(id: string): Promise<Quote | null> {
     // Get category
     let category: any = null;
     if (quote.category_id) {
-      category = await categoriesCollection.findOne({
-        $or: [{ id: quote.category_id }, { _id: quote.category_id }]
-      }) as any;
+      category = (await categoriesCollection.findOne({
+        $or: [{ id: quote.category_id }, { _id: quote.category_id }],
+      })) as any;
     }
 
     return {
@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: QuotePageProps): Promise<Meta
   const truncatedQuote = truncateText(quote.text, 100);
   const hasAuthor = Boolean(quote.author);
   const fullTitle = hasAuthor ? `"${truncatedQuote}" — ${quote.author}` : `"${truncatedQuote}"`;
-  const description = hasAuthor 
+  const description = hasAuthor
     ? `Read this inspiring ${quote.category.toLowerCase()} quote by ${quote.author}. Discover more motivational quotes on QuoteSwipe.`
     : `Read this inspiring ${quote.category.toLowerCase()} quote. Discover more motivational quotes on QuoteSwipe.`;
 
@@ -123,7 +123,9 @@ export async function generateMetadata({ params }: QuotePageProps): Promise<Meta
     twitter: {
       card: 'summary_large_image',
       title: fullTitle,
-      description: hasAuthor ? `${quote.category} quote by ${quote.author}` : `${quote.category} quote`,
+      description: hasAuthor
+        ? `${quote.category} quote by ${quote.author}`
+        : `${quote.category} quote`,
       images: ['/og-image.png'],
     },
     alternates: {

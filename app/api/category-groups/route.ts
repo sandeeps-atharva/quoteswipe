@@ -24,28 +24,28 @@ export function invalidateCategoryGroupsCache() {
 
 export async function GET(request: NextRequest) {
   const endTimer = startTimer();
-  
+
   try {
     const now = Date.now();
-    
+
     // Return cached data if valid
     if (cache && now - cache.timestamp < CACHE_DURATION) {
       const duration = endTimer();
       recordMetric('/api/category-groups', duration, true);
-      
+
       const response = NextResponse.json({
         success: true,
         groups: cache.data,
-        _meta: { cached: true, responseTime: duration }
+        _meta: { cached: true, responseTime: duration },
       });
-      
+
       // Aggressive cache headers for browser/CDN
       response.headers.set('Cache-Control', 'public, max-age=900, stale-while-revalidate=1800');
       return response;
     }
 
     const collection = await getCollection('category_groups');
-    
+
     const groups = await collection
       .find({ is_active: true })
       .sort({ order: 1 })
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // Transform _id to id for frontend
-    const transformedGroups = groups.map(group => ({
+    const transformedGroups = groups.map((group) => ({
       id: group._id.toString(),
       name: group.name,
       label: group.label,
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     // Update cache
     cache = {
       data: transformedGroups,
-      timestamp: now
+      timestamp: now,
     };
 
     const duration = endTimer();
@@ -81,12 +81,12 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.json({
       success: true,
       groups: transformedGroups,
-      _meta: { cached: false, responseTime: duration }
+      _meta: { cached: false, responseTime: duration },
     });
-    
+
     // Cache headers
     response.headers.set('Cache-Control', 'public, max-age=900, stale-while-revalidate=1800');
-    
+
     return response;
   } catch (error) {
     console.error('Error fetching category groups:', error);

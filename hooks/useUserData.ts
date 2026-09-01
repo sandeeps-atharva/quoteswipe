@@ -30,7 +30,9 @@ export function useUserData(): UseUserDataReturn {
   const [dislikedQuotes, setDislikedQuotes] = useState<Quote[]>([]);
   const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
   const [userQuotes, setUserQuotes] = useState<UserQuote[]>([]);
-  const [savedQuoteBackgrounds, setSavedQuoteBackgrounds] = useState<Record<string, BackgroundImage>>({});
+  const [savedQuoteBackgrounds, setSavedQuoteBackgrounds] = useState<
+    Record<string, BackgroundImage>
+  >({});
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -54,7 +56,7 @@ export function useUserData(): UseUserDataReturn {
         const savedData = await savedRes.json();
         const savedQuotesList = savedData.quotes || [];
         setSavedQuotes(savedQuotesList);
-        
+
         // Populate savedQuoteBackgrounds from saved quotes with custom backgrounds
         const backgrounds: Record<string, BackgroundImage> = {};
         savedQuotesList.forEach((q: Quote) => {
@@ -67,7 +69,7 @@ export function useUserData(): UseUserDataReturn {
           }
         });
         if (Object.keys(backgrounds).length > 0) {
-          setSavedQuoteBackgrounds(prev => ({ ...prev, ...backgrounds }));
+          setSavedQuoteBackgrounds((prev) => ({ ...prev, ...backgrounds }));
         }
       }
     } catch (error) {
@@ -87,74 +89,83 @@ export function useUserData(): UseUserDataReturn {
     }
   }, []);
 
-  const likeQuote = useCallback((quote: Quote, isAuthenticated: boolean) => {
-    const alreadyLiked = likedQuotes.some(q => String(q.id) === String(quote.id));
-    
-    if (!alreadyLiked) {
+  const likeQuote = useCallback(
+    (quote: Quote, isAuthenticated: boolean) => {
+      const alreadyLiked = likedQuotes.some((q) => String(q.id) === String(quote.id));
+
+      if (!alreadyLiked) {
+        // Optimistic update
+        setLikedQuotes((prev) => [...prev, quote]);
+        setDislikedQuotes((prev) => prev.filter((q) => String(q.id) !== String(quote.id)));
+
+        // API call
+        if (isAuthenticated) {
+          fetch('/api/user/likes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quoteId: quote.id }),
+          }).catch(console.error);
+        }
+      }
+    },
+    [likedQuotes]
+  );
+
+  const dislikeQuote = useCallback(
+    (quote: Quote, isAuthenticated: boolean) => {
+      const alreadyDisliked = dislikedQuotes.some((q) => String(q.id) === String(quote.id));
+
+      if (!alreadyDisliked) {
+        // Optimistic update
+        setDislikedQuotes((prev) => [...prev, quote]);
+        setLikedQuotes((prev) => prev.filter((q) => String(q.id) !== String(quote.id)));
+
+        // API call
+        if (isAuthenticated) {
+          fetch('/api/user/dislikes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quoteId: quote.id }),
+          }).catch(console.error);
+        }
+      }
+    },
+    [dislikedQuotes]
+  );
+
+  const saveQuote = useCallback(
+    (quote: Quote, customBackground: string | null, isAuthenticated: boolean) => {
       // Optimistic update
-      setLikedQuotes(prev => [...prev, quote]);
-      setDislikedQuotes(prev => prev.filter(q => String(q.id) !== String(quote.id)));
-      
+      setSavedQuotes((prev) => [...prev, quote]);
+
+      // Store custom background
+      if (customBackground) {
+        const quoteIdStr = String(quote.id);
+        setSavedQuoteBackgrounds((prev) => ({
+          ...prev,
+          [quoteIdStr]: createCustomBg({
+            id: `saved_custom_${quoteIdStr}`,
+            name: 'Saved Background',
+            url: customBackground,
+          }),
+        }));
+      }
+
       // API call
       if (isAuthenticated) {
-        fetch('/api/user/likes', {
+        fetch('/api/user/saved', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quoteId: quote.id }),
+          body: JSON.stringify({ quoteId: quote.id, customBackground }),
         }).catch(console.error);
       }
-    }
-  }, [likedQuotes]);
-
-  const dislikeQuote = useCallback((quote: Quote, isAuthenticated: boolean) => {
-    const alreadyDisliked = dislikedQuotes.some(q => String(q.id) === String(quote.id));
-    
-    if (!alreadyDisliked) {
-      // Optimistic update
-      setDislikedQuotes(prev => [...prev, quote]);
-      setLikedQuotes(prev => prev.filter(q => String(q.id) !== String(quote.id)));
-      
-      // API call
-      if (isAuthenticated) {
-        fetch('/api/user/dislikes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quoteId: quote.id }),
-        }).catch(console.error);
-      }
-    }
-  }, [dislikedQuotes]);
-
-  const saveQuote = useCallback((quote: Quote, customBackground: string | null, isAuthenticated: boolean) => {
-    // Optimistic update
-    setSavedQuotes(prev => [...prev, quote]);
-    
-    // Store custom background
-    if (customBackground) {
-      const quoteIdStr = String(quote.id);
-      setSavedQuoteBackgrounds(prev => ({
-        ...prev,
-        [quoteIdStr]: createCustomBg({
-          id: `saved_custom_${quoteIdStr}`,
-          name: 'Saved Background',
-          url: customBackground,
-        }),
-      }));
-    }
-    
-    // API call
-    if (isAuthenticated) {
-      fetch('/api/user/saved', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quoteId: quote.id, customBackground }),
-      }).catch(console.error);
-    }
-  }, []);
+    },
+    []
+  );
 
   const unsaveQuote = useCallback((quoteId: string | number, isAuthenticated: boolean) => {
-    setSavedQuotes(prev => prev.filter(q => String(q.id) !== String(quoteId)));
-    
+    setSavedQuotes((prev) => prev.filter((q) => String(q.id) !== String(quoteId)));
+
     if (isAuthenticated) {
       fetch('/api/user/saved', {
         method: 'DELETE',

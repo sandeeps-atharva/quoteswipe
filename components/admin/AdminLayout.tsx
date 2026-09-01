@@ -132,9 +132,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
               <Image src="/logo.svg" alt="Logo" width={24} height={24} />
             </div>
-            {sidebarOpen && (
-              <span className="font-bold text-white text-lg">Admin</span>
-            )}
+            {sidebarOpen && <span className="font-bold text-white text-lg">Admin</span>}
           </Link>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -150,9 +148,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Navigation */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = item.href === pathname || 
+            const isActive =
+              item.href === pathname ||
               (item.href !== '/admin' && pathname?.startsWith(item.href || ''));
-            
+
             return (
               <Link
                 key={item.id}
@@ -163,12 +162,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                 }`}
               >
-                <span className={isActive ? 'text-violet-400' : 'text-slate-500 group-hover:text-white'}>
+                <span
+                  className={isActive ? 'text-violet-400' : 'text-slate-500 group-hover:text-white'}
+                >
                   {item.icon}
                 </span>
-                {sidebarOpen && (
-                  <span className="font-medium">{item.label}</span>
-                )}
+                {sidebarOpen && <span className="font-medium">{item.label}</span>}
               </Link>
             );
           })}
@@ -176,7 +175,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* User Profile */}
         <div className="p-3 border-t border-slate-800">
-          <div className={`flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 ${sidebarOpen ? '' : 'justify-center'}`}>
+          <div
+            className={`flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 ${sidebarOpen ? '' : 'justify-center'}`}
+          >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
               {adminUser?.name?.charAt(0).toUpperCase() || 'A'}
             </div>
@@ -187,7 +188,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </div>
             )}
           </div>
-          
+
           <button
             onClick={handleLogout}
             className={`mt-2 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors ${
@@ -211,7 +212,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </button>
           <span className="font-bold text-white">Admin Panel</span>
         </div>
-        
+
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-sm">
           {adminUser?.name?.charAt(0).toUpperCase() || 'A'}
         </div>
@@ -280,15 +281,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Main Content */}
       <main
-        className={`flex-1 transition-all duration-300 ${
-          sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'
-        }`}
+        className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}
       >
-        <div className="min-h-screen pt-16 lg:pt-0">
-          {children}
-        </div>
+        <div className="min-h-screen pt-16 lg:pt-0">{children}</div>
       </main>
     </div>
   );
 }
-

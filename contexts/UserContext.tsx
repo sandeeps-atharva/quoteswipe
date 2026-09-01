@@ -1,6 +1,13 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { apiCache, CACHE_KEYS, CACHE_TTL, clearCacheOnLogout } from '@/lib/api-cache';
 
 // Types
@@ -27,7 +34,7 @@ interface UserContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   profile: UserProfile | null;
-  
+
   // Actions
   fetchUser: (force?: boolean) => Promise<User | null>;
   fetchProfile: (force?: boolean) => Promise<UserProfile | null>;
@@ -97,21 +104,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const updateProfile = useCallback(async (data: Partial<UserProfile>) => {
-    const response = await fetch('/api/user/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+  const updateProfile = useCallback(
+    async (data: Partial<UserProfile>) => {
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
 
-    if (response.ok) {
-      // Invalidate and refetch
-      apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
-      apiCache.invalidate(CACHE_KEYS.USER);
-      await fetchProfile(true);
-      await fetchUser(true);
-    }
-  }, [fetchProfile, fetchUser]);
+      if (response.ok) {
+        // Invalidate and refetch
+        apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
+        apiCache.invalidate(CACHE_KEYS.USER);
+        await fetchProfile(true);
+        await fetchUser(true);
+      }
+    },
+    [fetchProfile, fetchUser]
+  );
 
   const setUser = useCallback((newUser: User | null) => {
     setUserState(newUser);
@@ -152,11 +162,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     invalidateUser,
   };
 
-  return (
-    <UserContext.Provider value={value}>
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
 export function useUser() {
@@ -166,4 +172,3 @@ export function useUser() {
   }
   return context;
 }
-

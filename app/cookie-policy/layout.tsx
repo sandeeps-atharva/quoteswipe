@@ -4,7 +4,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quoteswipe.com';
 
 export const metadata: Metadata = {
   title: 'Cookie Policy',
-  description: 'Understand how QuoteSwipe uses cookies and similar technologies. Learn about your choices for managing and controlling cookies.',
+  description:
+    'Understand how QuoteSwipe uses cookies and similar technologies. Learn about your choices for managing and controlling cookies.',
   keywords: ['cookie policy', 'cookies', 'tracking', 'browser cookies', 'analytics'],
   openGraph: {
     title: 'Cookie Policy - QuoteSwipe',
@@ -26,11 +27,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function CookiePolicyLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function CookiePolicyLayout({ children }: { children: React.ReactNode }) {
   return children;
 }
-

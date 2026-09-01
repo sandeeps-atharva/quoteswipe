@@ -5,7 +5,14 @@ import { useMemo, useCallback, memo } from 'react';
 import Image from 'next/image';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { CardTheme, FontStyle, BackgroundImage, DEFAULT_THEME, DEFAULT_FONT, BACKGROUND_IMAGES } from '@/lib/constants';
+import {
+  CardTheme,
+  FontStyle,
+  BackgroundImage,
+  DEFAULT_THEME,
+  DEFAULT_FONT,
+  BACKGROUND_IMAGES,
+} from '@/lib/constants';
 
 // Re-export types for backward compatibility
 export type { CardTheme, FontStyle, BackgroundImage };
@@ -98,23 +105,24 @@ function QuoteCard({
 }: QuoteCardProps) {
   const offset = index - currentIndex;
   const isTopCard = offset === 0;
-  
+
   // Only translate the top card and the next card for performance
   const shouldTranslate = offset <= 1;
-  
+
   // Translation hook
   const { translatedText, isLoading: isTranslating } = useTranslation({
     text: quote.text,
     enabled: shouldTranslate,
   });
   const { isOriginal } = useLanguage();
-  
+
   // Use translated text for display
   const displayText = translatedText || quote.text;
-  
+
   // Check if background image is active
-  const hasBackgroundImage = backgroundImage && backgroundImage.id !== 'none' && backgroundImage.url;
-  
+  const hasBackgroundImage =
+    backgroundImage && backgroundImage.id !== 'none' && backgroundImage.url;
+
   // Get colors based on whether background image is used
   const colors = useMemo(() => {
     if (hasBackgroundImage) {
@@ -134,37 +142,40 @@ function QuoteCard({
       isDark: cardTheme.isDark,
     };
   }, [hasBackgroundImage, backgroundImage, cardTheme]);
-  
+
   // Memoized calculations
   const textLength = displayText.length;
   const lineHeight = useMemo(() => calculateLineHeight(textLength), [textLength]);
-  
+
   // Memoized responsive font sizes
-  const fontSizes = useMemo(() => ({
-    base: calculateFontSize(textLength, 12, 17),
-    sm: calculateFontSize(textLength, 13, 19),
-    md: calculateFontSize(textLength, 15, 24),
-    lg: calculateFontSize(textLength, 17, 28),
-    xl: calculateFontSize(textLength, 19, 32),
-  }), [textLength]);
+  const fontSizes = useMemo(
+    () => ({
+      base: calculateFontSize(textLength, 12, 17),
+      sm: calculateFontSize(textLength, 13, 19),
+      md: calculateFontSize(textLength, 15, 24),
+      lg: calculateFontSize(textLength, 17, 28),
+      xl: calculateFontSize(textLength, 19, 32),
+    }),
+    [textLength]
+  );
 
   // Memoized card transform style
   const cardTransformStyle = useMemo(() => {
-  if (offset < 0 || offset > 2) return null;
-    
-  const rotation = isTopCard ? dragOffset.x / 20 : 0;
-  const translateX = isTopCard ? dragOffset.x : 0;
-  const translateY = isTopCard ? dragOffset.y * 0.3 : 0;
-  const scale = 1 - offset * 0.05;
-  const yOffset = offset * 15;
-  const zIndex = 10 - offset;
+    if (offset < 0 || offset > 2) return null;
 
-  // Determine transition based on state:
-  // - During drag (isDragging && !isAnimating): no transition for responsive dragging
-  // - During undo animation (isUndoing): smooth transition for undo effect
-  // - During button press animation (isAnimating): smooth transition
-  // - Otherwise: smooth transition for card stacking
-  const shouldAnimate = isUndoing || isAnimating || !(isDragging && !isAnimating && isTopCard);
+    const rotation = isTopCard ? dragOffset.x / 20 : 0;
+    const translateX = isTopCard ? dragOffset.x : 0;
+    const translateY = isTopCard ? dragOffset.y * 0.3 : 0;
+    const scale = 1 - offset * 0.05;
+    const yOffset = offset * 15;
+    const zIndex = 10 - offset;
+
+    // Determine transition based on state:
+    // - During drag (isDragging && !isAnimating): no transition for responsive dragging
+    // - During undo animation (isUndoing): smooth transition for undo effect
+    // - During button press animation (isAnimating): smooth transition
+    // - Otherwise: smooth transition for card stacking
+    const shouldAnimate = isUndoing || isAnimating || !(isDragging && !isAnimating && isTopCard);
 
     return {
       transform: `translateX(${translateX}px) translateY(${translateY + yOffset}px) rotate(${rotation}deg) scale(${scale})`,
@@ -179,43 +190,62 @@ function QuoteCard({
   }, [offset, isTopCard, dragOffset.x, dragOffset.y, isDragging, isAnimating, isUndoing]);
 
   // Memoized card background style
-  const cardStyle = useMemo(() => ({
-    background: hasBackgroundImage ? 'transparent' : (customBackground || cardTheme.background),
-    borderRadius: '16px',
-    boxShadow: isTopCard 
-      ? '0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.03)' 
-      : '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-  }), [hasBackgroundImage, customBackground, cardTheme.background, isTopCard]);
+  const cardStyle = useMemo(
+    () => ({
+      background: hasBackgroundImage ? 'transparent' : customBackground || cardTheme.background,
+      borderRadius: '16px',
+      boxShadow: isTopCard
+        ? '0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.03)'
+        : '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+    }),
+    [hasBackgroundImage, customBackground, cardTheme.background, isTopCard]
+  );
 
   // Memoized quote text style
-  const quoteTextStyle = useMemo(() => ({
-    color: colors.textColor,
-    letterSpacing: '-0.01em',
-    fontFamily: fontStyle.fontFamily,
-    fontWeight: fontStyle.fontWeight,
-    fontSize: `clamp(${fontSizes.base}px, 2.5vw, ${fontSizes.xl}px)`,
-    lineHeight,
-    wordWrap: 'normal' as const,
-    overflowWrap: 'normal' as const,
-    wordBreak: 'keep-all' as const,
-    hyphens: 'none' as const,
-    WebkitHyphens: 'none' as const,
-    msHyphens: 'none' as const,
-    whiteSpace: 'normal' as const,
-    overflow: 'hidden' as const,
-    textShadow: hasBackgroundImage ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
-  }), [colors.textColor, fontStyle.fontFamily, fontStyle.fontWeight, fontSizes, lineHeight, hasBackgroundImage]);
+  const quoteTextStyle = useMemo(
+    () => ({
+      color: colors.textColor,
+      letterSpacing: '-0.01em',
+      fontFamily: fontStyle.fontFamily,
+      fontWeight: fontStyle.fontWeight,
+      fontSize: `clamp(${fontSizes.base}px, 2.5vw, ${fontSizes.xl}px)`,
+      lineHeight,
+      wordWrap: 'normal' as const,
+      overflowWrap: 'normal' as const,
+      wordBreak: 'keep-all' as const,
+      hyphens: 'none' as const,
+      WebkitHyphens: 'none' as const,
+      msHyphens: 'none' as const,
+      whiteSpace: 'normal' as const,
+      overflow: 'hidden' as const,
+      textShadow: hasBackgroundImage ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+    }),
+    [
+      colors.textColor,
+      fontStyle.fontFamily,
+      fontStyle.fontWeight,
+      fontSizes,
+      lineHeight,
+      hasBackgroundImage,
+    ]
+  );
 
   // Memoized event handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onDragStart(e);
-  }, [onDragStart]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      onDragStart(e);
+    },
+    [onDragStart]
+  );
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    onDragStart(e);
-  }, [onDragStart]);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault();
+      onDragStart(e);
+    },
+    [onDragStart]
+  );
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -234,7 +264,7 @@ function QuoteCard({
       onTouchMove={isTopCard ? onDragMove : undefined}
       onContextMenu={handleContextMenu}
     >
-      <div 
+      <div
         data-quote-id={quote.id}
         data-quote-card="true"
         data-theme-id={cardTheme.id}
@@ -259,16 +289,13 @@ function QuoteCard({
               />
             </div>
             {/* Overlay gradient for text readability */}
-            <div 
-              className="absolute inset-0"
-              style={{ background: backgroundImage.overlay }}
-            />
+            <div className="absolute inset-0" style={{ background: backgroundImage.overlay }} />
           </>
         )}
-        
+
         {/* Base gradient for non-image backgrounds */}
         {!hasBackgroundImage && (
-          <div 
+          <div
             className="absolute inset-0 rounded-[16px]"
             style={{ background: customBackground || cardTheme.background }}
           />
@@ -276,23 +303,20 @@ function QuoteCard({
 
         {/* Content Container with safe margins */}
         <div className="relative z-10 flex flex-col h-full p-5 sm:p-6 md:p-8 lg:p-10">
-          
           {/* Header Section - Category & Likes */}
           <div className="flex items-center justify-between flex-shrink-0">
             {/* Category Tag - Pill with proper background (hidden during download via data-hide-on-download) */}
-            <div 
+            <div
               data-hide-on-download="true"
               className="inline-flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-full"
-              style={{ 
-                background: hasBackgroundImage 
-                  ? 'rgba(0, 0, 0, 0.4)' 
-                  : colors.categoryBg,
+              style={{
+                background: hasBackgroundImage ? 'rgba(0, 0, 0, 0.4)' : colors.categoryBg,
                 backdropFilter: hasBackgroundImage ? 'blur(8px)' : 'none',
                 WebkitBackdropFilter: hasBackgroundImage ? 'blur(8px)' : 'none',
-                border: hasBackgroundImage 
-                  ? '1px solid rgba(255, 255, 255, 0.1)' 
-                  : colors.isDark 
-                    ? '1px solid rgba(255, 255, 255, 0.1)' 
+                border: hasBackgroundImage
+                  ? '1px solid rgba(255, 255, 255, 0.1)'
+                  : colors.isDark
+                    ? '1px solid rgba(255, 255, 255, 0.1)'
                     : '1px solid rgba(0, 0, 0, 0.05)',
                 boxShadow: hasBackgroundImage ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
               }}
@@ -300,14 +324,14 @@ function QuoteCard({
               {quote.category_icon && (
                 <span className="text-[10px] sm:text-xs leading-none">{quote.category_icon}</span>
               )}
-              <span 
+              <span
                 className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.06em] leading-none"
-                style={{ 
+                style={{
                   color: hasBackgroundImage ? '#ffffff' : colors.categoryText,
                   textShadow: hasBackgroundImage ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
                 }}
               >
-                  {quote.category}
+                {quote.category}
               </span>
             </div>
 
@@ -349,55 +373,57 @@ function QuoteCard({
           <div className="flex-1 flex flex-col justify-center py-4 sm:py-6 md:py-8 overflow-hidden">
             {/* Subtle Quote Mark */}
             <div className="mb-3 sm:mb-4 md:mb-5">
-              <svg 
-                width="32" 
-                height="32" 
-                viewBox="0 0 24 24" 
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
                 fill="none"
                 className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8"
                 style={{ opacity: colors.isDark ? 0.25 : 0.15 }}
               >
-                <path 
-                  d="M11 7.5V17.5H6.5C6.5 14.5 6.5 12 9 9.5L6 7.5H11ZM19.5 7.5V17.5H15C15 14.5 15 12 17.5 9.5L14.5 7.5H19.5Z" 
+                <path
+                  d="M11 7.5V17.5H6.5C6.5 14.5 6.5 12 9 9.5L6 7.5H11ZM19.5 7.5V17.5H15C15 14.5 15 12 17.5 9.5L14.5 7.5H19.5Z"
                   fill={colors.textColor}
                 />
               </svg>
             </div>
-                  
-                  {/* Translation indicator */}
+
+            {/* Translation indicator */}
             {!isOriginal && isTopCard && isTranslating && (
               <div className="flex items-center gap-1.5 mb-3">
                 <Loader2 size={12} className="animate-spin" style={{ color: colors.authorColor }} />
                 <span className="text-[10px] font-medium" style={{ color: colors.authorColor }}>
                   Translating...
                 </span>
-                    </div>
-                  )}
-            
+              </div>
+            )}
+
             {/* Quote text - Using CSS clamp for responsive sizing */}
-            <p 
+            <p
               className={`transition-opacity duration-200 ${isTranslating ? 'opacity-40' : 'opacity-100'}`}
               style={quoteTextStyle}
             >
               {displayText}
             </p>
-                </div>
-                
+          </div>
+
           {/* Author Section - Clean bottom area */}
           <div className="flex-shrink-0">
             {/* Thin divider line */}
-            <div 
+            <div
               className="w-12 sm:w-16 h-px mb-4 sm:mb-5"
-              style={{ background: colors.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)' }}
+              style={{
+                background: colors.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+              }}
             />
-            
+
             {/* Author name and Logo row */}
             <div className="flex items-center justify-between">
               {/* Author name - Simple sans-serif */}
               {quote.author ? (
-                <p 
+                <p
                   className="text-xs sm:text-sm md:text-base font-medium tracking-wide"
-                  style={{ 
+                  style={{
                     color: colors.authorColor,
                     fontFamily: 'system-ui, -apple-system, sans-serif',
                     textShadow: hasBackgroundImage ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
@@ -405,31 +431,33 @@ function QuoteCard({
                 >
                   — {quote.author}
                 </p>
-              ) : <div />}
-              
+              ) : (
+                <div />
+              )}
+
               {/* Logo */}
-              <div 
-                className="flex items-center gap-1.5" 
+              <div
+                className="flex items-center gap-1.5"
                 style={{ opacity: colors.isDark ? 0.7 : 0.6 }}
               >
-                <Image 
-                  src="/logo.svg" 
-                  alt="QuoteSwipe" 
+                <Image
+                  src="/logo.svg"
+                  alt="QuoteSwipe"
                   width={24}
                   height={24}
                   className="w-5 h-5 sm:w-6 sm:h-6"
                   style={{ filter: colors.isDark ? 'brightness(1.5)' : 'none' }}
                 />
-                <span 
+                <span
                   className="text-[9px] sm:text-[10px] font-medium tracking-wide sm:inline"
-                  style={{ 
+                  style={{
                     color: colors.authorColor,
                     fontFamily: 'system-ui, -apple-system, sans-serif',
                     textShadow: hasBackgroundImage ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
                   }}
                 >
                   QuoteSwipe
-                    </span>
+                </span>
               </div>
             </div>
           </div>

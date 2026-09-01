@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { 
-  CARD_THEMES, 
-  FONT_STYLES, 
-  BACKGROUND_IMAGES, 
-  CardTheme, 
-  FontStyle, 
-  BackgroundImage 
+import {
+  CARD_THEMES,
+  FONT_STYLES,
+  BACKGROUND_IMAGES,
+  CardTheme,
+  FontStyle,
+  BackgroundImage,
 } from '@/lib/constants';
 import { getFromCache, setToCache, CACHE_DURATIONS } from '@/lib/cache-utils';
 
@@ -26,7 +26,10 @@ interface UseCardStyleReturn {
   fetchAllPreferences: () => Promise<void>;
   saveCardStyle: (theme?: CardTheme, font?: FontStyle, bg?: BackgroundImage) => Promise<void>;
   createCustomBg: (img: { id: string; name: string; url: string }) => BackgroundImage;
-  resolveBackground: (bgId: string | undefined, serverBgs: Array<{ id: string; url: string; name: string }>) => BackgroundImage;
+  resolveBackground: (
+    bgId: string | undefined,
+    serverBgs: Array<{ id: string; url: string; name: string }>
+  ) => BackgroundImage;
   cacheStyles: (isAppReady: boolean) => void;
 }
 
@@ -51,7 +54,7 @@ export function createCustomBg(img: { id: string; name: string; url: string }): 
  * Helper: Resolve background ID to BackgroundImage object
  */
 export function resolveBackground(
-  bgId: string | undefined, 
+  bgId: string | undefined,
   serverBgs: Array<{ id: string; url: string; name: string }>
 ): BackgroundImage {
   if (!bgId || bgId === 'none') return BACKGROUND_IMAGES[0];
@@ -59,7 +62,7 @@ export function resolveBackground(
   // Check for custom background
   if (bgId === 'custom' || bgId.startsWith('custom_')) {
     // Try server-provided backgrounds first
-    const serverImg = serverBgs.find(img => img.id === bgId);
+    const serverImg = serverBgs.find((img) => img.id === bgId);
     if (serverImg) return createCustomBg(serverImg);
 
     // Fallback to localStorage
@@ -80,7 +83,7 @@ export function resolveBackground(
     }
   }
 
-  return BACKGROUND_IMAGES.find(b => b.id === bgId) || BACKGROUND_IMAGES[0];
+  return BACKGROUND_IMAGES.find((b) => b.id === bgId) || BACKGROUND_IMAGES[0];
 }
 
 export function useCardStyle(): UseCardStyleReturn {
@@ -89,20 +92,22 @@ export function useCardStyle(): UseCardStyleReturn {
     const cached = getFromCache<CardTheme>('cardTheme', CACHE_DURATIONS.PREFERENCES);
     return cached || CARD_THEMES[0];
   });
-  
+
   const [fontStyle, setFontStyle] = useState<FontStyle>(() => {
     const cached = getFromCache<FontStyle>('fontStyle', CACHE_DURATIONS.PREFERENCES);
     return cached || FONT_STYLES[0];
   });
-  
+
   const [backgroundImage, setBackgroundImage] = useState<BackgroundImage>(() => {
     const cached = getFromCache<BackgroundImage>('backgroundImage', CACHE_DURATIONS.PREFERENCES);
     return cached || BACKGROUND_IMAGES[0];
   });
-  
+
   // Per-quote custom backgrounds (for saved quotes with custom backgrounds)
-  const [savedQuoteBackgrounds, setSavedQuoteBackgrounds] = useState<Record<string, BackgroundImage>>({});
-  
+  const [savedQuoteBackgrounds, setSavedQuoteBackgrounds] = useState<
+    Record<string, BackgroundImage>
+  >({});
+
   const isLoadingPreferences = useRef(false);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
@@ -111,62 +116,66 @@ export function useCardStyle(): UseCardStyleReturn {
     try {
       isLoadingPreferences.current = true;
       const response = await fetch('/api/user/all-preferences', { credentials: 'include' });
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         // Apply card style preferences
-        const theme = CARD_THEMES.find(t => t.id === data.themeId);
-        const font = FONT_STYLES.find(f => f.id === data.fontId);
+        const theme = CARD_THEMES.find((t) => t.id === data.themeId);
+        const font = FONT_STYLES.find((f) => f.id === data.fontId);
         const bg = resolveBackground(data.backgroundId, data.customBackgrounds || []);
-        
+
         setCardTheme(theme || CARD_THEMES[0]);
         setFontStyle(font || FONT_STYLES[0]);
         setBackgroundImage(bg);
-        
+
         return data;
       }
-      
+
       setPreferencesLoaded(true);
     } catch (error) {
       console.error('Fetch all preferences error:', error);
       setPreferencesLoaded(true);
     } finally {
-      setTimeout(() => { isLoadingPreferences.current = false; }, 300);
+      setTimeout(() => {
+        isLoadingPreferences.current = false;
+      }, 300);
     }
   }, []);
 
   // Save user's card style preferences
-  const saveCardStyle = useCallback(async (
-    themeToSave?: CardTheme, 
-    fontToSave?: FontStyle, 
-    bgToSave?: BackgroundImage
-  ) => {
-    try {
-      const response = await fetch('/api/user/all-preferences', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          themeId: themeToSave?.id || cardTheme.id,
-          fontId: fontToSave?.id || fontStyle.id,
-          backgroundId: bgToSave?.id || backgroundImage.id,
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to save card style');
-    } catch (error) {
-      console.error('Save card style error:', error);
-      throw error;
-    }
-  }, [cardTheme.id, fontStyle.id, backgroundImage.id]);
+  const saveCardStyle = useCallback(
+    async (themeToSave?: CardTheme, fontToSave?: FontStyle, bgToSave?: BackgroundImage) => {
+      try {
+        const response = await fetch('/api/user/all-preferences', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            themeId: themeToSave?.id || cardTheme.id,
+            fontId: fontToSave?.id || fontStyle.id,
+            backgroundId: bgToSave?.id || backgroundImage.id,
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to save card style');
+      } catch (error) {
+        console.error('Save card style error:', error);
+        throw error;
+      }
+    },
+    [cardTheme.id, fontStyle.id, backgroundImage.id]
+  );
 
   // Cache card styles for instant restoration
-  const cacheStyles = useCallback((isAppReady: boolean) => {
-    if (!isAppReady) return;
-    setToCache('cardTheme', cardTheme);
-    setToCache('fontStyle', fontStyle);
-    setToCache('backgroundImage', backgroundImage);
-  }, [cardTheme, fontStyle, backgroundImage]);
+  const cacheStyles = useCallback(
+    (isAppReady: boolean) => {
+      if (!isAppReady) return;
+      setToCache('cardTheme', cardTheme);
+      setToCache('fontStyle', fontStyle);
+      setToCache('backgroundImage', backgroundImage);
+    },
+    [cardTheme, fontStyle, backgroundImage]
+  );
 
   return {
     cardTheme,
@@ -187,4 +196,3 @@ export function useCardStyle(): UseCardStyleReturn {
     cacheStyles,
   };
 }
-

@@ -1,10 +1,30 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
-import { X, Palette, Type, Check, Sparkles, Moon, Sun, Loader2, ImageIcon, Upload, Trash2, Camera } from 'lucide-react';
+import {
+  X,
+  Palette,
+  Type,
+  Check,
+  Sparkles,
+  Moon,
+  Sun,
+  Loader2,
+  ImageIcon,
+  Upload,
+  Trash2,
+  Camera,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
-import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
+import {
+  CARD_THEMES,
+  FONT_STYLES,
+  BACKGROUND_IMAGES,
+  CardTheme,
+  FontStyle,
+  BackgroundImage,
+} from '@/lib/constants';
 import ImageUploader, { UserBackground } from './ImageUploader';
 
 // Re-export for backward compatibility
@@ -70,17 +90,17 @@ function CardCustomization({
   const [isCapturing, setIsCapturing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Local state for selections (only applied on save)
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>(currentTheme);
   const [selectedFont, setSelectedFont] = useState<FontStyle>(currentFont);
   const [selectedBackground, setSelectedBackground] = useState<BackgroundImage>(currentBackground);
-  
+
   // Multiple custom images state (for guests only)
   const [customImages, setCustomImages] = useState<CustomImageData[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
-  
+
   // For authenticated users - ImageUploader state
   const [selectedCustomBgUrl, setSelectedCustomBgUrl] = useState<string | null>(null);
   const [selectedCustomBgId, setSelectedCustomBgId] = useState<string | null>(null);
@@ -124,9 +144,10 @@ function CardCustomization({
   }, [isOpen, isAuthenticated]);
 
   // Convert custom images to BackgroundImage objects
-  const customBackgrounds = useMemo(() => 
-    customImages.map(img => createCustomBackground(img)),
-  [customImages]);
+  const customBackgrounds = useMemo(
+    () => customImages.map((img) => createCustomBackground(img)),
+    [customImages]
+  );
 
   // Reset local state when modal opens
   useEffect(() => {
@@ -135,9 +156,12 @@ function CardCustomization({
       setSelectedFont(currentFont);
       setSelectedBackground(currentBackground);
       setShowLightThemes(!currentTheme.isDark);
-      
+
       // Restore custom background selection if current background is a custom one
-      if (currentBackground.id && (currentBackground.id.startsWith('custom_') || currentBackground.id.startsWith('bg_'))) {
+      if (
+        currentBackground.id &&
+        (currentBackground.id.startsWith('custom_') || currentBackground.id.startsWith('bg_'))
+      ) {
         setSelectedCustomBgUrl(currentBackground.url);
         setSelectedCustomBgId(currentBackground.id);
       } else {
@@ -148,9 +172,12 @@ function CardCustomization({
   }, [isOpen, currentTheme, currentFont, currentBackground]);
 
   // Memoized theme lists
-  const lightThemes = useMemo(() => CARD_THEMES.filter(t => !t.isDark), []);
-  const darkThemes = useMemo(() => CARD_THEMES.filter(t => t.isDark), []);
-  const displayedThemes = useMemo(() => showLightThemes ? lightThemes : darkThemes, [showLightThemes, lightThemes, darkThemes]);
+  const lightThemes = useMemo(() => CARD_THEMES.filter((t) => !t.isDark), []);
+  const darkThemes = useMemo(() => CARD_THEMES.filter((t) => t.isDark), []);
+  const displayedThemes = useMemo(
+    () => (showLightThemes ? lightThemes : darkThemes),
+    [showLightThemes, lightThemes, darkThemes]
+  );
 
   // Get preview colors (background image overrides theme colors when selected)
   const previewColors = useMemo(() => {
@@ -186,20 +213,20 @@ function CardCustomization({
         img.onload = () => {
           let width = img.width;
           let height = img.height;
-          
+
           if (width > maxWidth) {
             height = (height * maxWidth) / width;
             width = maxWidth;
           }
-          
+
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
-          
+
           canvas.toBlob(
-            (blob) => blob ? resolve(blob) : reject(new Error('Failed to compress')),
+            (blob) => (blob ? resolve(blob) : reject(new Error('Failed to compress'))),
             'image/jpeg',
             quality
           );
@@ -213,96 +240,102 @@ function CardCustomization({
   }, []);
 
   // Handle image upload - to server if authenticated, localStorage otherwise
-  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    // Check max images limit
-    if (customImages.length >= MAX_CUSTOM_IMAGES) {
-      toast.error(`Maximum ${MAX_CUSTOM_IMAGES} custom images allowed. Remove some to add more.`);
-      return;
-    }
+      // Check max images limit
+      if (customImages.length >= MAX_CUSTOM_IMAGES) {
+        toast.error(`Maximum ${MAX_CUSTOM_IMAGES} custom images allowed. Remove some to add more.`);
+        return;
+      }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
-      return;
-    }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image must be less than 5MB');
+        return;
+      }
 
-    setIsUploading(true);
+      setIsUploading(true);
 
-    try {
-      // Guest flow: Compress and store in localStorage
-      // (Authenticated users use ImageUploader component instead)
-      const compressedBlob = await compressImage(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const resizedBase64 = event.target?.result as string;
-        
-        const newImageData: CustomImageData = {
-          id: generateImageId(),
-          url: resizedBase64,
-          name: `Photo ${customImages.length + 1}`,
-          createdAt: Date.now(),
+      try {
+        // Guest flow: Compress and store in localStorage
+        // (Authenticated users use ImageUploader component instead)
+        const compressedBlob = await compressImage(file);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const resizedBase64 = event.target?.result as string;
+
+          const newImageData: CustomImageData = {
+            id: generateImageId(),
+            url: resizedBase64,
+            name: `Photo ${customImages.length + 1}`,
+            createdAt: Date.now(),
+          };
+
+          try {
+            const updatedImages = [...customImages, newImageData];
+            saveCustomImages(updatedImages);
+
+            const newBackground = createCustomBackground(newImageData);
+            setSelectedBackground(newBackground);
+
+            toast.success('Image uploaded! 📸 Login to sync.');
+          } catch (storageError) {
+            toast.error('Storage full. Remove some images first.');
+          }
+
+          setIsUploading(false);
         };
-        
-        try {
-          const updatedImages = [...customImages, newImageData];
-          saveCustomImages(updatedImages);
-          
-          const newBackground = createCustomBackground(newImageData);
-          setSelectedBackground(newBackground);
-          
-          toast.success('Image uploaded! 📸 Login to sync.');
-        } catch (storageError) {
-          toast.error('Storage full. Remove some images first.');
-        }
-        
+        reader.onerror = () => {
+          toast.error('Failed to read image');
+          setIsUploading(false);
+        };
+        reader.readAsDataURL(compressedBlob);
+      } catch (error) {
+        toast.error('Failed to upload image');
         setIsUploading(false);
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read image');
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(compressedBlob);
-    } catch (error) {
-      toast.error('Failed to upload image');
-      setIsUploading(false);
-    }
+      }
 
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, [customImages, saveCustomImages, isAuthenticated, compressImage]);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [customImages, saveCustomImages, isAuthenticated, compressImage]
+  );
 
   // Handle remove specific custom image - from server if authenticated
   // Handle remove custom image - for guests only (authenticated users use ImageUploader)
-  const handleRemoveCustomImage = useCallback(async (imageId: string) => {
-    setDeletingImageId(imageId);
-    
-    try {
-      // Remove from localStorage (guests only)
-      const updatedImages = customImages.filter(img => img.id !== imageId);
-      saveCustomImages(updatedImages);
-      
-      if (selectedBackground.id === imageId) {
-        setSelectedBackground(BACKGROUND_IMAGES[0]);
+  const handleRemoveCustomImage = useCallback(
+    async (imageId: string) => {
+      setDeletingImageId(imageId);
+
+      try {
+        // Remove from localStorage (guests only)
+        const updatedImages = customImages.filter((img) => img.id !== imageId);
+        saveCustomImages(updatedImages);
+
+        if (selectedBackground.id === imageId) {
+          setSelectedBackground(BACKGROUND_IMAGES[0]);
+        }
+
+        toast.success('Image removed');
+      } catch (error) {
+        toast.error('Failed to remove image');
+      } finally {
+        setDeletingImageId(null);
       }
-      
-      toast.success('Image removed');
-    } catch (error) {
-      toast.error('Failed to remove image');
-    } finally {
-      setDeletingImageId(null);
-    }
-  }, [customImages, selectedBackground.id, saveCustomImages]);
+    },
+    [customImages, selectedBackground.id, saveCustomImages]
+  );
 
   // Memoized handlers
   const handleCancel = useCallback(() => {
@@ -317,7 +350,7 @@ function CardCustomization({
       toast.error('Please login to save your preferences');
       return;
     }
-    
+
     setIsSaving(true);
     try {
       // Update parent state
@@ -333,7 +366,17 @@ function CardCustomization({
     } finally {
       setIsSaving(false);
     }
-  }, [isAuthenticated, selectedTheme, selectedFont, selectedBackground, onThemeChange, onFontChange, onBackgroundChange, onSave, onClose]);
+  }, [
+    isAuthenticated,
+    selectedTheme,
+    selectedFont,
+    selectedBackground,
+    onThemeChange,
+    onFontChange,
+    onBackgroundChange,
+    onSave,
+    onClose,
+  ]);
 
   const handleThemeSelect = useCallback((theme: CardTheme) => {
     setSelectedTheme(theme);
@@ -351,26 +394,29 @@ function CardCustomization({
   }, []);
 
   // Handle custom background selection from ImageUploader (for authenticated users)
-  const handleSelectCustomBackground = useCallback((url: string | null) => {
-    setSelectedCustomBgUrl(url);
-    if (url) {
-      // Find the actual background from the list to get the real server ID
-      const serverBg = userBackgroundsList.find(bg => bg.url === url);
-      const bgId = serverBg?.id || `custom_${Date.now()}`;
-      setSelectedCustomBgId(bgId);
-      
-      const customBg = createCustomBackground({
-        id: bgId, // Use the actual server ID for proper persistence
-        url,
-        name: serverBg?.name || 'Custom Photo',
-        createdAt: Date.now(),
-      });
-      setSelectedBackground(customBg);
-    } else {
-      setSelectedCustomBgId(null);
-      setSelectedBackground(BACKGROUND_IMAGES[0]);
-    }
-  }, [userBackgroundsList]);
+  const handleSelectCustomBackground = useCallback(
+    (url: string | null) => {
+      setSelectedCustomBgUrl(url);
+      if (url) {
+        // Find the actual background from the list to get the real server ID
+        const serverBg = userBackgroundsList.find((bg) => bg.url === url);
+        const bgId = serverBg?.id || `custom_${Date.now()}`;
+        setSelectedCustomBgId(bgId);
+
+        const customBg = createCustomBackground({
+          id: bgId, // Use the actual server ID for proper persistence
+          url,
+          name: serverBg?.name || 'Custom Photo',
+          createdAt: Date.now(),
+        });
+        setSelectedBackground(customBg);
+      } else {
+        setSelectedCustomBgId(null);
+        setSelectedBackground(BACKGROUND_IMAGES[0]);
+      }
+    },
+    [userBackgroundsList]
+  );
 
   // Track user backgrounds from ImageUploader
   const handleBackgroundsChange = useCallback((backgrounds: UserBackground[]) => {
@@ -395,76 +441,76 @@ function CardCustomization({
   }, []);
 
   // Handle camera capture - reuse compression logic
-  const handleCameraCapture = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleCameraCapture = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    // Check max images limit
-    if (customImages.length >= MAX_CUSTOM_IMAGES) {
-      toast.error(`Maximum ${MAX_CUSTOM_IMAGES} photos allowed. Remove some to add more.`);
-      return;
-    }
+      // Check max images limit
+      if (customImages.length >= MAX_CUSTOM_IMAGES) {
+        toast.error(`Maximum ${MAX_CUSTOM_IMAGES} photos allowed. Remove some to add more.`);
+        return;
+      }
 
-    setIsCapturing(true);
+      setIsCapturing(true);
 
-    try {
-      // Guest flow: Compress and store in localStorage
-      // (Authenticated users use ImageUploader component instead)
-      const compressedBlob = await compressImage(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const resizedBase64 = event.target?.result as string;
-        
-        const newImageData: CustomImageData = {
-          id: generateImageId(),
-          url: resizedBase64,
-          name: `Camera ${customImages.length + 1}`,
-          createdAt: Date.now(),
+      try {
+        // Guest flow: Compress and store in localStorage
+        // (Authenticated users use ImageUploader component instead)
+        const compressedBlob = await compressImage(file);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const resizedBase64 = event.target?.result as string;
+
+          const newImageData: CustomImageData = {
+            id: generateImageId(),
+            url: resizedBase64,
+            name: `Camera ${customImages.length + 1}`,
+            createdAt: Date.now(),
+          };
+
+          try {
+            const updatedImages = [...customImages, newImageData];
+            saveCustomImages(updatedImages);
+
+            const newBackground = createCustomBackground(newImageData);
+            setSelectedBackground(newBackground);
+
+            toast.success('Photo captured! 📷 Login to sync.');
+          } catch (storageError) {
+            toast.error('Storage full. Remove some photos first.');
+          }
+
+          setIsCapturing(false);
         };
-        
-        try {
-          const updatedImages = [...customImages, newImageData];
-          saveCustomImages(updatedImages);
-          
-          const newBackground = createCustomBackground(newImageData);
-          setSelectedBackground(newBackground);
-          
-          toast.success('Photo captured! 📷 Login to sync.');
-        } catch (storageError) {
-          toast.error('Storage full. Remove some photos first.');
-        }
-        
+        reader.onerror = () => {
+          toast.error('Failed to read photo');
+          setIsCapturing(false);
+        };
+        reader.readAsDataURL(compressedBlob);
+        return;
+      } catch (error) {
+        toast.error('Failed to capture photo');
         setIsCapturing(false);
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read photo');
-        setIsCapturing(false);
-      };
-      reader.readAsDataURL(compressedBlob);
-      return;
-    } catch (error) {
-      toast.error('Failed to capture photo');
-      setIsCapturing(false);
-    }
+      }
 
-    // Reset camera input
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = '';
-    }
-  }, [customImages, saveCustomImages, isAuthenticated, compressImage]);
+      // Reset camera input
+      if (cameraInputRef.current) {
+        cameraInputRef.current.value = '';
+      }
+    },
+    [customImages, saveCustomImages, isAuthenticated, compressImage]
+  );
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop with warm gradient */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-md"
-        onClick={handleCancel}
-      >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={handleCancel}>
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
       </div>
-      
+
       {/* Hidden file input for gallery */}
       <input
         ref={fileInputRef}
@@ -473,7 +519,7 @@ function CardCustomization({
         onChange={handleImageUpload}
         className="hidden"
       />
-      
+
       {/* Hidden camera input for taking photos */}
       <input
         ref={cameraInputRef}
@@ -483,13 +529,13 @@ function CardCustomization({
         onChange={handleCameraCapture}
         className="hidden"
       />
-      
+
       {/* Modal - Full width on mobile, centered on desktop */}
       <div className="relative w-full sm:w-auto sm:max-w-lg sm:mx-4 bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in max-h-[90vh] sm:max-h-[85vh] flex flex-col border border-stone-200/50 dark:border-stone-700/50">
         {/* Decorative gradient orbs */}
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none" />
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-3 sm:p-4 border-b border-stone-200 dark:border-stone-700 shrink-0 relative">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -497,8 +543,12 @@ function CardCustomization({
               <Palette className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white">Customize Card</h2>
-              <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400">Personalize your quote cards</p>
+              <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white">
+                Customize Card
+              </h2>
+              <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400">
+                Personalize your quote cards
+              </p>
             </div>
           </div>
           <button
@@ -605,9 +655,12 @@ function CardCustomization({
               {/* Custom Images Section */}
               <div className="space-y-2">
                 <p className="text-[10px] text-stone-500 dark:text-stone-400 uppercase tracking-wider font-medium">
-                  Your Photos {isAuthenticated ? `(${userBackgroundsCount}/100)` : `(${customImages.length}/${MAX_CUSTOM_IMAGES})`}
+                  Your Photos{' '}
+                  {isAuthenticated
+                    ? `(${userBackgroundsCount}/100)`
+                    : `(${customImages.length}/${MAX_CUSTOM_IMAGES})`}
                 </p>
-                
+
                 {/* For authenticated users: Use ImageUploader */}
                 {isAuthenticated ? (
                   <ImageUploader
@@ -627,7 +680,9 @@ function CardCustomization({
                     <div className="flex items-center justify-end gap-1 mb-2">
                       <button
                         onClick={triggerCameraInput}
-                        disabled={isCapturing || isUploading || customImages.length >= MAX_CUSTOM_IMAGES}
+                        disabled={
+                          isCapturing || isUploading || customImages.length >= MAX_CUSTOM_IMAGES
+                        }
                         className="flex items-center justify-center gap-1 h-7 px-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Take a photo"
                       >
@@ -638,10 +693,12 @@ function CardCustomization({
                         )}
                         <span>Camera</span>
                       </button>
-                      
+
                       <button
                         onClick={triggerFileInput}
-                        disabled={isUploading || isCapturing || customImages.length >= MAX_CUSTOM_IMAGES}
+                        disabled={
+                          isUploading || isCapturing || customImages.length >= MAX_CUSTOM_IMAGES
+                        }
                         className="flex items-center justify-center gap-1 h-7 px-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Upload from gallery"
                       >
@@ -653,7 +710,7 @@ function CardCustomization({
                         <span>Upload</span>
                       </button>
                     </div>
-                    
+
                     {isLoadingImages ? (
                       <div className="flex items-center justify-center py-4">
                         <Loader2 size={20} className="animate-spin text-amber-500" />
@@ -680,7 +737,7 @@ function CardCustomization({
                   </>
                 )}
               </div>
-              
+
               {/* Random BG Button - Each quote gets its own unique random gradient */}
               <div className="mb-3">
                 <button
@@ -697,7 +754,9 @@ function CardCustomization({
                   }`}
                 >
                   <Sparkles size={16} />
-                  {selectedBackground.id === 'none' ? 'Random BG Active ✓' : 'Random BG (Different for Each Quote)'}
+                  {selectedBackground.id === 'none'
+                    ? 'Random BG Active ✓'
+                    : 'Random BG (Different for Each Quote)'}
                 </button>
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1.5">
                   Each quote gets a unique random gradient background
@@ -711,7 +770,7 @@ function CardCustomization({
                 </p>
                 <div className="max-h-64 sm:max-h-72 overflow-y-auto">
                   <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-                    {BACKGROUND_IMAGES.filter(bg => bg.id !== 'none').map((bg) => (
+                    {BACKGROUND_IMAGES.filter((bg) => bg.id !== 'none').map((bg) => (
                       <ImageButton
                         key={bg.id}
                         background={bg}
@@ -741,7 +800,9 @@ function CardCustomization({
 
         {/* Preview */}
         <div className="p-3 sm:p-4 border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800/50 shrink-0 relative">
-          <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 text-center mb-2 sm:mb-3">Preview</p>
+          <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400 text-center mb-2 sm:mb-3">
+            Preview
+          </p>
           <div
             className="mx-auto w-32 sm:w-40 aspect-[4/5] rounded-lg sm:rounded-xl shadow-lg flex flex-col items-center justify-center p-3 sm:p-4 relative overflow-hidden transition-all duration-500"
             style={{ background: selectedTheme.background }}
@@ -749,11 +810,13 @@ function CardCustomization({
             {/* Background Image with smooth transition */}
             {selectedBackground.id !== 'none' && selectedBackground.url && (
               <>
-                <div 
+                <div
                   className="absolute inset-0 bg-cover bg-center transition-all duration-500"
-                  style={{ backgroundImage: `url(${selectedBackground.thumbnail || selectedBackground.url})` }}
+                  style={{
+                    backgroundImage: `url(${selectedBackground.thumbnail || selectedBackground.url})`,
+                  }}
                 />
-                <div 
+                <div
                   className="absolute inset-0 transition-all duration-500"
                   style={{ background: selectedBackground.overlay }}
                 />
@@ -767,16 +830,18 @@ function CardCustomization({
                   color: previewColors.textColor,
                   fontFamily: selectedFont.fontFamily,
                   fontWeight: selectedFont.fontWeight,
-                  textShadow: selectedBackground.id !== 'none' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                  textShadow:
+                    selectedBackground.id !== 'none' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
                 }}
               >
                 &ldquo;The best is yet to come.&rdquo;
               </p>
               <p
                 className="text-[8px] sm:text-[10px] mt-1 sm:mt-2"
-                style={{ 
+                style={{
                   color: previewColors.authorColor,
-                  textShadow: selectedBackground.id !== 'none' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                  textShadow:
+                    selectedBackground.id !== 'none' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
                 }}
               >
                 — Preview
@@ -878,15 +943,24 @@ interface CustomImageButtonProps {
   onDelete: () => void;
 }
 
-const CustomImageButton = memo(function CustomImageButton({ background, isSelected, isDeleting, onClick, onDelete }: CustomImageButtonProps) {
+const CustomImageButton = memo(function CustomImageButton({
+  background,
+  isSelected,
+  isDeleting,
+  onClick,
+  onDelete,
+}: CustomImageButtonProps) {
   const handleClick = useCallback(() => {
     if (!isDeleting) onClick(background);
   }, [onClick, background, isDeleting]);
 
-  const handleDelete = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!isDeleting) onDelete();
-  }, [onDelete, isDeleting]);
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!isDeleting) onDelete();
+    },
+    [onDelete, isDeleting]
+  );
 
   return (
     <div
@@ -953,7 +1027,11 @@ interface ImageButtonProps {
   onClick: (bg: BackgroundImage) => void;
 }
 
-const ImageButton = memo(function ImageButton({ background, isSelected, onClick }: ImageButtonProps) {
+const ImageButton = memo(function ImageButton({
+  background,
+  isSelected,
+  onClick,
+}: ImageButtonProps) {
   const handleClick = useCallback(() => {
     onClick(background);
   }, [onClick, background]);

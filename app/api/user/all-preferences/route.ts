@@ -55,7 +55,7 @@
 // export async function GET(request: NextRequest) {
 //   try {
 //     const userId = getUserIdFromRequest(request);
-    
+
 //     if (!userId) {
 //       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 //     }
@@ -87,7 +87,7 @@
 // export async function POST(request: NextRequest) {
 //   try {
 //     const userId = getUserIdFromRequest(request);
-    
+
 //     if (!userId) {
 //       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 //     }
@@ -126,7 +126,6 @@
 //     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 //   }
 // }
-
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCollection, toObjectId } from '@/lib/db';
@@ -187,13 +186,13 @@ function parseJsonField<T>(field: string | T[] | undefined): T[] {
 export async function GET(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
-    
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const collection = await getCollection('user_preferences');
-    
+
     // Use projection to fetch only needed fields (faster query)
     const prefs: any = await collection.findOne(
       { user_id: userId },
@@ -205,8 +204,8 @@ export async function GET(request: NextRequest) {
           card_background_id: 1,
           custom_backgrounds: 1,
           view_mode: 1,
-          _id: 0 // Exclude _id for smaller payload
-        }
+          _id: 0, // Exclude _id for smaller payload
+        },
       }
     );
 
@@ -222,7 +221,10 @@ export async function GET(request: NextRequest) {
       fontId: prefs.card_font_id || DEFAULTS.fontId,
       backgroundId: prefs.card_background_id || DEFAULTS.backgroundId,
       customBackgrounds: parseJsonField(prefs.custom_backgrounds),
-      viewMode: (prefs.view_mode === 'swipe' || prefs.view_mode === 'feed') ? prefs.view_mode : DEFAULTS.viewMode,
+      viewMode:
+        prefs.view_mode === 'swipe' || prefs.view_mode === 'feed'
+          ? prefs.view_mode
+          : DEFAULTS.viewMode,
     };
 
     return NextResponse.json(response);
@@ -239,13 +241,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
-    
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { selectedCategories, themeId, fontId, backgroundId, viewMode, markOnboardingComplete } = body;
+    const { selectedCategories, themeId, fontId, backgroundId, viewMode, markOnboardingComplete } =
+      body;
 
     // Validate early
     if (selectedCategories !== undefined && !Array.isArray(selectedCategories)) {

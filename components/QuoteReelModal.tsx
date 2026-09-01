@@ -1,7 +1,39 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Plus, Trash2, Play, Pause, Download, Loader2, Film, Image as ImageIcon, Sparkles, ChevronLeft, ChevronRight, Check, Type, AlignLeft, AlignCenter, AlignRight, Eye, EyeOff, Minus, MoveUp, MoveDown, MoveLeft, MoveRight, Bold, Italic, Underline, RotateCcw, Video, ImagePlus, AlertCircle } from 'lucide-react';
+import {
+  X,
+  Plus,
+  Trash2,
+  Play,
+  Pause,
+  Download,
+  Loader2,
+  Film,
+  Image as ImageIcon,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Type,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Eye,
+  EyeOff,
+  Minus,
+  MoveUp,
+  MoveDown,
+  MoveLeft,
+  MoveRight,
+  Bold,
+  Italic,
+  Underline,
+  RotateCcw,
+  Video,
+  ImagePlus,
+  AlertCircle,
+} from 'lucide-react';
 import Image from 'next/image';
 import { FONT_STYLES, FontStyle } from '@/lib/constants';
 
@@ -67,8 +99,10 @@ const QUALITY_OPTIONS = {
 // Detect mobile device
 const isMobileDevice = (): boolean => {
   if (typeof window === 'undefined') return false;
-  return /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    (window.innerWidth <= 768);
+  return (
+    /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    window.innerWidth <= 768
+  );
 };
 
 // Get max quality for device (prevents mobile crashes)
@@ -143,7 +177,7 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
   if (cached) {
     return Promise.resolve(cached);
   }
-  
+
   return new Promise((resolve, reject) => {
     const img = document.createElement('img');
     img.crossOrigin = 'anonymous';
@@ -210,11 +244,7 @@ const wrapText = (
 // Main Component
 // ============================================================================
 
-export default function QuoteReelModal({
-  isOpen,
-  onClose,
-  quote,
-}: QuoteReelModalProps) {
+export default function QuoteReelModal({ isOpen, onClose, quote }: QuoteReelModalProps) {
   // State
   const [images, setImages] = useState<string[]>([]);
   const [isMobile, setIsMobile] = useState(false);
@@ -232,7 +262,7 @@ export default function QuoteReelModal({
   const [showTextSettings, setShowTextSettings] = useState(false);
   // Custom quote text for when creating reel without pre-defined quote
   const [customQuoteText, setCustomQuoteText] = useState('');
-  
+
   // Video mode state
   const [reelMode, setReelMode] = useState<ReelMode>('images');
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
@@ -240,7 +270,6 @@ export default function QuoteReelModal({
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  
 
   // Refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -260,16 +289,16 @@ export default function QuoteReelModal({
       // Detect mobile device
       const mobile = isMobileDevice();
       setIsMobile(mobile);
-      
+
       // Set appropriate quality for device
       const maxQuality = getMaxQualityForDevice();
-      
+
       setImages([]);
       setCurrentImageIndex(0);
       setIsPlaying(false);
       setIsGenerating(false);
       setGenerationProgress(0);
-      setSettings(prev => ({
+      setSettings((prev) => ({
         ...prev,
         quality: maxQuality === '4k' ? '4k' : '1080p', // Default to best available
       }));
@@ -308,95 +337,105 @@ export default function QuoteReelModal({
   }, [isPlaying, images.length, settings.duration]);
 
   // Handle image upload
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  const handleImageUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files) return;
 
-    const remainingSlots = MAX_IMAGES - images.length;
-    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+      const remainingSlots = MAX_IMAGES - images.length;
+      const filesToProcess = Array.from(files).slice(0, remainingSlots);
 
-    filesToProcess.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setImages((prev) => {
-          if (prev.length < MAX_IMAGES) {
-            return [...prev, result];
-          }
-          return prev;
-        });
-      };
-      reader.readAsDataURL(file);
-    });
+      filesToProcess.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const result = event.target?.result as string;
+          setImages((prev) => {
+            if (prev.length < MAX_IMAGES) {
+              return [...prev, result];
+            }
+            return prev;
+          });
+        };
+        reader.readAsDataURL(file);
+      });
 
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, [images.length]);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [images.length]
+  );
 
   // Handle video upload
-  const handleVideoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleVideoUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    setVideoError(null);
-    setIsVideoPlaying(false);
+      setVideoError(null);
+      setIsVideoPlaying(false);
 
-    // Check file size (max 100MB)
-    const fileSizeMB = file.size / (1024 * 1024);
-    if (fileSizeMB > MAX_VIDEO_SIZE_MB) {
-      setVideoError(`Video must be less than ${MAX_VIDEO_SIZE_MB}MB. Your file is ${fileSizeMB.toFixed(1)}MB.`);
-      return;
-    }
+      // Check file size (max 100MB)
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > MAX_VIDEO_SIZE_MB) {
+        setVideoError(
+          `Video must be less than ${MAX_VIDEO_SIZE_MB}MB. Your file is ${fileSizeMB.toFixed(1)}MB.`
+        );
+        return;
+      }
 
-    // Check file type
-    if (!file.type.startsWith('video/')) {
-      setVideoError('Please upload a valid video file.');
-      return;
-    }
+      // Check file type
+      if (!file.type.startsWith('video/')) {
+        setVideoError('Please upload a valid video file.');
+        return;
+      }
 
-    // Revoke previous video URL if exists
-    if (uploadedVideo) {
-      URL.revokeObjectURL(uploadedVideo);
-    }
+      // Revoke previous video URL if exists
+      if (uploadedVideo) {
+        URL.revokeObjectURL(uploadedVideo);
+      }
 
-    // Create object URL for preview
-    const videoUrl = URL.createObjectURL(file);
-    
-    // Create a temporary video element to check duration
-    const tempVideo = document.createElement('video');
-    tempVideo.preload = 'metadata';
-    
-    tempVideo.onloadedmetadata = () => {
-      if (tempVideo.duration > MAX_VIDEO_DURATION) {
-        setVideoError(`Video must be ${MAX_VIDEO_DURATION} seconds or less. Your video is ${tempVideo.duration.toFixed(1)} seconds.`);
+      // Create object URL for preview
+      const videoUrl = URL.createObjectURL(file);
+
+      // Create a temporary video element to check duration
+      const tempVideo = document.createElement('video');
+      tempVideo.preload = 'metadata';
+
+      tempVideo.onloadedmetadata = () => {
+        if (tempVideo.duration > MAX_VIDEO_DURATION) {
+          setVideoError(
+            `Video must be ${MAX_VIDEO_DURATION} seconds or less. Your video is ${tempVideo.duration.toFixed(1)} seconds.`
+          );
+          URL.revokeObjectURL(videoUrl);
+          setUploadedVideo(null);
+          setUploadedVideoFile(null);
+          return;
+        }
+
+        setVideoDuration(tempVideo.duration);
+        setUploadedVideo(videoUrl);
+        setUploadedVideoFile(file);
+        setVideoError(null);
+      };
+
+      tempVideo.onerror = () => {
+        setVideoError('Failed to load video. Please try a different file.');
         URL.revokeObjectURL(videoUrl);
         setUploadedVideo(null);
         setUploadedVideoFile(null);
-        return;
-      }
-      
-      setVideoDuration(tempVideo.duration);
-      setUploadedVideo(videoUrl);
-      setUploadedVideoFile(file);
-      setVideoError(null);
-    };
-    
-    tempVideo.onerror = () => {
-      setVideoError('Failed to load video. Please try a different file.');
-      URL.revokeObjectURL(videoUrl);
-      setUploadedVideo(null);
-      setUploadedVideoFile(null);
-    };
-    
-    tempVideo.src = videoUrl;
+      };
 
-    // Reset input
-    if (videoInputRef.current) {
-      videoInputRef.current.value = '';
-    }
-  }, [uploadedVideo]);
+      tempVideo.src = videoUrl;
+
+      // Reset input
+      if (videoInputRef.current) {
+        videoInputRef.current.value = '';
+      }
+    },
+    [uploadedVideo]
+  );
 
   // Remove uploaded video
   const removeVideo = useCallback(() => {
@@ -414,12 +453,13 @@ export default function QuoteReelModal({
   const toggleVideoPlayback = useCallback(() => {
     const video = videoPreviewRef.current;
     if (!video || !uploadedVideo) return;
-    
+
     if (isVideoPlaying) {
       video.pause();
     } else {
       // Make sure video is ready to play
-      if (video.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+      if (video.readyState >= 2) {
+        // HAVE_CURRENT_DATA or higher
         video.play().catch((error) => {
           console.error('Video playback error:', error);
           setVideoError('Failed to play video. Try a different format (MP4 recommended).');
@@ -440,334 +480,367 @@ export default function QuoteReelModal({
   }, [isVideoPlaying, uploadedVideo]);
 
   // Remove image
-  const removeImage = useCallback((index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    if (currentImageIndex >= index && currentImageIndex > 0) {
-      setCurrentImageIndex((prev) => prev - 1);
-    }
-  }, [currentImageIndex]);
+  const removeImage = useCallback(
+    (index: number) => {
+      setImages((prev) => prev.filter((_, i) => i !== index));
+      if (currentImageIndex >= index && currentImageIndex > 0) {
+        setCurrentImageIndex((prev) => prev - 1);
+      }
+    },
+    [currentImageIndex]
+  );
 
   // Reorder images
-  const moveImage = useCallback((fromIndex: number, direction: 'left' | 'right') => {
-    const toIndex = direction === 'left' ? fromIndex - 1 : fromIndex + 1;
-    if (toIndex < 0 || toIndex >= images.length) return;
+  const moveImage = useCallback(
+    (fromIndex: number, direction: 'left' | 'right') => {
+      const toIndex = direction === 'left' ? fromIndex - 1 : fromIndex + 1;
+      if (toIndex < 0 || toIndex >= images.length) return;
 
-    setImages((prev) => {
-      const newImages = [...prev];
-      [newImages[fromIndex], newImages[toIndex]] = [newImages[toIndex], newImages[fromIndex]];
-      return newImages;
-    });
-  }, [images.length]);
+      setImages((prev) => {
+        const newImages = [...prev];
+        [newImages[fromIndex], newImages[toIndex]] = [newImages[toIndex], newImages[fromIndex]];
+        return newImages;
+      });
+    },
+    [images.length]
+  );
 
   // Draw frame on canvas
-  const drawFrame = useCallback(async (
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
-    imageIndex: number,
-    transitionProgress: number = 1, // 0-1, 1 = fully visible
-    nextImageIndex?: number
-  ) => {
-    const img = await loadImage(images[imageIndex]);
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height);
+  const drawFrame = useCallback(
+    async (
+      ctx: CanvasRenderingContext2D,
+      width: number,
+      height: number,
+      imageIndex: number,
+      transitionProgress: number = 1, // 0-1, 1 = fully visible
+      nextImageIndex?: number
+    ) => {
+      const img = await loadImage(images[imageIndex]);
 
-    // Draw background image (cover fit)
-    const imgRatio = img.width / img.height;
-    const canvasRatio = width / height;
-    let drawWidth, drawHeight, drawX, drawY;
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
 
-    if (imgRatio > canvasRatio) {
-      drawHeight = height;
-      drawWidth = height * imgRatio;
-      drawX = (width - drawWidth) / 2;
-      drawY = 0;
-    } else {
-      drawWidth = width;
-      drawHeight = width / imgRatio;
-      drawX = 0;
-      drawY = (height - drawHeight) / 2;
-    }
+      // Draw background image (cover fit)
+      const imgRatio = img.width / img.height;
+      const canvasRatio = width / height;
+      let drawWidth, drawHeight, drawX, drawY;
 
-    // Handle transitions
-    ctx.save();
-    
-    if (settings.transition === 'fade' && transitionProgress < 1 && nextImageIndex !== undefined) {
-      // Draw current image
-      ctx.globalAlpha = 1 - transitionProgress;
-      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-      
-      // Draw next image
-      const nextImg = await loadImage(images[nextImageIndex]);
-      const nextImgRatio = nextImg.width / nextImg.height;
-      let nextDrawWidth, nextDrawHeight, nextDrawX, nextDrawY;
-      
-      if (nextImgRatio > canvasRatio) {
-        nextDrawHeight = height;
-        nextDrawWidth = height * nextImgRatio;
-        nextDrawX = (width - nextDrawWidth) / 2;
-        nextDrawY = 0;
+      if (imgRatio > canvasRatio) {
+        drawHeight = height;
+        drawWidth = height * imgRatio;
+        drawX = (width - drawWidth) / 2;
+        drawY = 0;
       } else {
-        nextDrawWidth = width;
-        nextDrawHeight = width / nextImgRatio;
-        nextDrawX = 0;
-        nextDrawY = (height - nextDrawHeight) / 2;
-      }
-      
-      ctx.globalAlpha = transitionProgress;
-      ctx.drawImage(nextImg, nextDrawX, nextDrawY, nextDrawWidth, nextDrawHeight);
-    } else if (settings.transition === 'zoom' && transitionProgress < 1) {
-      const scale = 1 + (transitionProgress * 0.1);
-      ctx.translate(width / 2, height / 2);
-      ctx.scale(scale, scale);
-      ctx.translate(-width / 2, -height / 2);
-      ctx.globalAlpha = 1 - transitionProgress;
-      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-    } else if (settings.transition === 'slide' && transitionProgress < 1 && nextImageIndex !== undefined) {
-      // Slide current image out
-      const offset = width * transitionProgress;
-      ctx.drawImage(img, drawX - offset, drawY, drawWidth, drawHeight);
-      
-      // Slide next image in
-      const nextImg = await loadImage(images[nextImageIndex]);
-      ctx.drawImage(nextImg, drawX + width - offset, drawY, drawWidth, drawHeight);
-    } else {
-      ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-    }
-    
-    ctx.restore();
-
-    // Get the actual quote text to display (from prop or custom input)
-    const displayQuoteText = customQuoteText.trim();
-    
-    // Draw overlay gradient and text (only if showing text and have content)
-    if (textSettings.showQuote && displayQuoteText) {
-      const gradient = ctx.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, 'rgba(0,0,0,0.3)');
-      gradient.addColorStop(0.4, 'rgba(0,0,0,0.1)');
-      gradient.addColorStop(0.6, 'rgba(0,0,0,0.1)');
-      gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-
-      // Calculate base text position based on settings
-      let baseTextY: number;
-      switch (textSettings.position) {
-        case 'top':
-          baseTextY = height * 0.25;
-          break;
-        case 'bottom':
-          baseTextY = height * 0.70;
-          break;
-        default: // center
-          baseTextY = height * 0.45;
+        drawWidth = width;
+        drawHeight = width / imgRatio;
+        drawX = 0;
+        drawY = (height - drawHeight) / 2;
       }
 
-      // Set text alignment and base X position
-      let baseTextX: number;
-      switch (textSettings.alignment) {
-        case 'left':
-          ctx.textAlign = 'left';
-          baseTextX = width * 0.08;
-          break;
-        case 'right':
-          ctx.textAlign = 'right';
-          baseTextX = width * 0.92;
-          break;
-        default: // center
-          ctx.textAlign = 'center';
-          baseTextX = width / 2;
-      }
-      
-      // Apply fine position offsets
-      const textX = baseTextX + (textSettings.offsetX / 100) * width;
-      const textY = baseTextY + (textSettings.offsetY / 100) * height;
-      
-      ctx.textBaseline = 'middle';
+      // Handle transitions
+      ctx.save();
 
-      // Build font string with formatting
-      const baseFontSize = Math.floor(width * 0.045);
-      const fontSize = Math.floor(baseFontSize * (textSettings.fontSize / 100));
-      const fontWeight = textSettings.isBold ? '700' : '600';
-      const fontStyle = textSettings.isItalic ? 'italic' : 'normal';
-      ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${textSettings.fontFamily}", serif`;
-      ctx.fillStyle = textSettings.textColor;
-      
-      if (textSettings.shadowEnabled) {
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-      }
-      
-      const maxTextWidth = width * 0.85;
-      const lineHeight = fontSize * 1.5;
-      
-      const linesDrawn = wrapText(ctx, displayQuoteText, textX, textY, maxTextWidth, lineHeight);
-      
-      // Draw underline if enabled
-      if (textSettings.isUnderline && linesDrawn > 0) {
-        ctx.save();
-        ctx.strokeStyle = textSettings.textColor;
-        ctx.lineWidth = Math.max(2, fontSize * 0.05);
-        const underlineY = textY + (linesDrawn * lineHeight / 2) + fontSize * 0.2;
-        const underlineWidth = Math.min(maxTextWidth, ctx.measureText(displayQuoteText).width);
-        let underlineX = textX;
-        if (textSettings.alignment === 'center') {
-          underlineX = textX - underlineWidth / 2;
-        } else if (textSettings.alignment === 'right') {
-          underlineX = textX - underlineWidth;
+      if (
+        settings.transition === 'fade' &&
+        transitionProgress < 1 &&
+        nextImageIndex !== undefined
+      ) {
+        // Draw current image
+        ctx.globalAlpha = 1 - transitionProgress;
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+
+        // Draw next image
+        const nextImg = await loadImage(images[nextImageIndex]);
+        const nextImgRatio = nextImg.width / nextImg.height;
+        let nextDrawWidth, nextDrawHeight, nextDrawX, nextDrawY;
+
+        if (nextImgRatio > canvasRatio) {
+          nextDrawHeight = height;
+          nextDrawWidth = height * nextImgRatio;
+          nextDrawX = (width - nextDrawWidth) / 2;
+          nextDrawY = 0;
+        } else {
+          nextDrawWidth = width;
+          nextDrawHeight = width / nextImgRatio;
+          nextDrawX = 0;
+          nextDrawY = (height - nextDrawHeight) / 2;
         }
-        ctx.beginPath();
-        ctx.moveTo(underlineX, underlineY);
-        ctx.lineTo(underlineX + underlineWidth, underlineY);
-        ctx.stroke();
-        ctx.restore();
+
+        ctx.globalAlpha = transitionProgress;
+        ctx.drawImage(nextImg, nextDrawX, nextDrawY, nextDrawWidth, nextDrawHeight);
+      } else if (settings.transition === 'zoom' && transitionProgress < 1) {
+        const scale = 1 + transitionProgress * 0.1;
+        ctx.translate(width / 2, height / 2);
+        ctx.scale(scale, scale);
+        ctx.translate(-width / 2, -height / 2);
+        ctx.globalAlpha = 1 - transitionProgress;
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+      } else if (
+        settings.transition === 'slide' &&
+        transitionProgress < 1 &&
+        nextImageIndex !== undefined
+      ) {
+        // Slide current image out
+        const offset = width * transitionProgress;
+        ctx.drawImage(img, drawX - offset, drawY, drawWidth, drawHeight);
+
+        // Slide next image in
+        const nextImg = await loadImage(images[nextImageIndex]);
+        ctx.drawImage(nextImg, drawX + width - offset, drawY, drawWidth, drawHeight);
+      } else {
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
       }
-      
-      // Reset shadow
+
+      ctx.restore();
+
+      // Get the actual quote text to display (from prop or custom input)
+      const displayQuoteText = customQuoteText.trim();
+
+      // Draw overlay gradient and text (only if showing text and have content)
+      if (textSettings.showQuote && displayQuoteText) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, 'rgba(0,0,0,0.3)');
+        gradient.addColorStop(0.4, 'rgba(0,0,0,0.1)');
+        gradient.addColorStop(0.6, 'rgba(0,0,0,0.1)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // Calculate base text position based on settings
+        let baseTextY: number;
+        switch (textSettings.position) {
+          case 'top':
+            baseTextY = height * 0.25;
+            break;
+          case 'bottom':
+            baseTextY = height * 0.7;
+            break;
+          default: // center
+            baseTextY = height * 0.45;
+        }
+
+        // Set text alignment and base X position
+        let baseTextX: number;
+        switch (textSettings.alignment) {
+          case 'left':
+            ctx.textAlign = 'left';
+            baseTextX = width * 0.08;
+            break;
+          case 'right':
+            ctx.textAlign = 'right';
+            baseTextX = width * 0.92;
+            break;
+          default: // center
+            ctx.textAlign = 'center';
+            baseTextX = width / 2;
+        }
+
+        // Apply fine position offsets
+        const textX = baseTextX + (textSettings.offsetX / 100) * width;
+        const textY = baseTextY + (textSettings.offsetY / 100) * height;
+
+        ctx.textBaseline = 'middle';
+
+        // Build font string with formatting
+        const baseFontSize = Math.floor(width * 0.045);
+        const fontSize = Math.floor(baseFontSize * (textSettings.fontSize / 100));
+        const fontWeight = textSettings.isBold ? '700' : '600';
+        const fontStyle = textSettings.isItalic ? 'italic' : 'normal';
+        ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${textSettings.fontFamily}", serif`;
+        ctx.fillStyle = textSettings.textColor;
+
+        if (textSettings.shadowEnabled) {
+          ctx.shadowColor = 'rgba(0,0,0,0.5)';
+          ctx.shadowBlur = 10;
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+        }
+
+        const maxTextWidth = width * 0.85;
+        const lineHeight = fontSize * 1.5;
+
+        const linesDrawn = wrapText(ctx, displayQuoteText, textX, textY, maxTextWidth, lineHeight);
+
+        // Draw underline if enabled
+        if (textSettings.isUnderline && linesDrawn > 0) {
+          ctx.save();
+          ctx.strokeStyle = textSettings.textColor;
+          ctx.lineWidth = Math.max(2, fontSize * 0.05);
+          const underlineY = textY + (linesDrawn * lineHeight) / 2 + fontSize * 0.2;
+          const underlineWidth = Math.min(maxTextWidth, ctx.measureText(displayQuoteText).width);
+          let underlineX = textX;
+          if (textSettings.alignment === 'center') {
+            underlineX = textX - underlineWidth / 2;
+          } else if (textSettings.alignment === 'right') {
+            underlineX = textX - underlineWidth;
+          }
+          ctx.beginPath();
+          ctx.moveTo(underlineX, underlineY);
+          ctx.lineTo(underlineX + underlineWidth, underlineY);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Reset shadow
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+      }
+
+      // Logo/Watermark - Bottom Right - MATCH PREVIEW EXACTLY
+      // Preview: 240px width, logo=16px (6.67%), text=9px (3.75%), padding=12px (5%)
+      const logoSize = Math.floor(width * 0.0667); // 16/240 = 6.67%
+      const logoFontSize = Math.floor(width * 0.0375); // 9/240 = 3.75%
+      const paddingX = Math.floor(width * 0.05); // 12/240 = 5%
+      const paddingY = Math.floor(height * 0.028); // 12/426 = 2.8%
+      const gapSize = Math.floor(width * 0.025); // 6/240 = 2.5%
+
+      ctx.font = `600 ${logoFontSize}px "Arial", sans-serif`;
+      const textWidthLogo = ctx.measureText('QuoteSwipe').width;
+
+      // Position from bottom-right corner (same as preview: bottom-3 right-3)
+      const logoX = width - paddingX - textWidthLogo - gapSize - logoSize;
+      const logoY = height - paddingY - logoSize;
+
+      // Draw logo image
+      try {
+        const logoImg = await loadImage('/logo.svg');
+        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+      } catch (e) {
+        // Fallback: draw a simple circle if logo fails to load
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath();
+        ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw "QuoteSwipe" text (right of logo with gap, vertically centered with logo)
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('QuoteSwipe', logoX + logoSize + gapSize, logoY + logoSize / 2);
+
+      // Reset
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
-    }
+    },
+    [images, settings.transition, textSettings, customQuoteText]
+  );
 
-    // Logo/Watermark - Bottom Right - MATCH PREVIEW EXACTLY
-    // Preview: 240px width, logo=16px (6.67%), text=9px (3.75%), padding=12px (5%)
-    const logoSize = Math.floor(width * 0.0667);  // 16/240 = 6.67%
-    const logoFontSize = Math.floor(width * 0.0375);  // 9/240 = 3.75%
-    const paddingX = Math.floor(width * 0.05);  // 12/240 = 5%
-    const paddingY = Math.floor(height * 0.028);  // 12/426 = 2.8%
-    const gapSize = Math.floor(width * 0.025);  // 6/240 = 2.5%
-    
-    ctx.font = `600 ${logoFontSize}px "Arial", sans-serif`;
-    const textWidthLogo = ctx.measureText('QuoteSwipe').width;
-    
-    // Position from bottom-right corner (same as preview: bottom-3 right-3)
-    const logoX = width - paddingX - textWidthLogo - gapSize - logoSize;
-    const logoY = height - paddingY - logoSize;
-    
-    // Draw logo image
-    try {
-      const logoImg = await loadImage('/logo.svg');
-      ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-    } catch (e) {
-      // Fallback: draw a simple circle if logo fails to load
+  // Helper function to create overlay canvas
+  const createOverlayCanvas = useCallback(
+    (videoWidth: number, videoHeight: number) => {
+      const overlayCanvas = document.createElement('canvas');
+      overlayCanvas.width = videoWidth;
+      overlayCanvas.height = videoHeight;
+      const ctx = overlayCanvas.getContext('2d', { alpha: true })!;
+      ctx.clearRect(0, 0, videoWidth, videoHeight);
+
+      const displayQuoteText = customQuoteText.trim();
+
+      // Draw gradient for text readability
+      if (textSettings.showQuote && displayQuoteText) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, videoHeight);
+        gradient.addColorStop(0, 'rgba(0,0,0,0.25)');
+        gradient.addColorStop(0.35, 'rgba(0,0,0,0.05)');
+        gradient.addColorStop(0.65, 'rgba(0,0,0,0.05)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0.35)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, videoWidth, videoHeight);
+
+        // Text settings
+        const baseFontSize = Math.floor(videoWidth * 0.045);
+        const fontSize = Math.floor(baseFontSize * (textSettings.fontSize / 100));
+        const fontWeight = textSettings.isBold ? '700' : '600';
+        const fontStyleVal = textSettings.isItalic ? 'italic' : 'normal';
+        const fontString = `${fontStyleVal} ${fontWeight} ${fontSize}px "${textSettings.fontFamily}", serif`;
+        const maxTextWidth = videoWidth * 0.85;
+        const lineHeight = fontSize * 1.5;
+
+        let baseTextY: number;
+        switch (textSettings.position) {
+          case 'top':
+            baseTextY = videoHeight * 0.25;
+            break;
+          case 'bottom':
+            baseTextY = videoHeight * 0.7;
+            break;
+          default:
+            baseTextY = videoHeight * 0.45;
+        }
+
+        let textAlignValue: CanvasTextAlign;
+        let baseTextX: number;
+        switch (textSettings.alignment) {
+          case 'left':
+            textAlignValue = 'left';
+            baseTextX = videoWidth * 0.08;
+            break;
+          case 'right':
+            textAlignValue = 'right';
+            baseTextX = videoWidth * 0.92;
+            break;
+          default:
+            textAlignValue = 'center';
+            baseTextX = videoWidth / 2;
+        }
+
+        const textX = baseTextX + (textSettings.offsetX / 100) * videoWidth;
+        const textY = baseTextY + (textSettings.offsetY / 100) * videoHeight;
+
+        ctx.font = fontString;
+        ctx.textAlign = textAlignValue;
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = textSettings.textColor;
+
+        if (textSettings.shadowEnabled) {
+          ctx.shadowColor = 'rgba(0,0,0,0.7)';
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+        }
+
+        wrapText(ctx, displayQuoteText, textX, textY, maxTextWidth, lineHeight);
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+      }
+
+      // Draw QuoteSwipe watermark
+      const logoFontSize = Math.floor(videoWidth * 0.028);
+      const logoSize = Math.floor(videoWidth * 0.055);
+      const paddingX = Math.floor(videoWidth * 0.04);
+      const paddingY = Math.floor(videoHeight * 0.025);
+      const gapSize = Math.floor(videoWidth * 0.02);
+
+      ctx.font = `600 ${logoFontSize}px Arial, sans-serif`;
+      const textWidthLogo = ctx.measureText('QuoteSwipe').width;
+      const logoX = videoWidth - paddingX - textWidthLogo - gapSize - logoSize;
+      const logoY = videoHeight - paddingY - logoSize;
+
+      // Logo circle
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.beginPath();
       ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
       ctx.fill();
-    }
-    
-    // Draw "QuoteSwipe" text (right of logo with gap, vertically centered with logo)
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('QuoteSwipe', logoX + logoSize + gapSize, logoY + logoSize / 2);
-    
-    // Reset
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-  }, [images, settings.transition, textSettings, customQuoteText]);
 
-  // Helper function to create overlay canvas
-  const createOverlayCanvas = useCallback((videoWidth: number, videoHeight: number) => {
-    const overlayCanvas = document.createElement('canvas');
-    overlayCanvas.width = videoWidth;
-    overlayCanvas.height = videoHeight;
-    const ctx = overlayCanvas.getContext('2d', { alpha: true })!;
-    ctx.clearRect(0, 0, videoWidth, videoHeight);
-
-    const displayQuoteText = customQuoteText.trim();
-
-    // Draw gradient for text readability
-    if (textSettings.showQuote && displayQuoteText) {
-      const gradient = ctx.createLinearGradient(0, 0, 0, videoHeight);
-      gradient.addColorStop(0, 'rgba(0,0,0,0.25)');
-      gradient.addColorStop(0.35, 'rgba(0,0,0,0.05)');
-      gradient.addColorStop(0.65, 'rgba(0,0,0,0.05)');
-      gradient.addColorStop(1, 'rgba(0,0,0,0.35)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, videoWidth, videoHeight);
-
-      // Text settings
-      const baseFontSize = Math.floor(videoWidth * 0.045);
-      const fontSize = Math.floor(baseFontSize * (textSettings.fontSize / 100));
-      const fontWeight = textSettings.isBold ? '700' : '600';
-      const fontStyleVal = textSettings.isItalic ? 'italic' : 'normal';
-      const fontString = `${fontStyleVal} ${fontWeight} ${fontSize}px "${textSettings.fontFamily}", serif`;
-      const maxTextWidth = videoWidth * 0.85;
-      const lineHeight = fontSize * 1.5;
-
-      let baseTextY: number;
-      switch (textSettings.position) {
-        case 'top': baseTextY = videoHeight * 0.25; break;
-        case 'bottom': baseTextY = videoHeight * 0.70; break;
-        default: baseTextY = videoHeight * 0.45;
-      }
-
-      let textAlignValue: CanvasTextAlign;
-      let baseTextX: number;
-      switch (textSettings.alignment) {
-        case 'left': textAlignValue = 'left'; baseTextX = videoWidth * 0.08; break;
-        case 'right': textAlignValue = 'right'; baseTextX = videoWidth * 0.92; break;
-        default: textAlignValue = 'center'; baseTextX = videoWidth / 2;
-      }
-
-      const textX = baseTextX + (textSettings.offsetX / 100) * videoWidth;
-      const textY = baseTextY + (textSettings.offsetY / 100) * videoHeight;
-
-      ctx.font = fontString;
-      ctx.textAlign = textAlignValue;
+      // Sparkle emoji
+      ctx.font = `${logoSize * 0.55}px Arial`;
+      ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = textSettings.textColor;
+      ctx.fillText('✨', logoX + logoSize / 2, logoY + logoSize / 2);
 
-      if (textSettings.shadowEnabled) {
-        ctx.shadowColor = 'rgba(0,0,0,0.7)';
-        ctx.shadowBlur = 12;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-      }
+      // QuoteSwipe text
+      ctx.font = `600 ${logoFontSize}px Arial, sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('QuoteSwipe', logoX + logoSize + gapSize, logoY + logoSize / 2);
 
-      wrapText(ctx, displayQuoteText, textX, textY, maxTextWidth, lineHeight);
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-    }
-
-    // Draw QuoteSwipe watermark
-    const logoFontSize = Math.floor(videoWidth * 0.028);
-    const logoSize = Math.floor(videoWidth * 0.055);
-    const paddingX = Math.floor(videoWidth * 0.04);
-    const paddingY = Math.floor(videoHeight * 0.025);
-    const gapSize = Math.floor(videoWidth * 0.02);
-
-    ctx.font = `600 ${logoFontSize}px Arial, sans-serif`;
-    const textWidthLogo = ctx.measureText('QuoteSwipe').width;
-    const logoX = videoWidth - paddingX - textWidthLogo - gapSize - logoSize;
-    const logoY = videoHeight - paddingY - logoSize;
-
-    // Logo circle
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.beginPath();
-    ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Sparkle emoji
-    ctx.font = `${logoSize * 0.55}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('✨', logoX + logoSize / 2, logoY + logoSize / 2);
-
-    // QuoteSwipe text
-    ctx.font = `600 ${logoFontSize}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('QuoteSwipe', logoX + logoSize + gapSize, logoY + logoSize / 2);
-
-    return overlayCanvas;
-  }, [textSettings, customQuoteText]);
+      return overlayCanvas;
+    },
+    [textSettings, customQuoteText]
+  );
 
   // CLIENT-SIDE VIDEO PROCESSING: Works everywhere (Vercel, mobile, desktop)
   // Optimized for maximum quality with pre-rendered overlay
@@ -785,7 +858,7 @@ export default function QuoteReelModal({
       sourceVideo.muted = true;
       sourceVideo.playsInline = true;
       sourceVideo.crossOrigin = 'anonymous';
-      
+
       await new Promise<void>((resolve, reject) => {
         sourceVideo.oncanplaythrough = () => resolve();
         sourceVideo.onerror = () => reject(new Error('Failed to load video'));
@@ -807,9 +880,9 @@ export default function QuoteReelModal({
       const mainCanvas = document.createElement('canvas');
       mainCanvas.width = videoWidth;
       mainCanvas.height = videoHeight;
-      const ctx = mainCanvas.getContext('2d', { 
+      const ctx = mainCanvas.getContext('2d', {
         alpha: false,
-        desynchronized: true // Better performance
+        desynchronized: true, // Better performance
       })!;
 
       // Step 4: Setup MediaRecorder with BEST quality settings
@@ -823,7 +896,7 @@ export default function QuoteReelModal({
 
       // Maximum bitrate for best quality (scales with resolution)
       const bitrate = Math.min(25000000, videoWidth * videoHeight * 12); // Up to 25 Mbps
-      
+
       const stream = mainCanvas.captureStream(30);
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType,
@@ -843,14 +916,14 @@ export default function QuoteReelModal({
           try {
             const blob = new Blob(chunks, { type: mimeType });
             const url = URL.createObjectURL(blob);
-            
+
             const a = document.createElement('a');
             a.href = url;
             a.download = `quote-reel-${Date.now()}.webm`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            
+
             setTimeout(() => URL.revokeObjectURL(url), 1000);
             resolve();
           } catch (err) {
@@ -868,7 +941,7 @@ export default function QuoteReelModal({
 
         let isRecording = true;
         let lastTime = 0;
-        
+
         // Use requestVideoFrameCallback if available (Chrome/Edge) for better sync
         // Otherwise fallback to requestAnimationFrame
         const hasVideoFrameCallback = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
@@ -884,14 +957,26 @@ export default function QuoteReelModal({
             if (!isRecording) return;
             drawFrame();
             updateProgress();
-            (sourceVideo as HTMLVideoElement & { requestVideoFrameCallback: (cb: (now: number, metadata: { mediaTime: number }) => void) => void }).requestVideoFrameCallback(onVideoFrame);
+            (
+              sourceVideo as HTMLVideoElement & {
+                requestVideoFrameCallback: (
+                  cb: (now: number, metadata: { mediaTime: number }) => void
+                ) => void;
+              }
+            ).requestVideoFrameCallback(onVideoFrame);
           };
-          (sourceVideo as HTMLVideoElement & { requestVideoFrameCallback: (cb: (now: number, metadata: { mediaTime: number }) => void) => void }).requestVideoFrameCallback(onVideoFrame);
+          (
+            sourceVideo as HTMLVideoElement & {
+              requestVideoFrameCallback: (
+                cb: (now: number, metadata: { mediaTime: number }) => void
+              ) => void;
+            }
+          ).requestVideoFrameCallback(onVideoFrame);
         } else {
           // Fallback: requestAnimationFrame (still good quality)
           const renderLoop = () => {
             if (!isRecording) return;
-            
+
             // Only draw if time has changed (avoid duplicate frames)
             if (sourceVideo.currentTime !== lastTime) {
               drawFrame();
@@ -920,7 +1005,6 @@ export default function QuoteReelModal({
 
       setIsGenerating(false);
       setGenerationProgress(100);
-
     } catch (error) {
       console.error('Video generation error:', error);
       setIsGenerating(false);
@@ -933,7 +1017,7 @@ export default function QuoteReelModal({
     if (reelMode === 'video') {
       return generateVideoFromUpload();
     }
-    
+
     if (images.length === 0) return;
 
     setIsGenerating(true);
@@ -941,9 +1025,10 @@ export default function QuoteReelModal({
 
     // On mobile, enforce max 1080p to prevent memory crashes
     const maxQuality = getMaxQualityForDevice();
-    const effectiveQuality = settings.quality === '4k' && maxQuality !== '4k' ? '1080p' : settings.quality;
+    const effectiveQuality =
+      settings.quality === '4k' && maxQuality !== '4k' ? '1080p' : settings.quality;
     const quality = QUALITY_OPTIONS[effectiveQuality];
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -986,7 +1071,7 @@ export default function QuoteReelModal({
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
-        
+
         // Download
         const a = document.createElement('a');
         a.href = url;
@@ -994,7 +1079,7 @@ export default function QuoteReelModal({
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        
+
         // Cleanup
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         clearImageCache(); // Free memory after generation
@@ -1016,25 +1101,37 @@ export default function QuoteReelModal({
       for (let frame = 0; frame < totalFrames; frame++) {
         const imageIndex = Math.floor(frame / framesPerImage) % images.length;
         const frameInImage = frame % framesPerImage;
-        
+
         // Check if we're in transition period
-        const isTransitioning = frameInImage >= (framesPerImage - transitionFrames);
+        const isTransitioning = frameInImage >= framesPerImage - transitionFrames;
         let transitionProgress = 0;
         let nextImageIndex: number | undefined;
 
-        if (isTransitioning && settings.transition !== 'none' && settings.transition !== 'default') {
-          transitionProgress = (frameInImage - (framesPerImage - transitionFrames)) / transitionFrames;
+        if (
+          isTransitioning &&
+          settings.transition !== 'none' &&
+          settings.transition !== 'default'
+        ) {
+          transitionProgress =
+            (frameInImage - (framesPerImage - transitionFrames)) / transitionFrames;
           nextImageIndex = (imageIndex + 1) % images.length;
         }
 
-        await drawFrame(ctx, quality.width, quality.height, imageIndex, transitionProgress, nextImageIndex);
-        
+        await drawFrame(
+          ctx,
+          quality.width,
+          quality.height,
+          imageIndex,
+          transitionProgress,
+          nextImageIndex
+        );
+
         // Update progress (10% for loading, 90% for rendering)
         setGenerationProgress(10 + Math.floor((frame / totalFrames) * 90));
 
         // Wait for next frame - use requestAnimationFrame for better performance
         await new Promise((resolve) => setTimeout(resolve, 1000 / fps));
-        
+
         // Periodic memory cleanup on mobile (every 30 frames = 1 second)
         if (isMobile && frame > 0 && frame % 30 === 0) {
           ctx.clearRect(0, 0, quality.width, quality.height);
@@ -1054,10 +1151,7 @@ export default function QuoteReelModal({
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-md"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative w-full max-w-4xl mx-4 bg-white dark:bg-stone-900 rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -1076,19 +1170,18 @@ export default function QuoteReelModal({
                   Create {textSettings.showQuote && customQuoteText.trim() ? 'Quote ' : ''}Reel
                 </h2>
                 <p className="text-sm text-stone-500 dark:text-stone-400">
-                  {reelMode === 'images' 
+                  {reelMode === 'images'
                     ? `${images.length} images • ${totalDuration.toFixed(1)}s video`
-                    : uploadedVideo 
+                    : uploadedVideo
                       ? `Video • ${videoDuration.toFixed(1)}s`
-                      : 'No video uploaded'
-                  }
+                      : 'No video uploaded'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {/* Toggle Quote Mode */}
               <button
-                onClick={() => setTextSettings(s => ({ ...s, showQuote: !s.showQuote }))}
+                onClick={() => setTextSettings((s) => ({ ...s, showQuote: !s.showQuote }))}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   textSettings.showQuote
                     ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
@@ -1097,7 +1190,9 @@ export default function QuoteReelModal({
                 title={textSettings.showQuote ? 'Click to hide quote' : 'Click to show quote'}
               >
                 {textSettings.showQuote ? <Eye size={16} /> : <EyeOff size={16} />}
-                <span className="hidden sm:inline">{textSettings.showQuote ? 'With Text' : 'No Text'}</span>
+                <span className="hidden sm:inline">
+                  {textSettings.showQuote ? 'With Text' : 'No Text'}
+                </span>
               </button>
               <button
                 onClick={onClose}
@@ -1228,10 +1323,15 @@ export default function QuoteReelModal({
                         onPlay={() => setIsVideoPlaying(true)}
                         onError={(e) => {
                           console.error('Video element error:', e);
-                          setVideoError('Failed to load video. Please try a different format (MP4, WebM).');
+                          setVideoError(
+                            'Failed to load video. Please try a different format (MP4, WebM).'
+                          );
                         }}
                       >
-                        <source src={uploadedVideo || ''} type={uploadedVideoFile?.type || 'video/mp4'} />
+                        <source
+                          src={uploadedVideo || ''}
+                          type={uploadedVideoFile?.type || 'video/mp4'}
+                        />
                         Your browser does not support the video tag.
                       </video>
                       {/* Play/Pause overlay */}
@@ -1258,142 +1358,142 @@ export default function QuoteReelModal({
 
               {/* Image Grid - Only show in images mode */}
               {reelMode === 'images' && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon size={16} className="text-orange-500" />
-                    <span className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-                      Background Images ({images.length})
-                    </span>
-                  </div>
-                  {images.length > 0 && (
-                    <button
-                      onClick={() => setImages([])}
-                      className="text-xs text-red-500 hover:text-red-600 font-medium"
-                    >
-                      Clear All
-                    </button>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar p-1">
-                  {/* Add Button - Always first */}
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={images.length >= MAX_IMAGES}
-                    className="aspect-[9/16] rounded-xl border-2 border-dashed border-stone-300 dark:border-stone-600 flex flex-col items-center justify-center hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Plus size={20} className="text-stone-400" />
-                    <span className="text-[10px] text-stone-400 mt-1">Add</span>
-                  </button>
-                  
-                  {/* Uploaded Images */}
-                  {images.map((img, index) => (
-                    <div key={index} className="aspect-[9/16] relative">
-                      <div className="relative w-full h-full rounded-xl overflow-hidden group">
-                        <Image
-                          src={img}
-                          alt={`Image ${index + 1}`}
-                          fill
-                          className="object-cover"
-                        />
-                        {/* Order badge */}
-                        <div className="absolute top-1 left-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{index + 1}</span>
-                        </div>
-                        {/* Actions on hover */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                          {index > 0 && (
-                            <button
-                              onClick={() => moveImage(index, 'left')}
-                              className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center"
-                            >
-                              <ChevronLeft size={14} className="text-stone-800" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => removeImage(index)}
-                            className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center"
-                          >
-                            <Trash2 size={12} className="text-white" />
-                          </button>
-                          {index < images.length - 1 && (
-                            <button
-                              onClick={() => moveImage(index, 'right')}
-                              className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center"
-                            >
-                              <ChevronRight size={14} className="text-stone-800" />
-                            </button>
-                          )}
-                        </div>
-                        {/* Current indicator */}
-                        {currentImageIndex === index && isPlaying && (
-                          <div className="absolute inset-0 border-2 border-orange-500 rounded-xl pointer-events-none" />
-                        )}
-                      </div>
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon size={16} className="text-orange-500" />
+                      <span className="text-sm font-semibold text-stone-700 dark:text-stone-300">
+                        Background Images ({images.length})
+                      </span>
                     </div>
-                  ))}
-                </div>
+                    {images.length > 0 && (
+                      <button
+                        onClick={() => setImages([])}
+                        className="text-xs text-red-500 hover:text-red-600 font-medium"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </div>
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar p-1">
+                    {/* Add Button - Always first */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={images.length >= MAX_IMAGES}
+                      className="aspect-[9/16] rounded-xl border-2 border-dashed border-stone-300 dark:border-stone-600 flex flex-col items-center justify-center hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus size={20} className="text-stone-400" />
+                      <span className="text-[10px] text-stone-400 mt-1">Add</span>
+                    </button>
+
+                    {/* Uploaded Images */}
+                    {images.map((img, index) => (
+                      <div key={index} className="aspect-[9/16] relative">
+                        <div className="relative w-full h-full rounded-xl overflow-hidden group">
+                          <Image
+                            src={img}
+                            alt={`Image ${index + 1}`}
+                            fill
+                            className="object-cover"
+                          />
+                          {/* Order badge */}
+                          <div className="absolute top-1 left-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">{index + 1}</span>
+                          </div>
+                          {/* Actions on hover */}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                            {index > 0 && (
+                              <button
+                                onClick={() => moveImage(index, 'left')}
+                                className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center"
+                              >
+                                <ChevronLeft size={14} className="text-stone-800" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => removeImage(index)}
+                              className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center"
+                            >
+                              <Trash2 size={12} className="text-white" />
+                            </button>
+                            {index < images.length - 1 && (
+                              <button
+                                onClick={() => moveImage(index, 'right')}
+                                className="w-6 h-6 rounded-full bg-white/90 flex items-center justify-center"
+                              >
+                                <ChevronRight size={14} className="text-stone-800" />
+                              </button>
+                            )}
+                          </div>
+                          {/* Current indicator */}
+                          {currentImageIndex === index && isPlaying && (
+                            <div className="absolute inset-0 border-2 border-orange-500 rounded-xl pointer-events-none" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </div>
               )}
 
               {/* Settings - For Images Mode */}
               {reelMode === 'images' && (
-              <div className="space-y-4 pt-4 border-t border-stone-200 dark:border-stone-700">
-                {/* Duration */}
-                <div>
-                  <label className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2 block">
-                    Duration per image
-                  </label>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
-                    {DURATION_OPTIONS.map((d) => (
-                      <button
-                        key={d.value}
-                        onClick={() => setSettings((s) => ({ ...s, duration: d.value }))}
-                        className={`shrink-0 py-2 px-3 rounded-xl text-xs font-medium transition-all ${
-                          settings.duration === d.value
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
-                        }`}
-                      >
-                        {d.label}
-                      </button>
-                    ))}
+                <div className="space-y-4 pt-4 border-t border-stone-200 dark:border-stone-700">
+                  {/* Duration */}
+                  <div>
+                    <label className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2 block">
+                      Duration per image
+                    </label>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                      {DURATION_OPTIONS.map((d) => (
+                        <button
+                          key={d.value}
+                          onClick={() => setSettings((s) => ({ ...s, duration: d.value }))}
+                          className={`shrink-0 py-2 px-3 rounded-xl text-xs font-medium transition-all ${
+                            settings.duration === d.value
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* Transition */}
-                <div>
-                  <label className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2 block">
-                    Transition Effect
-                  </label>
-                  <div className="flex gap-2">
-                    {TRANSITIONS.map((t) => (
-                      <button
-                        key={t.id}
-                        onClick={() => setSettings((s) => ({ ...s, transition: t.id }))}
-                        className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-                          settings.transition === t.id
-                            ? 'bg-orange-500 text-white'
-                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
-                        }`}
-                      >
-                        <span>{t.icon}</span>
-                        <span className="hidden sm:inline">{t.label}</span>
-                      </button>
-                    ))}
+                  {/* Transition */}
+                  <div>
+                    <label className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2 block">
+                      Transition Effect
+                    </label>
+                    <div className="flex gap-2">
+                      {TRANSITIONS.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setSettings((s) => ({ ...s, transition: t.id }))}
+                          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                            settings.transition === t.id
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                          }`}
+                        >
+                          <span>{t.icon}</span>
+                          <span className="hidden sm:inline">{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
               )}
 
               {/* Common Settings - Quality & Text */}
@@ -1402,8 +1502,8 @@ export default function QuoteReelModal({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-                    Video Quality
-                  </label>
+                      Video Quality
+                    </label>
                     {isMobile && (
                       <span className="text-[10px] text-orange-500 font-medium">
                         📱 Mobile optimized
@@ -1416,22 +1516,24 @@ export default function QuoteReelModal({
                       const value = QUALITY_OPTIONS[key];
                       const isDisabled = isMobile && key === '4k';
                       return (
-                      <button
-                        key={key}
-                          onClick={() => !isDisabled && setSettings((s) => ({ ...s, quality: key }))}
+                        <button
+                          key={key}
+                          onClick={() =>
+                            !isDisabled && setSettings((s) => ({ ...s, quality: key }))
+                          }
                           disabled={isDisabled}
-                        className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
-                          settings.quality === key
-                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+                            settings.quality === key
+                              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
                               : isDisabled
                                 ? 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-50'
-                            : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
-                        }`}
+                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                          }`}
                           title={isDisabled ? 'Not available on mobile devices' : value.label}
-                      >
-                        {value.label}
+                        >
+                          {value.label}
                           {isDisabled && ' 🔒'}
-                      </button>
+                        </button>
                       );
                     })}
                   </div>
@@ -1453,9 +1555,9 @@ export default function QuoteReelModal({
                         <Type size={16} className="text-orange-500" />
                         <span>Text Settings</span>
                       </div>
-                      <ChevronRight 
-                        size={16} 
-                        className={`transition-transform ${showTextSettings ? 'rotate-90' : ''}`} 
+                      <ChevronRight
+                        size={16}
+                        className={`transition-transform ${showTextSettings ? 'rotate-90' : ''}`}
                       />
                     </button>
 
@@ -1463,10 +1565,12 @@ export default function QuoteReelModal({
                       <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
                         {/* Text Formatting - Bold, Italic, Underline */}
                         <div>
-                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">Text Style</label>
+                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">
+                            Text Style
+                          </label>
                           <div className="flex gap-1.5">
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, isBold: !s.isBold }))}
+                              onClick={() => setTextSettings((s) => ({ ...s, isBold: !s.isBold }))}
                               className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center ${
                                 textSettings.isBold
                                   ? 'bg-orange-500 text-white'
@@ -1477,7 +1581,9 @@ export default function QuoteReelModal({
                               <Bold size={14} />
                             </button>
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, isItalic: !s.isItalic }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({ ...s, isItalic: !s.isItalic }))
+                              }
                               className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center ${
                                 textSettings.isItalic
                                   ? 'bg-orange-500 text-white'
@@ -1488,7 +1594,9 @@ export default function QuoteReelModal({
                               <Italic size={14} />
                             </button>
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, isUnderline: !s.isUnderline }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({ ...s, isUnderline: !s.isUnderline }))
+                              }
                               className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center ${
                                 textSettings.isUnderline
                                   ? 'bg-orange-500 text-white'
@@ -1503,12 +1611,14 @@ export default function QuoteReelModal({
 
                         {/* Text Position (Preset) */}
                         <div>
-                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">Position</label>
+                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">
+                            Position
+                          </label>
                           <div className="flex gap-1.5">
-                            {(['top', 'center', 'bottom'] as TextPosition[]).map(pos => (
+                            {(['top', 'center', 'bottom'] as TextPosition[]).map((pos) => (
                               <button
                                 key={pos}
-                                onClick={() => setTextSettings(s => ({ ...s, position: pos }))}
+                                onClick={() => setTextSettings((s) => ({ ...s, position: pos }))}
                                 className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all capitalize ${
                                   textSettings.position === pos
                                     ? 'bg-orange-500 text-white'
@@ -1524,9 +1634,13 @@ export default function QuoteReelModal({
                         {/* Fine Position Control */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <label className="text-xs text-stone-600 dark:text-stone-400">Fine Position</label>
+                            <label className="text-xs text-stone-600 dark:text-stone-400">
+                              Fine Position
+                            </label>
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, offsetX: 0, offsetY: 0 }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({ ...s, offsetX: 0, offsetY: 0 }))
+                              }
                               className="text-xs text-orange-500 hover:text-orange-600 flex items-center gap-1"
                               title="Reset position"
                             >
@@ -1538,7 +1652,12 @@ export default function QuoteReelModal({
                             {/* Row 1: Up */}
                             <div />
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, offsetY: Math.max(-50, s.offsetY - 5) }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({
+                                  ...s,
+                                  offsetY: Math.max(-50, s.offsetY - 5),
+                                }))
+                              }
                               className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:text-orange-500 transition-all active:scale-95"
                               title="Move Up"
                             >
@@ -1547,7 +1666,12 @@ export default function QuoteReelModal({
                             <div />
                             {/* Row 2: Left, indicator, Right */}
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, offsetX: Math.max(-50, s.offsetX - 5) }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({
+                                  ...s,
+                                  offsetX: Math.max(-50, s.offsetX - 5),
+                                }))
+                              }
                               className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:text-orange-500 transition-all active:scale-95"
                               title="Move Left"
                             >
@@ -1557,7 +1681,12 @@ export default function QuoteReelModal({
                               {textSettings.offsetX},{textSettings.offsetY}
                             </div>
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, offsetX: Math.min(50, s.offsetX + 5) }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({
+                                  ...s,
+                                  offsetX: Math.min(50, s.offsetX + 5),
+                                }))
+                              }
                               className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:text-orange-500 transition-all active:scale-95"
                               title="Move Right"
                             >
@@ -1566,7 +1695,12 @@ export default function QuoteReelModal({
                             {/* Row 3: Down */}
                             <div />
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, offsetY: Math.min(50, s.offsetY + 5) }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({
+                                  ...s,
+                                  offsetY: Math.min(50, s.offsetY + 5),
+                                }))
+                              }
                               className="w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 hover:text-orange-500 transition-all active:scale-95"
                               title="Move Down"
                             >
@@ -1578,10 +1712,12 @@ export default function QuoteReelModal({
 
                         {/* Text Alignment */}
                         <div>
-                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">Alignment</label>
+                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">
+                            Alignment
+                          </label>
                           <div className="flex gap-1.5">
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, alignment: 'left' }))}
+                              onClick={() => setTextSettings((s) => ({ ...s, alignment: 'left' }))}
                               className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center ${
                                 textSettings.alignment === 'left'
                                   ? 'bg-orange-500 text-white'
@@ -1591,7 +1727,9 @@ export default function QuoteReelModal({
                               <AlignLeft size={14} />
                             </button>
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, alignment: 'center' }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({ ...s, alignment: 'center' }))
+                              }
                               className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center ${
                                 textSettings.alignment === 'center'
                                   ? 'bg-orange-500 text-white'
@@ -1601,7 +1739,7 @@ export default function QuoteReelModal({
                               <AlignCenter size={14} />
                             </button>
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, alignment: 'right' }))}
+                              onClick={() => setTextSettings((s) => ({ ...s, alignment: 'right' }))}
                               className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center ${
                                 textSettings.alignment === 'right'
                                   ? 'bg-orange-500 text-white'
@@ -1620,7 +1758,12 @@ export default function QuoteReelModal({
                           </label>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, fontSize: Math.max(50, s.fontSize - 10) }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({
+                                  ...s,
+                                  fontSize: Math.max(50, s.fontSize - 10),
+                                }))
+                              }
                               className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700"
                             >
                               <Minus size={14} />
@@ -1630,11 +1773,18 @@ export default function QuoteReelModal({
                               min="50"
                               max="150"
                               value={textSettings.fontSize}
-                              onChange={(e) => setTextSettings(s => ({ ...s, fontSize: Number(e.target.value) }))}
+                              onChange={(e) =>
+                                setTextSettings((s) => ({ ...s, fontSize: Number(e.target.value) }))
+                              }
                               className="flex-1 h-2 bg-stone-200 dark:bg-stone-700 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500"
                             />
                             <button
-                              onClick={() => setTextSettings(s => ({ ...s, fontSize: Math.min(150, s.fontSize + 10) }))}
+                              onClick={() =>
+                                setTextSettings((s) => ({
+                                  ...s,
+                                  fontSize: Math.min(150, s.fontSize + 10),
+                                }))
+                              }
                               className="w-8 h-8 rounded-lg bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700"
                             >
                               <Plus size={14} />
@@ -1644,12 +1794,16 @@ export default function QuoteReelModal({
 
                         {/* Font Family */}
                         <div>
-                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">Font Style</label>
+                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">
+                            Font Style
+                          </label>
                           <div className="grid grid-cols-3 gap-1.5">
                             {FONT_STYLES.slice(0, 6).map((font: FontStyle) => (
                               <button
                                 key={font.id}
-                                onClick={() => setTextSettings(s => ({ ...s, fontFamily: font.fontFamily }))}
+                                onClick={() =>
+                                  setTextSettings((s) => ({ ...s, fontFamily: font.fontFamily }))
+                                }
                                 className={`py-1.5 px-2 rounded-lg text-xs transition-all ${
                                   textSettings.fontFamily === font.fontFamily
                                     ? 'bg-orange-500 text-white'
@@ -1665,15 +1819,19 @@ export default function QuoteReelModal({
 
                         {/* Text Color */}
                         <div>
-                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">Text Color</label>
+                          <label className="text-xs text-stone-600 dark:text-stone-400 mb-2 block">
+                            Text Color
+                          </label>
                           <div className="flex gap-2">
-                            {TEXT_COLORS.map(c => (
+                            {TEXT_COLORS.map((c) => (
                               <button
                                 key={c.id}
-                                onClick={() => setTextSettings(s => ({ ...s, textColor: c.color }))}
+                                onClick={() =>
+                                  setTextSettings((s) => ({ ...s, textColor: c.color }))
+                                }
                                 className={`w-8 h-8 rounded-full transition-all ${
-                                  textSettings.textColor === c.color 
-                                    ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-white dark:ring-offset-stone-900' 
+                                  textSettings.textColor === c.color
+                                    ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-white dark:ring-offset-stone-900'
                                     : ''
                                 }`}
                                 style={{ backgroundColor: c.color }}
@@ -1685,18 +1843,24 @@ export default function QuoteReelModal({
 
                         {/* Text Shadow */}
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-stone-600 dark:text-stone-400">Text Shadow</span>
+                          <span className="text-xs text-stone-600 dark:text-stone-400">
+                            Text Shadow
+                          </span>
                           <button
-                            onClick={() => setTextSettings(s => ({ ...s, shadowEnabled: !s.shadowEnabled }))}
+                            onClick={() =>
+                              setTextSettings((s) => ({ ...s, shadowEnabled: !s.shadowEnabled }))
+                            }
                             className={`w-10 h-5 rounded-full transition-all ${
-                              textSettings.shadowEnabled 
-                                ? 'bg-orange-500' 
+                              textSettings.shadowEnabled
+                                ? 'bg-orange-500'
                                 : 'bg-stone-300 dark:bg-stone-600'
                             }`}
                           >
-                            <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-0.5 ${
-                              textSettings.shadowEnabled ? 'translate-x-5' : 'translate-x-0'
-                            }`} />
+                            <div
+                              className={`w-4 h-4 rounded-full bg-white shadow transition-transform mx-0.5 ${
+                                textSettings.shadowEnabled ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
                           </button>
                         </div>
                       </div>
@@ -1733,33 +1897,39 @@ export default function QuoteReelModal({
                     {textSettings.showQuote && customQuoteText.trim() && (
                       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
                     )}
-                    
+
                     {/* Quote Content - Only show when enabled and has text */}
                     {textSettings.showQuote && customQuoteText.trim() && (
-                      <div 
+                      <div
                         className={`absolute inset-0 flex flex-col p-6 ${
-                          textSettings.position === 'top' ? 'justify-start pt-12' :
-                          textSettings.position === 'bottom' ? 'justify-end pb-16' :
-                          'justify-center'
+                          textSettings.position === 'top'
+                            ? 'justify-start pt-12'
+                            : textSettings.position === 'bottom'
+                              ? 'justify-end pb-16'
+                              : 'justify-center'
                         } ${
-                          textSettings.alignment === 'left' ? 'items-start text-left' :
-                          textSettings.alignment === 'right' ? 'items-end text-right' :
-                          'items-center text-center'
+                          textSettings.alignment === 'left'
+                            ? 'items-start text-left'
+                            : textSettings.alignment === 'right'
+                              ? 'items-end text-right'
+                              : 'items-center text-center'
                         }`}
                         style={{
                           transform: `translate(${textSettings.offsetX}%, ${textSettings.offsetY}%)`,
                         }}
                       >
-                        <p 
+                        <p
                           className="leading-relaxed"
-                          style={{ 
+                          style={{
                             color: textSettings.textColor,
                             fontFamily: textSettings.fontFamily,
                             fontSize: `${0.875 * (textSettings.fontSize / 100)}rem`,
                             fontWeight: textSettings.isBold ? 700 : 600,
                             fontStyle: textSettings.isItalic ? 'italic' : 'normal',
                             textDecoration: textSettings.isUnderline ? 'underline' : 'none',
-                            textShadow: textSettings.shadowEnabled ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none'
+                            textShadow: textSettings.shadowEnabled
+                              ? '2px 2px 4px rgba(0,0,0,0.5)'
+                              : 'none',
                           }}
                         >
                           {customQuoteText}
@@ -1782,7 +1952,7 @@ export default function QuoteReelModal({
                 ) : reelMode === 'images' && images.length > 0 ? (
                   <>
                     {/* Background Image */}
-                    <div 
+                    <div
                       className="absolute inset-0 transition-all duration-500"
                       style={{
                         backgroundImage: `url(${images[currentImageIndex]})`,
@@ -1794,33 +1964,39 @@ export default function QuoteReelModal({
                     {textSettings.showQuote && customQuoteText.trim() && (
                       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/40" />
                     )}
-                    
+
                     {/* Quote Content - Only show when enabled and has text */}
                     {textSettings.showQuote && customQuoteText.trim() && (
-                      <div 
+                      <div
                         className={`absolute inset-0 flex flex-col p-6 ${
-                          textSettings.position === 'top' ? 'justify-start pt-12' :
-                          textSettings.position === 'bottom' ? 'justify-end pb-16' :
-                          'justify-center'
+                          textSettings.position === 'top'
+                            ? 'justify-start pt-12'
+                            : textSettings.position === 'bottom'
+                              ? 'justify-end pb-16'
+                              : 'justify-center'
                         } ${
-                          textSettings.alignment === 'left' ? 'items-start text-left' :
-                          textSettings.alignment === 'right' ? 'items-end text-right' :
-                          'items-center text-center'
+                          textSettings.alignment === 'left'
+                            ? 'items-start text-left'
+                            : textSettings.alignment === 'right'
+                              ? 'items-end text-right'
+                              : 'items-center text-center'
                         }`}
                         style={{
                           transform: `translate(${textSettings.offsetX}%, ${textSettings.offsetY}%)`,
                         }}
                       >
-                        <p 
+                        <p
                           className="leading-relaxed"
-                          style={{ 
+                          style={{
                             color: textSettings.textColor,
                             fontFamily: textSettings.fontFamily,
                             fontSize: `${0.875 * (textSettings.fontSize / 100)}rem`,
                             fontWeight: textSettings.isBold ? 700 : 600,
                             fontStyle: textSettings.isItalic ? 'italic' : 'normal',
                             textDecoration: textSettings.isUnderline ? 'underline' : 'none',
-                            textShadow: textSettings.shadowEnabled ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none'
+                            textShadow: textSettings.shadowEnabled
+                              ? '2px 2px 4px rgba(0,0,0,0.5)'
+                              : 'none',
                           }}
                         >
                           {customQuoteText}
@@ -1834,9 +2010,7 @@ export default function QuoteReelModal({
                         <div
                           key={i}
                           className={`w-1.5 h-1.5 rounded-full transition-all ${
-                            i === currentImageIndex
-                              ? 'bg-white w-4'
-                              : 'bg-white/50'
+                            i === currentImageIndex ? 'bg-white w-4' : 'bg-white/50'
                           }`}
                         />
                       ))}
@@ -1875,7 +2049,9 @@ export default function QuoteReelModal({
               {reelMode === 'images' && images.length > 0 && (
                 <div className="flex justify-center gap-3">
                   <button
-                    onClick={() => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)}
+                    onClick={() =>
+                      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+                    }
                     className="w-10 h-10 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center hover:bg-stone-200 dark:hover:bg-stone-700 transition-all"
                   >
                     <ChevronLeft size={20} className="text-stone-600 dark:text-stone-400" />
@@ -1913,7 +2089,7 @@ export default function QuoteReelModal({
                 <span className="font-semibold text-orange-500">{generationProgress}%</span>
               </div>
               <div className="h-2 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-300"
                   style={{ width: `${generationProgress}%` }}
                 />
@@ -1941,7 +2117,7 @@ export default function QuoteReelModal({
               </button>
             </div>
           )}
-          
+
           {reelMode === 'images' && images.length < MIN_IMAGES && (
             <p className="text-center text-xs text-stone-500 mt-2">
               Add at least {MIN_IMAGES} images to generate a reel
@@ -1960,4 +2136,3 @@ export default function QuoteReelModal({
     </div>
   );
 }
-

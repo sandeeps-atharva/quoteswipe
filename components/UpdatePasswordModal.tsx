@@ -10,10 +10,7 @@ interface UpdatePasswordModalProps {
   onClose: () => void;
 }
 
-export default function UpdatePasswordModal({
-  isOpen,
-  onClose,
-}: UpdatePasswordModalProps) {
+export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordModalProps) {
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -94,7 +91,7 @@ export default function UpdatePasswordModal({
             <KeyRound size={28} className="text-white" />
           </div>
         </div>
-        
+
         <h2 className="mt-4 text-2xl font-bold text-stone-800 dark:text-stone-100">
           Update Password
         </h2>

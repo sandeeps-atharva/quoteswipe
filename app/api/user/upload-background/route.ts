@@ -36,11 +36,11 @@ async function compressImageToBase64(buffer: Buffer, mimeType: string): Promise<
     const metadata = await sharp(buffer).metadata();
     const originalWidth = metadata.width || 0;
     const originalHeight = metadata.height || 0;
-    
+
     // Calculate new dimensions (maintain aspect ratio)
     let width = originalWidth;
     let height = originalHeight;
-    
+
     if (width > MAX_WIDTH) {
       height = Math.round((height * MAX_WIDTH) / width);
       width = MAX_WIDTH;
@@ -49,11 +49,11 @@ async function compressImageToBase64(buffer: Buffer, mimeType: string): Promise<
       width = Math.round((width * MAX_HEIGHT) / height);
       height = MAX_HEIGHT;
     }
-    
+
     // Try WebP first (smaller file size)
     let compressedBuffer: Buffer;
     let outputMimeType: string;
-    
+
     try {
       compressedBuffer = await sharp(buffer)
         .resize(width, height, {
@@ -74,17 +74,21 @@ async function compressImageToBase64(buffer: Buffer, mimeType: string): Promise<
         .toBuffer();
       outputMimeType = 'image/jpeg';
     }
-    
+
     // Convert to Base64
     const base64 = compressedBuffer.toString('base64');
     const dataUrl = `data:${outputMimeType};base64,${base64}`;
-  
+
     // Log compression results
     const originalKB = (buffer.length / 1024).toFixed(1);
     const compressedKB = (compressedBuffer.length / 1024).toFixed(1);
-    const reduction = (((buffer.length - compressedBuffer.length) / buffer.length) * 100).toFixed(0);
-    console.log(`[Server] Image compressed: ${originalKB}KB → ${compressedKB}KB (${reduction}% smaller)`);
-    
+    const reduction = (((buffer.length - compressedBuffer.length) / buffer.length) * 100).toFixed(
+      0
+    );
+    console.log(
+      `[Server] Image compressed: ${originalKB}KB → ${compressedKB}KB (${reduction}% smaller)`
+    );
+
     return dataUrl;
   } catch (error) {
     console.error('Server compression error:', error);
@@ -98,7 +102,7 @@ async function compressImageToBase64(buffer: Buffer, mimeType: string): Promise<
 export async function POST(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: 'Please login to upload custom backgrounds' },
@@ -108,12 +112,9 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('image') as File;
-    
+
     if (!file) {
-      return NextResponse.json(
-        { error: 'No image file provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No image file provided' }, { status: 400 });
     }
 
     // Validate file type
@@ -126,28 +127,28 @@ export async function POST(request: NextRequest) {
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: 'File too large. Maximum size is 5MB' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'File too large. Maximum size is 5MB' }, { status: 400 });
     }
 
     const preferencesCollection = await getCollection('user_preferences');
 
     // Get existing custom backgrounds
-    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
+    const preferences: any = (await preferencesCollection.findOne({ user_id: userId })) as any;
 
     let existingBackgrounds: CustomBackground[] = [];
     if (preferences?.custom_backgrounds) {
-      existingBackgrounds = typeof preferences.custom_backgrounds === 'string' 
-        ? JSON.parse(preferences.custom_backgrounds)
-        : preferences.custom_backgrounds;
+      existingBackgrounds =
+        typeof preferences.custom_backgrounds === 'string'
+          ? JSON.parse(preferences.custom_backgrounds)
+          : preferences.custom_backgrounds;
     }
 
     // Check limit
     if (existingBackgrounds.length >= MAX_BACKGROUNDS) {
       return NextResponse.json(
-        { error: `Maximum ${MAX_BACKGROUNDS} custom backgrounds allowed. Please delete one first.` },
+        {
+          error: `Maximum ${MAX_BACKGROUNDS} custom backgrounds allowed. Please delete one first.`,
+        },
         { status: 400 }
       );
     }
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const base64DataUrl = await compressImageToBase64(buffer, file.type);
-    
+
     // Check final Base64 size
     if (base64DataUrl.length > MAX_BASE64_SIZE) {
       return NextResponse.json(
@@ -176,19 +177,19 @@ export async function POST(request: NextRequest) {
 
     // Update database
     const updatedBackgrounds = [...existingBackgrounds, newBackground];
-    
+
     // Upsert preferences
     await preferencesCollection.updateOne(
       { user_id: userId },
       {
         $set: {
           custom_backgrounds: updatedBackgrounds,
-          updated_at: new Date()
+          updated_at: new Date(),
         },
         $setOnInsert: {
           user_id: userId,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       },
       { upsert: true }
     );
@@ -198,13 +199,9 @@ export async function POST(request: NextRequest) {
       background: newBackground,
       total: updatedBackgrounds.length,
     });
-
   } catch (error) {
     console.error('Upload background error:', error);
-    return NextResponse.json(
-      { error: 'Failed to upload image' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
   }
 }
 
@@ -212,19 +209,20 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
-    
+
     if (!userId) {
       return NextResponse.json({ backgrounds: [] });
     }
 
     const preferencesCollection = await getCollection('user_preferences');
-    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
+    const preferences: any = (await preferencesCollection.findOne({ user_id: userId })) as any;
 
     let backgrounds: CustomBackground[] = [];
     if (preferences?.custom_backgrounds) {
-      backgrounds = typeof preferences.custom_backgrounds === 'string'
-        ? JSON.parse(preferences.custom_backgrounds)
-        : preferences.custom_backgrounds;
+      backgrounds =
+        typeof preferences.custom_backgrounds === 'string'
+          ? JSON.parse(preferences.custom_backgrounds)
+          : preferences.custom_backgrounds;
     }
 
     return NextResponse.json(
@@ -232,12 +230,11 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          Pragma: 'no-cache',
+          Expires: '0',
         },
       }
     );
-
   } catch (error) {
     console.error('Get backgrounds error:', error);
     return NextResponse.json(
@@ -245,8 +242,8 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
+          Pragma: 'no-cache',
+          Expires: '0',
         },
       }
     );
@@ -257,49 +254,38 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { backgroundId } = await request.json();
-    
+
     if (!backgroundId) {
-      return NextResponse.json(
-        { error: 'Background ID required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Background ID required' }, { status: 400 });
     }
 
     const preferencesCollection = await getCollection('user_preferences');
-    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
+    const preferences: any = (await preferencesCollection.findOne({ user_id: userId })) as any;
 
     if (!preferences?.custom_backgrounds) {
-      return NextResponse.json(
-        { error: 'Background not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Background not found' }, { status: 404 });
     }
 
-    const backgrounds: CustomBackground[] = typeof preferences.custom_backgrounds === 'string'
-      ? JSON.parse(preferences.custom_backgrounds)
-      : preferences.custom_backgrounds;
+    const backgrounds: CustomBackground[] =
+      typeof preferences.custom_backgrounds === 'string'
+        ? JSON.parse(preferences.custom_backgrounds)
+        : preferences.custom_backgrounds;
 
-    const backgroundToDelete = backgrounds.find(bg => bg.id === backgroundId);
-    
+    const backgroundToDelete = backgrounds.find((bg) => bg.id === backgroundId);
+
     if (!backgroundToDelete) {
-      return NextResponse.json(
-        { error: 'Background not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Background not found' }, { status: 404 });
     }
 
     // Update database (no file to delete - it's all in database!)
-    const updatedBackgrounds = backgrounds.filter(bg => bg.id !== backgroundId);
-    
+    const updatedBackgrounds = backgrounds.filter((bg) => bg.id !== backgroundId);
+
     await preferencesCollection.updateOne(
       { user_id: userId },
       { $set: { custom_backgrounds: updatedBackgrounds, updated_at: new Date() } }
@@ -309,12 +295,8 @@ export async function DELETE(request: NextRequest) {
       success: true,
       remaining: updatedBackgrounds.length,
     });
-
   } catch (error) {
     console.error('Delete background error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete background' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete background' }, { status: 500 });
   }
 }

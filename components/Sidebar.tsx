@@ -1,7 +1,36 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { X, User, Bookmark, LogOut, ArrowLeft, Trash2, Search, Heart, ThumbsDown, Mail, Calendar, Shield, Edit2, Check, Lock, Loader2, Eye, ChevronRight, Share2, ExternalLink, MessageSquare, Info, Palette, PenLine, Plus, Globe, Camera, Image as ImageIcon } from 'lucide-react';
+import {
+  X,
+  User,
+  Bookmark,
+  LogOut,
+  ArrowLeft,
+  Trash2,
+  Search,
+  Heart,
+  ThumbsDown,
+  Mail,
+  Calendar,
+  Shield,
+  Edit2,
+  Check,
+  Lock,
+  Loader2,
+  Eye,
+  ChevronRight,
+  Share2,
+  ExternalLink,
+  MessageSquare,
+  Info,
+  Palette,
+  PenLine,
+  Plus,
+  Globe,
+  Camera,
+  Image as ImageIcon,
+} from 'lucide-react';
 import { isQuotePublic } from '@/lib/helpers';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -47,7 +76,12 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isAuthenticated: boolean;
-  user: { name: string; email: string; role?: 'user' | 'admin'; auth_provider?: 'google' | 'email' } | null;
+  user: {
+    name: string;
+    email: string;
+    role?: 'user' | 'admin';
+    auth_provider?: 'google' | 'email';
+  } | null;
   likedCount: number;
   savedCount: number;
   dislikedCount: number;
@@ -61,7 +95,11 @@ interface SidebarProps {
   onLogout: () => void;
   isLoggingOut?: boolean;
   onSavedQuoteDelete?: (quoteId: string | number) => void;
-  onQuoteClick?: (quoteId: string | number, category?: string, customBackground?: string | null) => void;
+  onQuoteClick?: (
+    quoteId: string | number,
+    category?: string,
+    customBackground?: string | null
+  ) => void;
   onCustomizeClick?: () => void;
   onCreateQuoteClick?: () => void;
   onEditQuoteClick?: (quote: UserQuote) => void;
@@ -126,7 +164,7 @@ export default function Sidebar({
   const [collectionSearch, setCollectionSearch] = useState('');
   const [showUpdatePasswordModal, setShowUpdatePasswordModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
-  
+
   // Profile state
   const [profileData, setProfileData] = useState<{
     user: {
@@ -165,7 +203,7 @@ export default function Sidebar({
   // Fetch category groups from API with caching
   useEffect(() => {
     if (hasFetchedGroups) return;
-    
+
     const fetchGroups = async () => {
       try {
         const data = await apiCache.getOrFetch<{ success: boolean; groups: CategoryGroupData[] }>(
@@ -177,7 +215,7 @@ export default function Sidebar({
           },
           { ttl: CACHE_TTL.LONG }
         );
-        
+
         if (data.success && data.groups) {
           setCategoryGroups(data.groups);
         }
@@ -187,7 +225,7 @@ export default function Sidebar({
         setHasFetchedGroups(true);
       }
     };
-    
+
     fetchGroups();
   }, [hasFetchedGroups]);
 
@@ -217,7 +255,7 @@ export default function Sidebar({
   // Consolidated view-based data fetching - single useEffect for better performance
   useEffect(() => {
     if (!isAuthenticated) return;
-    
+
     switch (currentView) {
       case 'liked':
         if (!hasFetchedLiked) fetchLikedQuotes();
@@ -247,7 +285,7 @@ export default function Sidebar({
         },
         { ttl: CACHE_TTL.MEDIUM, sensitive: true }
       );
-      
+
       if (data) {
         setProfileData(data);
         setEditName(data.user.name);
@@ -276,8 +314,8 @@ export default function Sidebar({
 
       if (response.ok) {
         const data = await response.json();
-        setProfileData(prev => prev ? { ...prev, user: data.user } : null);
-        setCurrentUser(prev => prev ? { ...prev, name: data.user.name } : null);
+        setProfileData((prev) => (prev ? { ...prev, user: data.user } : null));
+        setCurrentUser((prev) => (prev ? { ...prev, name: data.user.name } : null));
         setIsEditingName(false);
         // Invalidate user cache
         apiCache.invalidate(CACHE_KEYS.USER_PROFILE);
@@ -315,15 +353,23 @@ export default function Sidebar({
   // Group categories by their groups (from database)
   const groupedCategories = useMemo(() => {
     const searchResults = debouncedSearchQuery.trim()
-      ? categories.filter(category =>
-          category.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase().trim()) || 
-          category.icon.includes(debouncedSearchQuery)
+      ? categories.filter(
+          (category) =>
+            category.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase().trim()) ||
+            category.icon.includes(debouncedSearchQuery)
         )
       : categories;
 
     if (debouncedSearchQuery.trim()) {
       // When searching, return flat list
-      return [{ id: 'search', label: `🔍 Search Results (${searchResults.length})`, icon: '🔍', categories: searchResults }];
+      return [
+        {
+          id: 'search',
+          label: `🔍 Search Results (${searchResults.length})`,
+          icon: '🔍',
+          categories: searchResults,
+        },
+      ];
     }
 
     // If no groups loaded yet, show all categories in one group
@@ -335,15 +381,15 @@ export default function Sidebar({
     const grouped: { id: string; label: string; icon: string; categories: Category[] }[] = [];
     const assignedCategories = new Set<string>();
 
-    categoryGroups.forEach(group => {
-      const matchingCategories = categories.filter(cat => 
-        group.keywords.some(keyword => 
-          cat.name.toLowerCase() === keyword.toLowerCase()
-        ) && !assignedCategories.has(cat.name)
+    categoryGroups.forEach((group) => {
+      const matchingCategories = categories.filter(
+        (cat) =>
+          group.keywords.some((keyword) => cat.name.toLowerCase() === keyword.toLowerCase()) &&
+          !assignedCategories.has(cat.name)
       );
-      
+
       if (matchingCategories.length > 0) {
-        matchingCategories.forEach(cat => assignedCategories.add(cat.name));
+        matchingCategories.forEach((cat) => assignedCategories.add(cat.name));
         grouped.push({
           id: group.id,
           label: group.label,
@@ -354,7 +400,7 @@ export default function Sidebar({
     });
 
     // Add remaining categories to "More"
-    const remaining = categories.filter(cat => !assignedCategories.has(cat.name));
+    const remaining = categories.filter((cat) => !assignedCategories.has(cat.name));
     if (remaining.length > 0) {
       grouped.push({
         id: 'more',
@@ -371,74 +417,82 @@ export default function Sidebar({
   const filteredCategories = useMemo(() => {
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase().trim();
-      return categories.filter(category =>
-        category.name.toLowerCase().includes(query) || category.icon.includes(query)
+      return categories.filter(
+        (category) => category.name.toLowerCase().includes(query) || category.icon.includes(query)
       );
     }
     return categories;
   }, [categories, debouncedSearchQuery]);
 
   // Get group selection state: 'all' | 'some' | 'none'
-  const getGroupSelectionState = useCallback((groupCategories: Category[]) => {
-    const categoryNames = groupCategories.map(c => c.name);
-    const selectedInGroup = categoryNames.filter(name => selectedCategories.includes(name));
-    if (selectedInGroup.length === 0) return 'none';
-    if (selectedInGroup.length === categoryNames.length) return 'all';
-    return 'some';
-  }, [selectedCategories]);
+  const getGroupSelectionState = useCallback(
+    (groupCategories: Category[]) => {
+      const categoryNames = groupCategories.map((c) => c.name);
+      const selectedInGroup = categoryNames.filter((name) => selectedCategories.includes(name));
+      if (selectedInGroup.length === 0) return 'none';
+      if (selectedInGroup.length === categoryNames.length) return 'all';
+      return 'some';
+    },
+    [selectedCategories]
+  );
 
   // Handle group toggle - select or deselect all categories in a group
-  const handleGroupToggle = useCallback((groupCategories: Category[]) => {
-    const categoryNames = groupCategories.map(c => c.name);
-    const selectionState = getGroupSelectionState(groupCategories);
-    
-    if (onMultipleCategoryToggle) {
-      // Use batch toggle if available (more efficient)
-      if (selectionState === 'all') {
-        // Deselect all
-        onMultipleCategoryToggle(categoryNames, false);
+  const handleGroupToggle = useCallback(
+    (groupCategories: Category[]) => {
+      const categoryNames = groupCategories.map((c) => c.name);
+      const selectionState = getGroupSelectionState(groupCategories);
+
+      if (onMultipleCategoryToggle) {
+        // Use batch toggle if available (more efficient)
+        if (selectionState === 'all') {
+          // Deselect all
+          onMultipleCategoryToggle(categoryNames, false);
+        } else {
+          // Select all (including partial selection case)
+          onMultipleCategoryToggle(categoryNames, true);
+        }
       } else {
-        // Select all (including partial selection case)
-        onMultipleCategoryToggle(categoryNames, true);
+        // Fallback: toggle each category individually
+        if (selectionState === 'all') {
+          // Deselect all
+          categoryNames.forEach((name) => {
+            if (selectedCategories.includes(name)) {
+              onCategoryToggle(name);
+            }
+          });
+        } else {
+          // Select all that aren't already selected
+          categoryNames.forEach((name) => {
+            if (!selectedCategories.includes(name)) {
+              onCategoryToggle(name);
+            }
+          });
+        }
       }
-    } else {
-      // Fallback: toggle each category individually
-      if (selectionState === 'all') {
-        // Deselect all
-        categoryNames.forEach(name => {
-          if (selectedCategories.includes(name)) {
-            onCategoryToggle(name);
-          }
-        });
-      } else {
-        // Select all that aren't already selected
-        categoryNames.forEach(name => {
-          if (!selectedCategories.includes(name)) {
-            onCategoryToggle(name);
-          }
-        });
-      }
-    }
-  }, [getGroupSelectionState, onMultipleCategoryToggle, onCategoryToggle, selectedCategories]);
+    },
+    [getGroupSelectionState, onMultipleCategoryToggle, onCategoryToggle, selectedCategories]
+  );
 
   // Filter quotes based on search
   const filteredLikedQuotes = useMemo(() => {
     if (!collectionSearch.trim()) return likedQuotes;
     const q = collectionSearch.toLowerCase();
-    return likedQuotes.filter(quote =>
-      quote.text.toLowerCase().includes(q) ||
-      quote.author.toLowerCase().includes(q) ||
-      quote.category?.toLowerCase().includes(q)
+    return likedQuotes.filter(
+      (quote) =>
+        quote.text.toLowerCase().includes(q) ||
+        quote.author.toLowerCase().includes(q) ||
+        quote.category?.toLowerCase().includes(q)
     );
   }, [likedQuotes, collectionSearch]);
 
   const filteredDislikedQuotes = useMemo(() => {
     if (!collectionSearch.trim()) return dislikedQuotes;
     const q = collectionSearch.toLowerCase();
-    return dislikedQuotes.filter(quote =>
-      quote.text.toLowerCase().includes(q) ||
-      quote.author.toLowerCase().includes(q) ||
-      quote.category?.toLowerCase().includes(q)
+    return dislikedQuotes.filter(
+      (quote) =>
+        quote.text.toLowerCase().includes(q) ||
+        quote.author.toLowerCase().includes(q) ||
+        quote.category?.toLowerCase().includes(q)
     );
   }, [dislikedQuotes, collectionSearch]);
 
@@ -454,7 +508,7 @@ export default function Sidebar({
         },
         { ttl: CACHE_TTL.MEDIUM, sensitive: true }
       );
-      
+
       setLikedQuotes(data.quotes || []);
       setHasFetchedLiked(true);
     } catch (error) {
@@ -476,7 +530,7 @@ export default function Sidebar({
         },
         { ttl: CACHE_TTL.MEDIUM, sensitive: true }
       );
-      
+
       setDislikedQuotes(data.quotes || []);
       setHasFetchedDisliked(true);
     } catch (error) {
@@ -510,31 +564,51 @@ export default function Sidebar({
           <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
             {/* Compact Avatar Row */}
             <div className="flex items-center gap-3">
-                <div className="relative shrink-0">
+              <div className="relative shrink-0">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center text-white text-lg sm:text-xl font-bold shadow-lg shadow-orange-500/30">
-                  {profileData.user.name.includes(' ') 
-                    ? profileData.user.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
-                    : profileData.user.name.slice(0, 2).toUpperCase()
-                  }
+                  {profileData.user.name.includes(' ')
+                    ? profileData.user.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase()
+                    : profileData.user.name.slice(0, 2).toUpperCase()}
                 </div>
-                <div className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                  profileData.user.auth_provider === 'google' 
-                    ? 'bg-white dark:bg-stone-800 shadow' 
-                    : 'bg-amber-500 text-white'
-                }`}>
+                <div
+                  className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                    profileData.user.auth_provider === 'google'
+                      ? 'bg-white dark:bg-stone-800 shadow'
+                      : 'bg-amber-500 text-white'
+                  }`}
+                >
                   {profileData.user.auth_provider === 'google' ? (
                     <svg className="w-3 h-3" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      />
                     </svg>
-                  ) : '📧'}
+                  ) : (
+                    '📧'
+                  )}
                 </div>
               </div>
-              
+
               <div className="flex-1 min-w-0">
-                  {isEditingName ? (
+                {isEditingName ? (
                   <div className="flex items-center gap-1.5">
                     <input
                       type="text"
@@ -543,27 +617,55 @@ export default function Sidebar({
                       className="flex-1 px-2 py-1.5 text-sm border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800 text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                       autoFocus
                     />
-                    <button onClick={handleSaveName} disabled={isSavingName} className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50">
-                      {isSavingName ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                    <button
+                      onClick={handleSaveName}
+                      disabled={isSavingName}
+                      className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50"
+                    >
+                      {isSavingName ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Check size={14} />
+                      )}
                     </button>
-                    <button onClick={() => { setIsEditingName(false); setEditName(profileData.user.name); }} className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-600 rounded-lg">
+                    <button
+                      onClick={() => {
+                        setIsEditingName(false);
+                        setEditName(profileData.user.name);
+                      }}
+                      className="p-1.5 bg-stone-100 dark:bg-stone-800 text-stone-600 rounded-lg"
+                    >
                       <X size={14} />
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => setIsEditingName(true)} className="flex items-center gap-1.5 group">
-                    <span className="text-base sm:text-lg font-bold text-stone-900 dark:text-white truncate">{profileData.user.name}</span>
-                    <Edit2 size={12} className="text-stone-400 opacity-50 sm:opacity-0 sm:group-hover:opacity-100 shrink-0" />
+                  <button
+                    onClick={() => setIsEditingName(true)}
+                    className="flex items-center gap-1.5 group"
+                  >
+                    <span className="text-base sm:text-lg font-bold text-stone-900 dark:text-white truncate">
+                      {profileData.user.name}
+                    </span>
+                    <Edit2
+                      size={12}
+                      className="text-stone-400 opacity-50 sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
+                    />
                   </button>
                 )}
                 <p className="text-xs text-stone-500 truncate">{profileData.user.email}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                    profileData.user.auth_provider === 'google' ? 'bg-stone-100 dark:bg-stone-800 text-stone-500' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
-                  }`}>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                      profileData.user.auth_provider === 'google'
+                        ? 'bg-stone-100 dark:bg-stone-800 text-stone-500'
+                        : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                    }`}
+                  >
                     {profileData.user.auth_provider === 'google' ? 'Google' : 'Email'}
                   </span>
-                  <span className="text-[10px] text-stone-400">Since {formatDate(profileData.user.created_at)}</span>
+                  <span className="text-[10px] text-stone-400">
+                    Since {formatDate(profileData.user.created_at)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -572,19 +674,26 @@ export default function Sidebar({
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20 rounded-xl p-2 sm:p-3 text-center border border-rose-200/50 dark:border-rose-800/30">
                 <Heart size={16} className="mx-auto text-rose-500 mb-0.5" fill="currentColor" />
-                <div className="text-lg sm:text-xl font-bold text-rose-600 dark:text-rose-400">{likedCount}</div>
+                <div className="text-lg sm:text-xl font-bold text-rose-600 dark:text-rose-400">
+                  {likedCount}
+                </div>
                 <div className="text-[10px] text-rose-600/70 dark:text-rose-400/70">Liked</div>
               </div>
               <div className="bg-gradient-to-br from-stone-50 to-stone-100 dark:from-stone-800/40 dark:to-stone-700/40 rounded-xl p-2 sm:p-3 text-center border border-stone-200/50 dark:border-stone-700/30">
                 <ThumbsDown size={16} className="mx-auto text-stone-400 mb-0.5" />
-                <div className="text-lg sm:text-xl font-bold text-stone-600 dark:text-stone-400">{dislikedCount}</div>
+                <div className="text-lg sm:text-xl font-bold text-stone-600 dark:text-stone-400">
+                  {dislikedCount}
+                </div>
                 <div className="text-[10px] text-stone-500">Skipped</div>
               </div>
             </div>
 
             {/* Create Your Quote Button */}
             <button
-              onClick={() => { onCreateQuoteClick?.(); onClose(); }}
+              onClick={() => {
+                onCreateQuoteClick?.();
+                onClose();
+              }}
               className="w-full relative overflow-hidden py-3.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white rounded-xl font-semibold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               <div className="flex items-center justify-center gap-2">
@@ -592,11 +701,17 @@ export default function Sidebar({
                 <span>Create Your Own Quote</span>
               </div>
               <div className="flex items-center justify-center gap-2 mt-1 text-[10px] text-white/80">
-                <span className="flex items-center gap-1"><Camera size={10} /> Photo</span>
+                <span className="flex items-center gap-1">
+                  <Camera size={10} /> Photo
+                </span>
                 <span>•</span>
-                <span className="flex items-center gap-1"><ImageIcon size={10} /> Upload</span>
+                <span className="flex items-center gap-1">
+                  <ImageIcon size={10} /> Upload
+                </span>
                 <span>•</span>
-                <span className="flex items-center gap-1"><Palette size={10} /> Themes</span>
+                <span className="flex items-center gap-1">
+                  <Palette size={10} /> Themes
+                </span>
               </div>
             </button>
 
@@ -631,45 +746,48 @@ export default function Sidebar({
   );
 
   // Handle quote click - navigate to the quote with loading state
-  const handleQuoteClick = useCallback(async (quoteId: string | number, category?: string, customBackground?: string | null) => {
-    // Prevent double clicks
-    if (navigatingQuoteId) return;
-    
-    setNavigatingQuoteId(quoteId);
-    
-    // Close sidebar first so user sees the main content immediately
-    onClose();
-    
-    try {
-      if (onQuoteClick) {
-        await onQuoteClick(quoteId, category, customBackground);
-      } else {
-        // Fallback: navigate directly using window.location
-        const idStr = String(quoteId);
-        if (idStr.startsWith('user_')) {
-          window.location.href = `/user-quote/${idStr.replace('user_', '')}`;
+  const handleQuoteClick = useCallback(
+    async (quoteId: string | number, category?: string, customBackground?: string | null) => {
+      // Prevent double clicks
+      if (navigatingQuoteId) return;
+
+      setNavigatingQuoteId(quoteId);
+
+      // Close sidebar first so user sees the main content immediately
+      onClose();
+
+      try {
+        if (onQuoteClick) {
+          await onQuoteClick(quoteId, category, customBackground);
         } else {
-          window.location.href = `/quote/${quoteId}`;
+          // Fallback: navigate directly using window.location
+          const idStr = String(quoteId);
+          if (idStr.startsWith('user_')) {
+            window.location.href = `/user-quote/${idStr.replace('user_', '')}`;
+          } else {
+            window.location.href = `/quote/${quoteId}`;
+          }
         }
+      } catch (error) {
+        console.error('Navigation error:', error);
+        toast.error('Failed to navigate to quote');
+      } finally {
+        // Small delay to prevent flicker if navigation is fast
+        setTimeout(() => setNavigatingQuoteId(null), 300);
       }
-    } catch (error) {
-      console.error('Navigation error:', error);
-      toast.error('Failed to navigate to quote');
-    } finally {
-      // Small delay to prevent flicker if navigation is fast
-      setTimeout(() => setNavigatingQuoteId(null), 300);
-    }
-  }, [navigatingQuoteId, onQuoteClick, onClose]);
+    },
+    [navigatingQuoteId, onQuoteClick, onClose]
+  );
 
   // Handle share quote
   const handleShareQuote = async (e: React.MouseEvent, quote: SavedQuote) => {
     e.stopPropagation(); // Prevent triggering the quote click
     const idStr = String(quote.id);
-    const shareUrl = idStr.startsWith('user_') 
+    const shareUrl = idStr.startsWith('user_')
       ? `${window.location.origin}/user-quote/${idStr.replace('user_', '')}`
       : `${window.location.origin}/quote/${quote.id}`;
     const shareText = `"${quote.text}" — ${quote.author}`;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -688,11 +806,14 @@ export default function Sidebar({
 
   // Copy to clipboard helper
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast.success('Link copied to clipboard!');
-    }).catch(() => {
-      toast.error('Failed to copy link');
-    });
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        toast.success('Link copied to clipboard!');
+      })
+      .catch(() => {
+        toast.error('Failed to copy link');
+      });
   };
 
   // Render Liked Quotes View with Search
@@ -701,11 +822,17 @@ export default function Sidebar({
       {/* Header with Search */}
       <div className="p-3 border-b border-stone-100 dark:border-stone-800 space-y-2">
         <div className="flex items-center gap-2">
-          <button onClick={() => setCurrentView('profile')} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors shrink-0">
+          <button
+            onClick={() => setCurrentView('profile')}
+            className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors shrink-0"
+          >
             <ArrowLeft size={16} className="text-stone-500" />
           </button>
           <div className="flex-1 relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400"
+            />
             <input
               type="text"
               placeholder="Search liked quotes..."
@@ -714,7 +841,10 @@ export default function Sidebar({
               className="w-full pl-8 pr-8 py-1.5 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
             {collectionSearch && (
-              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+              <button
+                onClick={() => setCollectionSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+              >
                 <X size={12} />
               </button>
             )}
@@ -727,7 +857,9 @@ export default function Sidebar({
           </div>
         </div>
         {collectionSearch && (
-          <p className="text-[10px] text-stone-500 pl-9">Found {filteredLikedQuotes.length} of {likedQuotes.length}</p>
+          <p className="text-[10px] text-stone-500 pl-9">
+            Found {filteredLikedQuotes.length} of {likedQuotes.length}
+          </p>
         )}
       </div>
 
@@ -741,14 +873,21 @@ export default function Sidebar({
             <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-3">
               <Heart size={22} className="text-rose-500" />
             </div>
-            <p className="font-medium text-stone-900 dark:text-white text-sm mb-1">No liked quotes</p>
+            <p className="font-medium text-stone-900 dark:text-white text-sm mb-1">
+              No liked quotes
+            </p>
             <p className="text-xs text-stone-500">Swipe right on quotes you love</p>
           </div>
         ) : filteredLikedQuotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <Search size={28} className="text-stone-300 mb-2" />
             <p className="text-xs text-stone-500">No quotes match "{collectionSearch}"</p>
-            <button onClick={() => setCollectionSearch('')} className="text-xs text-rose-500 hover:text-rose-600 mt-2">Clear search</button>
+            <button
+              onClick={() => setCollectionSearch('')}
+              className="text-xs text-rose-500 hover:text-rose-600 mt-2"
+            >
+              Clear search
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
@@ -762,45 +901,48 @@ export default function Sidebar({
                 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
                 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
               ];
-              const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+              const bgIndex =
+                typeof quote.id === 'string'
+                  ? quote.id.charCodeAt(0) % defaultBgs.length
+                  : Number(quote.id) % defaultBgs.length;
               const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
-              
+
               return (
-              <div 
-                key={quote.id} 
-                onClick={() => handleQuoteClick(quote.id, quote.category)}
+                <div
+                  key={quote.id}
+                  onClick={() => handleQuoteClick(quote.id, quote.category)}
                   className={`group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
-              >
+                >
                   {/* Background Image */}
-                  <div 
+                  <div
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url(${backgroundUrl})` }}
                   />
-                  
+
                   {/* Dark Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  
+
                   {/* Heart Icon */}
                   <div className="absolute top-2 right-2 z-10">
                     <Heart size={18} className="text-rose-500 drop-shadow-lg" fill="currentColor" />
                   </div>
-                  
+
                   {/* Share Button - Shows on hover */}
-                <button
-                  onClick={(e) => handleShareQuote(e, quote)}
+                  <button
+                    onClick={(e) => handleShareQuote(e, quote)}
                     className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10"
-                  title="Share"
-                >
+                    title="Share"
+                  >
                     <Share2 size={14} className="text-white" />
-                </button>
-                  
+                  </button>
+
                   {/* Loading Overlay */}
                   {navigatingQuoteId === quote.id && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
                       <Loader2 size={24} className="animate-spin text-white" />
-                  </div>
+                    </div>
                   )}
-                  
+
                   {/* Quote Content */}
                   <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
                     <p className="text-white text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
@@ -809,8 +951,8 @@ export default function Sidebar({
                     <p className="text-white/70 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
                       — {quote.author}
                     </p>
-                    </div>
                   </div>
+                </div>
               );
             })}
           </div>
@@ -825,11 +967,17 @@ export default function Sidebar({
       {/* Header with Search */}
       <div className="p-3 border-b border-stone-100 dark:border-stone-800 space-y-2">
         <div className="flex items-center gap-2">
-          <button onClick={() => setCurrentView('profile')} className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors shrink-0">
+          <button
+            onClick={() => setCurrentView('profile')}
+            className="p-1.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors shrink-0"
+          >
             <ArrowLeft size={16} className="text-stone-500" />
           </button>
           <div className="flex-1 relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400"
+            />
             <input
               type="text"
               placeholder="Search skipped quotes..."
@@ -838,7 +986,10 @@ export default function Sidebar({
               className="w-full pl-8 pr-8 py-1.5 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
             />
             {collectionSearch && (
-              <button onClick={() => setCollectionSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+              <button
+                onClick={() => setCollectionSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+              >
                 <X size={12} />
               </button>
             )}
@@ -846,12 +997,18 @@ export default function Sidebar({
           <div className="flex items-center gap-1.5 px-2 py-1 bg-stone-100 dark:bg-stone-800 rounded-lg shrink-0">
             <ThumbsDown size={14} className="text-stone-400" />
             <span className="text-sm font-semibold text-stone-600 dark:text-stone-400">
-              {isLoadingDisliked ? <Loader2 size={12} className="animate-spin" /> : dislikedQuotes.length}
+              {isLoadingDisliked ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                dislikedQuotes.length
+              )}
             </span>
           </div>
         </div>
         {collectionSearch && (
-          <p className="text-[10px] text-stone-500 pl-9">Found {filteredDislikedQuotes.length} of {dislikedQuotes.length}</p>
+          <p className="text-[10px] text-stone-500 pl-9">
+            Found {filteredDislikedQuotes.length} of {dislikedQuotes.length}
+          </p>
         )}
       </div>
 
@@ -865,14 +1022,21 @@ export default function Sidebar({
             <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-3">
               <ThumbsDown size={22} className="text-stone-400" />
             </div>
-            <p className="font-medium text-stone-900 dark:text-white text-sm mb-1">No skipped quotes</p>
+            <p className="font-medium text-stone-900 dark:text-white text-sm mb-1">
+              No skipped quotes
+            </p>
             <p className="text-xs text-stone-500">Swipe left to skip quotes</p>
           </div>
         ) : filteredDislikedQuotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <Search size={28} className="text-stone-300 mb-2" />
             <p className="text-xs text-stone-500">No quotes match "{collectionSearch}"</p>
-            <button onClick={() => setCollectionSearch('')} className="text-xs text-stone-500 hover:text-stone-600 mt-2">Clear search</button>
+            <button
+              onClick={() => setCollectionSearch('')}
+              className="text-xs text-stone-500 hover:text-stone-600 mt-2"
+            >
+              Clear search
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
@@ -885,45 +1049,48 @@ export default function Sidebar({
                 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
                 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
               ];
-              const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+              const bgIndex =
+                typeof quote.id === 'string'
+                  ? quote.id.charCodeAt(0) % defaultBgs.length
+                  : Number(quote.id) % defaultBgs.length;
               const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
-              
+
               return (
-              <div 
-                key={quote.id} 
-                onClick={() => handleQuoteClick(quote.id, quote.category)}
+                <div
+                  key={quote.id}
+                  onClick={() => handleQuoteClick(quote.id, quote.category)}
                   className={`group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 grayscale-[30%] ${navigatingQuoteId === quote.id ? 'opacity-50 pointer-events-none' : ''}`}
-              >
+                >
                   {/* Background Image */}
-                  <div 
+                  <div
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url(${backgroundUrl})` }}
                   />
-                  
+
                   {/* Dark Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-                  
+
                   {/* Skipped Icon */}
                   <div className="absolute top-2 right-2 z-10">
                     <ThumbsDown size={16} className="text-stone-400 drop-shadow-lg" />
                   </div>
-                  
+
                   {/* Share Button - Shows on hover */}
-                <button
-                  onClick={(e) => handleShareQuote(e, quote)}
+                  <button
+                    onClick={(e) => handleShareQuote(e, quote)}
                     className="absolute top-2 left-2 p-1.5 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10"
-                  title="Share"
-                >
+                    title="Share"
+                  >
                     <Share2 size={14} className="text-white" />
-                </button>
-                  
+                  </button>
+
                   {/* Loading Overlay */}
                   {navigatingQuoteId === quote.id && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
                       <Loader2 size={24} className="animate-spin text-white" />
-                  </div>
+                    </div>
                   )}
-                  
+
                   {/* Quote Content */}
                   <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
                     <p className="text-white/90 text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
@@ -932,8 +1099,8 @@ export default function Sidebar({
                     <p className="text-white/60 text-[10px] sm:text-xs mt-1.5 truncate drop-shadow">
                       — {quote.author}
                     </p>
-                    </div>
                   </div>
+                </div>
               );
             })}
           </div>
@@ -955,7 +1122,7 @@ export default function Sidebar({
             </h2>
           </div>
           <p className="text-xs text-stone-500 mb-3">Choose your favorite topics</p>
-          
+
           {/* View Mode Toggle */}
           {onViewModeChange && (
             <div className="flex items-center gap-2 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
@@ -967,7 +1134,16 @@ export default function Sidebar({
                     : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
                 }`}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <rect x="3" y="3" width="18" height="18" rx="3" />
                   <path d="M12 8v8M8 12h8" />
                 </svg>
@@ -981,7 +1157,16 @@ export default function Sidebar({
                     : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
                 }`}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <rect x="3" y="3" width="7" height="7" rx="1" />
                   <rect x="14" y="3" width="7" height="7" rx="1" />
                   <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -1006,7 +1191,10 @@ export default function Sidebar({
       {isAuthenticated && (
         <div className="px-3 sm:px-4 pb-3">
           <button
-            onClick={() => { onCreateQuoteClick?.(); onClose(); }}
+            onClick={() => {
+              onCreateQuoteClick?.();
+              onClose();
+            }}
             className="w-full relative overflow-hidden group rounded-xl"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 opacity-90 group-hover:opacity-100 transition-opacity rounded-xl" />
@@ -1020,11 +1208,18 @@ export default function Sidebar({
               <div className="flex-1 text-left">
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-white text-sm sm:text-base">Create Your Quote</h3>
-                  <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[9px] font-bold text-white uppercase">New</span>
+                  <span className="px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[9px] font-bold text-white uppercase">
+                    New
+                  </span>
                 </div>
-                <p className="text-white/80 text-[10px] sm:text-xs mt-0.5">Write, upload photos or take pictures as background</p>
+                <p className="text-white/80 text-[10px] sm:text-xs mt-0.5">
+                  Write, upload photos or take pictures as background
+                </p>
               </div>
-              <ChevronRight size={20} className="text-white/60 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight
+                size={20}
+                className="text-white/60 group-hover:translate-x-1 transition-transform"
+              />
             </div>
             {/* Feature badges */}
             <div className="relative flex items-center justify-center gap-2 pb-3 px-3">
@@ -1051,11 +1246,18 @@ export default function Sidebar({
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-500/30">
                 <span className="text-2xl sm:text-3xl">🔓</span>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-white mb-2">Unlock Everything</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-stone-900 dark:text-white mb-2">
+                Unlock Everything
+              </h3>
               <p className="text-sm text-stone-600 dark:text-stone-400 mb-4">
-                Access <span className="font-bold text-amber-600 dark:text-amber-400">{totalCategories}+</span> categories & <span className="font-bold text-rose-600 dark:text-rose-400">12K+</span> quotes
+                Access{' '}
+                <span className="font-bold text-amber-600 dark:text-amber-400">
+                  {totalCategories}+
+                </span>{' '}
+                categories &{' '}
+                <span className="font-bold text-rose-600 dark:text-rose-400">12K+</span> quotes
               </p>
-              
+
               {/* Features Grid */}
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {[
@@ -1066,34 +1268,42 @@ export default function Sidebar({
                   { icon: '💾', text: 'Save & Organize', desc: 'Build collections' },
                   { icon: '📤', text: 'Share & Download', desc: 'HD quality' },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-2 p-2.5 bg-white/60 dark:bg-stone-700/50 rounded-lg text-left">
+                  <div
+                    key={i}
+                    className="flex items-start gap-2 p-2.5 bg-white/60 dark:bg-stone-700/50 rounded-lg text-left"
+                  >
                     <span className="text-lg shrink-0">{item.icon}</span>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-stone-900 dark:text-white truncate">{item.text}</p>
+                      <p className="text-xs font-semibold text-stone-900 dark:text-white truncate">
+                        {item.text}
+                      </p>
                       <p className="text-[10px] text-stone-500 dark:text-stone-400">{item.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
-              
+
               <button
-                onClick={() => { onLoginClick(); onClose(); }}
+                onClick={() => {
+                  onLoginClick();
+                  onClose();
+                }}
                 className="w-full py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 transition-all text-sm active:scale-[0.98]"
               >
                 Get Started Free
               </button>
-              
+
               <p className="text-[10px] text-stone-400 mt-3">
                 Free account • No credit card required
               </p>
             </div>
-            
+
             {/* Quick Links for Guest */}
             <div className="mt-4 space-y-2">
               <p className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-stone-500 font-medium px-1 mb-2">
                 Explore QuoteSwipe
               </p>
-              
+
               <Link
                 href="/about"
                 onClick={onClose}
@@ -1102,13 +1312,18 @@ export default function Sidebar({
                 <div className="flex items-center gap-3">
                   <span className="text-lg group-hover:scale-110 transition-transform">✨</span>
                   <div>
-                    <p className="text-sm font-medium text-stone-900 dark:text-white">About & Features</p>
+                    <p className="text-sm font-medium text-stone-900 dark:text-white">
+                      About & Features
+                    </p>
                     <p className="text-[10px] text-stone-500">Learn about QuoteSwipe</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight
+                  size={16}
+                  className="text-stone-400 group-hover:translate-x-1 transition-transform"
+                />
               </Link>
-              
+
               <Link
                 href="/review"
                 onClick={onClose}
@@ -1117,13 +1332,18 @@ export default function Sidebar({
                 <div className="flex items-center gap-3">
                   <span className="text-lg group-hover:scale-110 transition-transform">⭐</span>
                   <div>
-                    <p className="text-sm font-medium text-stone-900 dark:text-white">User Reviews</p>
+                    <p className="text-sm font-medium text-stone-900 dark:text-white">
+                      User Reviews
+                    </p>
                     <p className="text-[10px] text-stone-500">See what others say</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight
+                  size={16}
+                  className="text-stone-400 group-hover:translate-x-1 transition-transform"
+                />
               </Link>
-              
+
               <Link
                 href="/feedback"
                 onClick={onClose}
@@ -1132,13 +1352,18 @@ export default function Sidebar({
                 <div className="flex items-center gap-3">
                   <span className="text-lg group-hover:scale-110 transition-transform">💬</span>
                   <div>
-                    <p className="text-sm font-medium text-stone-900 dark:text-white">Send Feedback</p>
+                    <p className="text-sm font-medium text-stone-900 dark:text-white">
+                      Send Feedback
+                    </p>
                     <p className="text-[10px] text-stone-500">Help us improve</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight
+                  size={16}
+                  className="text-stone-400 group-hover:translate-x-1 transition-transform"
+                />
               </Link>
-              
+
               <Link
                 href="/contact"
                 onClick={onClose}
@@ -1151,9 +1376,12 @@ export default function Sidebar({
                     <p className="text-[10px] text-stone-500">Get in touch</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-stone-400 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight
+                  size={16}
+                  className="text-stone-400 group-hover:translate-x-1 transition-transform"
+                />
               </Link>
-              
+
               {/* Legal Links */}
               <div className="pt-3 mt-3 border-t border-stone-200 dark:border-stone-700">
                 <p className="text-[10px] uppercase tracking-wider text-stone-400 dark:text-stone-500 font-medium px-1 mb-2">
@@ -1186,15 +1414,26 @@ export default function Sidebar({
               {selectedCategories.length > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="flex-1 flex flex-wrap gap-2 min-w-0">
-                      {selectedCategories.slice(0, 3).map((catName) => {
-                      const cat = categories.find(c => c.name === catName);
-                      return cat && (
-                        <span key={cat.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white text-[11px] sm:text-xs font-medium rounded-full shadow-sm shadow-orange-500/30">
-                          {cat.icon} {cat.name}
-                          <button onClick={(e) => { e.stopPropagation(); onCategoryToggle(catName); }} className="hover:bg-white/20 rounded-full p-0.5 -mr-1">
-                            <X size={12} />
-                          </button>
-                        </span>
+                    {selectedCategories.slice(0, 3).map((catName) => {
+                      const cat = categories.find((c) => c.name === catName);
+                      return (
+                        cat && (
+                          <span
+                            key={cat.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white text-[11px] sm:text-xs font-medium rounded-full shadow-sm shadow-orange-500/30"
+                          >
+                            {cat.icon} {cat.name}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onCategoryToggle(catName);
+                              }}
+                              className="hover:bg-white/20 rounded-full p-0.5 -mr-1"
+                            >
+                              <X size={12} />
+                            </button>
+                          </span>
+                        )
                       );
                     })}
                     {selectedCategories.length > 3 && (
@@ -1204,7 +1443,7 @@ export default function Sidebar({
                     )}
                   </div>
                   <button
-                    onClick={() => selectedCategories.forEach(cat => onCategoryToggle(cat))}
+                    onClick={() => selectedCategories.forEach((cat) => onCategoryToggle(cat))}
                     className="text-[10px] sm:text-xs text-amber-500 hover:text-amber-600 whitespace-nowrap shrink-0"
                   >
                     Clear
@@ -1214,7 +1453,10 @@ export default function Sidebar({
 
               {/* Search */}
               <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                <Search
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400"
+                />
                 <input
                   type="text"
                   placeholder="Search categories..."
@@ -1223,7 +1465,10 @@ export default function Sidebar({
                   className="w-full pl-8 pr-3 py-2 bg-stone-100 dark:bg-stone-800 rounded-lg text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600">
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                  >
                     <X size={12} />
                   </button>
                 )}
@@ -1232,7 +1477,8 @@ export default function Sidebar({
 
             {/* Categories List - Grouped with Headlines */}
             <div className="flex-1 overflow-y-auto custom-scrollbar px-3 sm:px-4 pb-3 sm:pb-4">
-              {groupedCategories.length === 0 || (groupedCategories.length === 1 && groupedCategories[0].categories.length === 0) ? (
+              {groupedCategories.length === 0 ||
+              (groupedCategories.length === 1 && groupedCategories[0].categories.length === 0) ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Search size={28} className="text-stone-300 mb-2" />
                   <p className="text-xs text-stone-500">No categories found</p>
@@ -1242,75 +1488,88 @@ export default function Sidebar({
                   {groupedCategories.map((group) => {
                     const groupState = getGroupSelectionState(group.categories);
                     const isSearchResult = group.id === 'search';
-                    
+
                     return (
-                    <div key={group.id}>
-                      {/* Group Header - Clickable to select/deselect all */}
-                      <button
-                        onClick={() => !isSearchResult && handleGroupToggle(group.categories)}
-                        disabled={isSearchResult}
-                        className={`w-full flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-stone-900 py-1.5 z-10 rounded-lg transition-all ${
-                          !isSearchResult ? 'hover:bg-stone-50 dark:hover:bg-stone-800/50 cursor-pointer group' : ''
-                        }`}
-                      >
-                        {/* Selection indicator */}
-                        {!isSearchResult && (
-                          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                            groupState === 'all' 
-                              ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 border-transparent' 
-                              : groupState === 'some'
-                                ? 'bg-gradient-to-r from-amber-200 to-rose-200 dark:from-amber-800 dark:to-rose-800 border-amber-300 dark:border-amber-700'
-                                : 'border-stone-300 dark:border-stone-600 group-hover:border-amber-400 dark:group-hover:border-amber-500'
-                          }`}>
-                            {groupState === 'all' && (
-                              <Check size={12} className="text-white" />
-                            )}
-                            {groupState === 'some' && (
-                              <div className="w-2 h-2 rounded-sm bg-gradient-to-r from-amber-500 to-rose-500" />
-                            )}
-                          </div>
-                        )}
-                        <span className="text-base">{group.icon}</span>
-                        <h3 className="text-sm font-bold text-stone-800 dark:text-stone-200">
-                          {group.label}
-                        </h3>
-                        <div className="flex-1 h-px bg-gradient-to-r from-stone-200 dark:from-stone-700 to-transparent" />
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                          groupState === 'all' 
-                            ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white' 
-                            : groupState === 'some'
-                              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
-                              : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500'
-                        }`}>
-                          {groupState !== 'none' && `${group.categories.filter(c => selectedCategories.includes(c.name)).length}/`}{group.categories.length}
-                        </span>
-                      </button>
-                      
-                      {/* Categories Grid */}
-                      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                        {group.categories.map((category) => {
-                          const isSelected = selectedCategories.includes(category.name);
-                          return (
-                            <button
-                              key={category.id}
-                              onClick={() => { onCategoryToggle(category.name); onClose(); }}
-                              className={`flex items-center gap-2.5 px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-xl transition-all ${
-                                isSelected
-                                  ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/30 ring-2 ring-amber-300/50'
-                                  : 'bg-stone-50 dark:bg-stone-800/50 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 hover:border-amber-200 dark:hover:border-amber-800'
+                      <div key={group.id}>
+                        {/* Group Header - Clickable to select/deselect all */}
+                        <button
+                          onClick={() => !isSearchResult && handleGroupToggle(group.categories)}
+                          disabled={isSearchResult}
+                          className={`w-full flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-stone-900 py-1.5 z-10 rounded-lg transition-all ${
+                            !isSearchResult
+                              ? 'hover:bg-stone-50 dark:hover:bg-stone-800/50 cursor-pointer group'
+                              : ''
+                          }`}
+                        >
+                          {/* Selection indicator */}
+                          {!isSearchResult && (
+                            <div
+                              className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                                groupState === 'all'
+                                  ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 border-transparent'
+                                  : groupState === 'some'
+                                    ? 'bg-gradient-to-r from-amber-200 to-rose-200 dark:from-amber-800 dark:to-rose-800 border-amber-300 dark:border-amber-700'
+                                    : 'border-stone-300 dark:border-stone-600 group-hover:border-amber-400 dark:group-hover:border-amber-500'
                               }`}
                             >
-                              <span className="text-lg sm:text-xl shrink-0">{category.icon}</span>
-                              <span className="flex-1 text-left text-xs sm:text-sm font-medium truncate">{category.name}</span>
-                              <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shrink-0 font-medium ${isSelected ? 'bg-white/25' : 'bg-stone-200 dark:bg-stone-700'}`}>
-                                {category.count}
-                              </span>
-                            </button>
-                          );
-                        })}
+                              {groupState === 'all' && <Check size={12} className="text-white" />}
+                              {groupState === 'some' && (
+                                <div className="w-2 h-2 rounded-sm bg-gradient-to-r from-amber-500 to-rose-500" />
+                              )}
+                            </div>
+                          )}
+                          <span className="text-base">{group.icon}</span>
+                          <h3 className="text-sm font-bold text-stone-800 dark:text-stone-200">
+                            {group.label}
+                          </h3>
+                          <div className="flex-1 h-px bg-gradient-to-r from-stone-200 dark:from-stone-700 to-transparent" />
+                          <span
+                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                              groupState === 'all'
+                                ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white'
+                                : groupState === 'some'
+                                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                                  : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500'
+                            }`}
+                          >
+                            {groupState !== 'none' &&
+                              `${group.categories.filter((c) => selectedCategories.includes(c.name)).length}/`}
+                            {group.categories.length}
+                          </span>
+                        </button>
+
+                        {/* Categories Grid */}
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                          {group.categories.map((category) => {
+                            const isSelected = selectedCategories.includes(category.name);
+                            return (
+                              <button
+                                key={category.id}
+                                onClick={() => {
+                                  onCategoryToggle(category.name);
+                                  onClose();
+                                }}
+                                className={`flex items-center gap-2.5 px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-xl transition-all ${
+                                  isSelected
+                                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-lg shadow-orange-500/30 ring-2 ring-amber-300/50'
+                                    : 'bg-stone-50 dark:bg-stone-800/50 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 hover:border-amber-200 dark:hover:border-amber-800'
+                                }`}
+                              >
+                                <span className="text-lg sm:text-xl shrink-0">{category.icon}</span>
+                                <span className="flex-1 text-left text-xs sm:text-sm font-medium truncate">
+                                  {category.name}
+                                </span>
+                                <span
+                                  className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full shrink-0 font-medium ${isSelected ? 'bg-white/25' : 'bg-stone-200 dark:bg-stone-700'}`}
+                                >
+                                  {category.count}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
                   })}
                 </div>
               )}
@@ -1341,9 +1600,14 @@ export default function Sidebar({
           <div className="flex items-center justify-between p-4 border-b border-stone-100 dark:border-stone-800">
             <div className="flex items-center gap-2">
               <Image src="/logo.svg" alt="QuoteSwipe" width={40} height={40} />
-              <span className="text-lg font-bold bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 bg-clip-text text-transparent">QuoteSwipe</span>
+              <span className="text-lg font-bold bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 bg-clip-text text-transparent">
+                QuoteSwipe
+              </span>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl transition-colors"
+            >
               <X size={20} className="text-stone-500" />
             </button>
           </div>
@@ -1409,19 +1673,26 @@ export default function Sidebar({
               </button>
             ) : (
               <button
-                onClick={() => { onLoginClick(); onClose(); }}
+                onClick={() => {
+                  onLoginClick();
+                  onClose();
+                }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/30 transition-all text-sm font-semibold active:scale-[0.98]"
               >
                 <User size={16} />
                 <span>Sign In</span>
               </button>
             )}
-            
+
             {/* Legal Links */}
             <div className="flex items-center justify-center gap-2 text-[9px] sm:text-[10px] text-stone-400 dark:text-stone-500">
-              <Link href="/terms-of-service" className="hover:text-amber-500 transition-colors">Terms</Link>
+              <Link href="/terms-of-service" className="hover:text-amber-500 transition-colors">
+                Terms
+              </Link>
               <span>•</span>
-              <Link href="/cookie-policy" className="hover:text-amber-500 transition-colors">Cookies</Link>
+              <Link href="/cookie-policy" className="hover:text-amber-500 transition-colors">
+                Cookies
+              </Link>
               <span>•</span>
               <span>© 2025</span>
             </div>
@@ -1431,7 +1702,10 @@ export default function Sidebar({
 
       {/* Update Password Modal */}
       {isAuthenticated && (
-        <UpdatePasswordModal isOpen={showUpdatePasswordModal} onClose={() => setShowUpdatePasswordModal(false)} />
+        <UpdatePasswordModal
+          isOpen={showUpdatePasswordModal}
+          onClose={() => setShowUpdatePasswordModal(false)}
+        />
       )}
     </>
   );

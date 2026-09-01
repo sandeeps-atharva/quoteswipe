@@ -255,8 +255,18 @@ export default function SchedulePage() {
   };
 
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   const formatDate = (dateStr: string) => {
@@ -269,10 +279,14 @@ export default function SchedulePage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'sent': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      case 'pending': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-      case 'failed': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      case 'sent':
+        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+      case 'pending':
+        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      case 'failed':
+        return 'bg-red-500/20 text-red-400 border-red-500/30';
+      default:
+        return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
     }
   };
 
@@ -284,7 +298,10 @@ export default function SchedulePage() {
 
     for (let i = 0; i < firstDay; i++) {
       days.push(
-        <div key={`empty-${i}`} className="min-h-[100px] lg:min-h-[120px] bg-slate-900/20 rounded-lg" />
+        <div
+          key={`empty-${i}`}
+          className="min-h-[100px] lg:min-h-[120px] bg-slate-900/20 rounded-lg"
+        />
       );
     }
 
@@ -310,18 +327,14 @@ export default function SchedulePage() {
             isToday
               ? 'bg-violet-500/10 border-violet-500/50 hover:bg-violet-500/20'
               : isPast
-              ? 'bg-slate-900/30 border-slate-800/50 cursor-default opacity-50'
-              : 'bg-slate-900/30 border-slate-800 hover:border-slate-700 hover:bg-slate-800/30'
+                ? 'bg-slate-900/30 border-slate-800/50 cursor-default opacity-50'
+                : 'bg-slate-900/30 border-slate-800 hover:border-slate-700 hover:bg-slate-800/30'
           }`}
         >
           <div className="flex items-center justify-between mb-2">
             <span
               className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium ${
-                isToday
-                  ? 'bg-violet-500 text-white'
-                  : isPast
-                  ? 'text-slate-600'
-                  : 'text-slate-400'
+                isToday ? 'bg-violet-500 text-white' : isPast ? 'text-slate-600' : 'text-slate-400'
               }`}
             >
               {day}
@@ -376,11 +389,7 @@ export default function SchedulePage() {
               disabled={isProcessing || pendingEmails.length === 0}
               className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-xl text-white transition-colors"
             >
-              {isProcessing ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <Play size={18} />
-              )}
+              {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} />}
               Process Now
             </button>
             <button
@@ -520,7 +529,10 @@ export default function SchedulePage() {
             <div className="p-4">
               <div className="grid grid-cols-7 gap-2 mb-2">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                  <div key={day} className="text-center text-xs font-semibold text-slate-500 py-2 uppercase tracking-wider">
+                  <div
+                    key={day}
+                    className="text-center text-xs font-semibold text-slate-500 py-2 uppercase tracking-wider"
+                  >
                     {day}
                   </div>
                 ))}
@@ -539,7 +551,10 @@ export default function SchedulePage() {
                 </div>
               ) : (
                 scheduledEmails
-                  .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())
+                  .sort(
+                    (a, b) =>
+                      new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
+                  )
                   .map((email) => (
                     <div
                       key={email.id}
@@ -559,7 +574,9 @@ export default function SchedulePage() {
                           </div>
                         </div>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(email.status)}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(email.status)}`}
+                      >
                         {email.status}
                       </span>
                     </div>
@@ -589,9 +606,7 @@ export default function SchedulePage() {
               <form onSubmit={handleCreateSchedule} className="p-5 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Title *
-                    </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Title *</label>
                     <input
                       type="text"
                       value={formData.title}
@@ -619,9 +634,7 @@ export default function SchedulePage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Date *
-                    </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Date *</label>
                     <input
                       type="date"
                       value={formData.scheduled_date}
@@ -632,9 +645,7 @@ export default function SchedulePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Time
-                    </label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Time</label>
                     <input
                       type="time"
                       value={formData.scheduled_time}
@@ -650,7 +661,7 @@ export default function SchedulePage() {
                     <Users size={14} className="inline mr-2" />
                     Recipients *
                   </label>
-                  
+
                   <div className="flex gap-2 mb-3">
                     <button
                       type="button"
@@ -696,7 +707,7 @@ export default function SchedulePage() {
                           className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-white placeholder-slate-500 text-sm"
                         />
                       </div>
-                      
+
                       <div className="max-h-48 overflow-y-auto space-y-1">
                         {users.map((user) => (
                           <label
@@ -707,12 +718,16 @@ export default function SchedulePage() {
                                 : 'hover:bg-slate-700/50 border border-transparent'
                             }`}
                           >
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                              selectedUserIds.includes(user.id)
-                                ? 'bg-violet-500 border-violet-500'
-                                : 'border-slate-600'
-                            }`}>
-                              {selectedUserIds.includes(user.id) && <Check size={12} className="text-white" />}
+                            <div
+                              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                selectedUserIds.includes(user.id)
+                                  ? 'bg-violet-500 border-violet-500'
+                                  : 'border-slate-600'
+                              }`}
+                            >
+                              {selectedUserIds.includes(user.id) && (
+                                <Check size={12} className="text-white" />
+                              )}
                             </div>
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-xs">
                               {user.name?.charAt(0).toUpperCase() || 'U'}
@@ -730,10 +745,12 @@ export default function SchedulePage() {
                           </label>
                         ))}
                       </div>
-                      
+
                       {selectedUserIds.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-slate-700 flex items-center justify-between">
-                          <span className="text-sm text-slate-400">{selectedUserIds.length} user(s) selected</span>
+                          <span className="text-sm text-slate-400">
+                            {selectedUserIds.length} user(s) selected
+                          </span>
                           <button
                             type="button"
                             onClick={() => setSelectedUserIds([])}
@@ -801,7 +818,9 @@ export default function SchedulePage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting || (!formData.send_to_all && selectedUserIds.length === 0)}
+                    disabled={
+                      isSubmitting || (!formData.send_to_all && selectedUserIds.length === 0)
+                    }
                     className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-medium text-white transition-colors flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
@@ -833,11 +852,14 @@ export default function SchedulePage() {
 
               <div className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className={`px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusColor(selectedEmail.status)}`}>
+                  <span
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusColor(selectedEmail.status)}`}
+                  >
                     {selectedEmail.status.charAt(0).toUpperCase() + selectedEmail.status.slice(1)}
                   </span>
                   <div className="text-sm text-slate-400">
-                    {formatDate(selectedEmail.scheduled_date)} at {selectedEmail.scheduled_time?.slice(0, 5) || '09:00'}
+                    {formatDate(selectedEmail.scheduled_date)} at{' '}
+                    {selectedEmail.scheduled_time?.slice(0, 5) || '09:00'}
                   </div>
                 </div>
 
@@ -856,7 +878,9 @@ export default function SchedulePage() {
                       <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-700">
                         <p className="text-slate-300 italic">"{selectedEmail.quote_text}"</p>
                         {selectedEmail.quote_author && (
-                          <p className="text-sm text-slate-500 mt-1">— {selectedEmail.quote_author}</p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            — {selectedEmail.quote_author}
+                          </p>
                         )}
                       </div>
                     </div>

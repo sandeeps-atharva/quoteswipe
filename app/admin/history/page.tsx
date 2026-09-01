@@ -216,7 +216,9 @@ export default function HistoryPage() {
                             {campaign.subject}
                           </h3>
                           <div className="flex items-center gap-3 mt-1">
-                            <span className="text-sm text-violet-400">{campaign.festival_name}</span>
+                            <span className="text-sm text-violet-400">
+                              {campaign.festival_name}
+                            </span>
                             <span className="text-slate-600">•</span>
                             <span className="text-sm text-slate-400">
                               {formatDate(campaign.created_at)}
@@ -278,4 +280,3 @@ export default function HistoryPage() {
     </AdminLayout>
   );
 }
-

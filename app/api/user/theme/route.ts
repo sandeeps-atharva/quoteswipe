@@ -6,16 +6,13 @@ import { getUserIdFromRequest } from '@/lib/auth';
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserIdFromRequest(request);
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const preferencesCollection = await getCollection('user_preferences');
-    const preferences: any = await preferencesCollection.findOne({ user_id: userId }) as any;
+    const preferences: any = (await preferencesCollection.findOne({ user_id: userId })) as any;
 
     if (preferences?.theme_mode) {
       return NextResponse.json({
@@ -27,13 +24,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       theme: 'light',
     });
-
   } catch (error) {
     console.error('Get theme preference error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get theme preference' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get theme preference' }, { status: 500 });
   }
 }
 
@@ -41,12 +34,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userId = await getUserIdFromRequest(request);
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { theme } = await request.json();
@@ -67,12 +57,12 @@ export async function POST(request: NextRequest) {
       {
         $set: {
           theme_mode: theme,
-          updated_at: new Date()
+          updated_at: new Date(),
         },
         $setOnInsert: {
           user_id: userId,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       },
       { upsert: true }
     );
@@ -81,12 +71,8 @@ export async function POST(request: NextRequest) {
       success: true,
       theme,
     });
-
   } catch (error) {
     console.error('Save theme preference error:', error);
-    return NextResponse.json(
-      { error: 'Failed to save theme preference' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to save theme preference' }, { status: 500 });
   }
 }

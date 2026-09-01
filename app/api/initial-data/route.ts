@@ -20,16 +20,16 @@ interface CacheEntry<T> {
 
 // Cache durations
 const CACHE_DURATIONS = {
-  categories: 10 * 60 * 1000,    // 10 minutes (rarely change)
+  categories: 10 * 60 * 1000, // 10 minutes (rarely change)
   quotesWithCounts: 2 * 60 * 1000, // 2 minutes (quotes + like counts)
-  userPrefs: 30 * 1000,          // 30 seconds (user-specific)
+  userPrefs: 30 * 1000, // 30 seconds (user-specific)
 } as const;
 
 // Global caches
 const categoriesCache: CacheEntry<any[]> = { data: [], timestamp: 0 };
 const quotesCache: CacheEntry<{ quotes: any[]; total: number }> = {
   data: { quotes: [], total: 0 },
-  timestamp: 0
+  timestamp: 0,
 };
 // Per-category quote caches
 const categoryQuotesCache = new Map<string, CacheEntry<{ quotes: any[]; total: number }>>();
@@ -40,7 +40,10 @@ const categoryQuotesCache = new Map<string, CacheEntry<{ quotes: any[]; total: n
 async function getCachedCategories(): Promise<any[]> {
   const now = Date.now();
 
-  if (categoriesCache.data.length > 0 && now - categoriesCache.timestamp < CACHE_DURATIONS.categories) {
+  if (
+    categoriesCache.data.length > 0 &&
+    now - categoriesCache.timestamp < CACHE_DURATIONS.categories
+  ) {
     return categoriesCache.data;
   }
 
@@ -50,9 +53,7 @@ async function getCachedCategories(): Promise<any[]> {
   // Use aggregation for counts - single query with index
   const [categories, quoteCounts] = await Promise.all([
     categoriesCollection.find({}).sort({ name: 1 }).toArray(),
-    quotesCollection.aggregate([
-      { $group: { _id: '$category_id', count: { $sum: 1 } } }
-    ]).toArray()
+    quotesCollection.aggregate([{ $group: { _id: '$category_id', count: { $sum: 1 } } }]).toArray(),
   ]);
 
   const countMap = new Map<string, number>();
@@ -91,7 +92,11 @@ async function getQuotesWithCachedCounts(
 
   // Check cache
   const cached = categoryIds ? categoryQuotesCache.get(cacheKey) : quotesCache;
-  if (cached && cached.data.quotes.length > 0 && now - cached.timestamp < CACHE_DURATIONS.quotesWithCounts) {
+  if (
+    cached &&
+    cached.data.quotes.length > 0 &&
+    now - cached.timestamp < CACHE_DURATIONS.quotesWithCounts
+  ) {
     // Return cached quotes with proper pagination
     const paginatedQuotes = cached.data.quotes.slice(offset, offset + limit);
     return { quotes: paginatedQuotes, total: cached.data.total };
@@ -104,7 +109,7 @@ async function getQuotesWithCachedCounts(
   const filter: any = {};
   if (categoryIds && categoryIds.length > 0) {
     // Convert string IDs to ObjectIds for category_id
-    const objectIds = categoryIds.map(id => {
+    const objectIds = categoryIds.map((id) => {
       try {
         return ObjectId.isValid(id) ? new ObjectId(id) : id;
       } catch {
@@ -124,9 +129,9 @@ async function getQuotesWithCachedCounts(
         text: 1,
         author: 1,
         category_id: 1,
-        likes_count: 1,  // Use denormalized field if available
+        likes_count: 1, // Use denormalized field if available
         dislikes_count: 1,
-        _id: 1
+        _id: 1,
       })
       .limit(500) // Fetch more for caching, paginate from cache
       .toArray(),
@@ -134,15 +139,12 @@ async function getQuotesWithCachedCounts(
     quotesCollection.estimatedDocumentCount(), // Much faster than countDocuments
 
     // Categories are likely cached, this is fast
-    getCachedCategories()
+    getCachedCategories(),
   ]);
 
   // Create category lookup map
   const categoryMap = new Map(
-    allCategories.map((c: any) => [
-      c.id,
-      { name: c.name, icon: c.icon }
-    ])
+    allCategories.map((c: any) => [c.id, { name: c.name, icon: c.icon }])
   );
 
   // Transform quotes - use denormalized counts if available
@@ -213,31 +215,35 @@ async function getUserDataFast(userId: string): Promise<{
         role: 1,
         profile_picture: 1,
         google_id: 1,
-        onboarding_complete: 1
-      }
+        onboarding_complete: 1,
+      },
     }),
-    preferencesCollection.findOne({ user_id: userId })
+    preferencesCollection.findOne({ user_id: userId }),
   ]);
 
   const userDoc = user as any;
   const prefsDoc = preferences as any;
 
   return {
-    user: userDoc ? {
-      id: userDoc._id.toString(),
-      name: userDoc.name,
-      email: userDoc.email,
-      role: userDoc.role || 'user',
-      profile_picture: userDoc.profile_picture,
-      auth_provider: userDoc.google_id ? 'google' : 'email',
-    } : null,
-    preferences: prefsDoc ? {
-      selectedCategories: prefsDoc.selected_categories || [],
-      themeId: prefsDoc.theme_id || 'default',
-      fontId: prefsDoc.font_id || 'default',
-      backgroundId: prefsDoc.background_id || 'none',
-      customBackgrounds: prefsDoc.custom_backgrounds || [],
-    } : null,
+    user: userDoc
+      ? {
+          id: userDoc._id.toString(),
+          name: userDoc.name,
+          email: userDoc.email,
+          role: userDoc.role || 'user',
+          profile_picture: userDoc.profile_picture,
+          auth_provider: userDoc.google_id ? 'google' : 'email',
+        }
+      : null,
+    preferences: prefsDoc
+      ? {
+          selectedCategories: prefsDoc.selected_categories || [],
+          themeId: prefsDoc.theme_id || 'default',
+          fontId: prefsDoc.font_id || 'default',
+          backgroundId: prefsDoc.background_id || 'none',
+          customBackgrounds: prefsDoc.custom_backgrounds || [],
+        }
+      : null,
     onboardingComplete: userDoc?.onboarding_complete ?? true,
   };
 }
@@ -260,13 +266,14 @@ export async function GET(request: NextRequest) {
     // Parse category filter
     let categoryIds: string[] | null = null;
     if (categoriesParam && categoriesParam !== 'All') {
-      const categoryNames = categoriesParam.split(',').map(c => c.trim()).filter(Boolean);
+      const categoryNames = categoriesParam
+        .split(',')
+        .map((c) => c.trim())
+        .filter(Boolean);
       if (categoryNames.length > 0) {
         // Get category IDs from cached categories
         const categories = await getCachedCategories();
-        categoryIds = categories
-          .filter(c => categoryNames.includes(c.name))
-          .map(c => c.id);
+        categoryIds = categories.filter((c) => categoryNames.includes(c.name)).map((c) => c.id);
       }
     }
 
@@ -276,7 +283,7 @@ export async function GET(request: NextRequest) {
     const [categories, quotesData, userData] = await Promise.all([
       getCachedCategories(),
       getQuotesWithCachedCounts(categoryIds, limit, offset),
-      isAuthenticated && userId ? getUserDataFast(userId) : Promise.resolve(null)
+      isAuthenticated && userId ? getUserDataFast(userId) : Promise.resolve(null),
     ]);
 
     // All users can access all categories (no authentication restriction)
@@ -327,7 +334,7 @@ export async function GET(request: NextRequest) {
         responseTime,
         timestamp: Date.now(),
         cached: responseTime < 100, // Likely cached if very fast
-      }
+      },
     });
 
     // Aggressive caching headers
@@ -341,9 +348,6 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('[initial-data] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to load initial data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to load initial data' }, { status: 500 });
   }
 }

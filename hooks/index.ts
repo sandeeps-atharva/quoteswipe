@@ -23,4 +23,3 @@ export { useSwipeActions } from './useSwipeActions';
 export { useAuthActions } from './useAuthActions';
 
 export { useQuoteFetch } from './useQuoteFetch';
-

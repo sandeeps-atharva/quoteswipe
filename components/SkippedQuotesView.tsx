@@ -56,46 +56,53 @@ export default function SkippedQuotesView({
   const filteredQuotes = useMemo(() => {
     if (!searchQuery.trim()) return quotes;
     const q = searchQuery.toLowerCase();
-    return quotes.filter(quote =>
-      quote.text.toLowerCase().includes(q) ||
-      quote.author.toLowerCase().includes(q) ||
-      quote.category.toLowerCase().includes(q)
+    return quotes.filter(
+      (quote) =>
+        quote.text.toLowerCase().includes(q) ||
+        quote.author.toLowerCase().includes(q) ||
+        quote.category.toLowerCase().includes(q)
     );
   }, [quotes, searchQuery]);
 
   // Handle share
-  const handleShare = useCallback((e: React.MouseEvent, quote: SkippedQuote) => {
-    e.stopPropagation();
-    setActiveActionsId(null);
-    onShareQuote(quote);
-  }, [onShareQuote]);
+  const handleShare = useCallback(
+    (e: React.MouseEvent, quote: SkippedQuote) => {
+      e.stopPropagation();
+      setActiveActionsId(null);
+      onShareQuote(quote);
+    },
+    [onShareQuote]
+  );
 
   // Toggle actions menu (for mobile)
   const toggleActions = useCallback((e: React.MouseEvent, quoteId: string | number) => {
     e.stopPropagation();
-    setActiveActionsId(prev => prev === quoteId ? null : quoteId);
+    setActiveActionsId((prev) => (prev === quoteId ? null : quoteId));
   }, []);
 
   // Handle quote click with loading state
-  const handleQuoteClick = useCallback((quote: SkippedQuote) => {
-    // On mobile with actions shown, close actions instead of navigating
-    if (activeActionsId === quote.id) {
-      setActiveActionsId(null);
-      return;
-    }
-    if (navigatingId) return;
-    setNavigatingId(quote.id);
-    onQuoteClick(quote.id, quote.category);
-    // Reset after navigation
-    setTimeout(() => setNavigatingId(null), 500);
-  }, [navigatingId, onQuoteClick, activeActionsId]);
+  const handleQuoteClick = useCallback(
+    (quote: SkippedQuote) => {
+      // On mobile with actions shown, close actions instead of navigating
+      if (activeActionsId === quote.id) {
+        setActiveActionsId(null);
+        return;
+      }
+      if (navigatingId) return;
+      setNavigatingId(quote.id);
+      onQuoteClick(quote.id, quote.category);
+      // Reset after navigation
+      setTimeout(() => setNavigatingId(null), 500);
+    },
+    [navigatingId, onQuoteClick, activeActionsId]
+  );
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-30 bg-[#FFFBF7] dark:bg-[#0C0A09] flex flex-col"
-      style={{ 
+      style={{
         paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
-        paddingTop: 'env(safe-area-inset-top, 0px)'
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
       {/* Header */}
@@ -158,7 +165,9 @@ export default function SkippedQuotesView({
               <div className="w-20 h-20 rounded-2xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center mb-4">
                 <ThumbsDown size={36} className="text-stone-400" />
               </div>
-              <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-2">No skipped quotes yet</h3>
+              <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-2">
+                No skipped quotes yet
+              </h3>
               <p className="text-sm text-stone-500 dark:text-stone-400 max-w-xs">
                 Swipe left on quotes to skip them and they'll appear here
               </p>
@@ -186,11 +195,14 @@ export default function SkippedQuotesView({
                   'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=400&q=80',
                   'https://images.unsplash.com/photo-1504805572947-34fad45aed93?w=400&q=80',
                 ];
-                const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+                const bgIndex =
+                  typeof quote.id === 'string'
+                    ? quote.id.charCodeAt(0) % defaultBgs.length
+                    : Number(quote.id) % defaultBgs.length;
                 const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
-                
+
                 const isActionsVisible = activeActionsId === quote.id;
-                
+
                 return (
                   <div
                     key={quote.id}
@@ -200,19 +212,19 @@ export default function SkippedQuotesView({
                     }`}
                   >
                     {/* Background Image */}
-                    <div 
+                    <div
                       className="absolute inset-0 bg-cover bg-center grayscale-[30%]"
                       style={{ backgroundImage: `url(${backgroundUrl})` }}
                     />
-                    
+
                     {/* Dark Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                    
+
                     {/* Skipped Icon */}
                     <div className="absolute top-2 right-2 z-10">
                       <ThumbsDown size={18} className="text-stone-400 drop-shadow-lg" />
                     </div>
-                    
+
                     {/* Mobile Menu Button - Hidden when actions shown */}
                     {!isActionsVisible && (
                       <button
@@ -222,13 +234,15 @@ export default function SkippedQuotesView({
                         <MoreVertical size={14} className="text-white" />
                       </button>
                     )}
-                    
+
                     {/* Share Button - Shows instantly on mobile when active, with transition on desktop hover */}
-                    <div className={`absolute top-2 left-2 flex gap-1 z-10 ${
-                      isActionsVisible 
-                        ? 'flex' 
-                        : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
-                    }`}>
+                    <div
+                      className={`absolute top-2 left-2 flex gap-1 z-10 ${
+                        isActionsVisible
+                          ? 'flex'
+                          : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
+                      }`}
+                    >
                       <button
                         onClick={(e) => handleShare(e, quote)}
                         className="p-2 sm:p-1.5 bg-black/40 backdrop-blur-sm hover:bg-black/60 active:bg-black/60 rounded-lg"
@@ -237,14 +251,14 @@ export default function SkippedQuotesView({
                         <Share2 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
                       </button>
                     </div>
-                    
+
                     {/* Loading Overlay */}
                     {navigatingId === quote.id && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
                         <Loader2 size={24} className="animate-spin text-white" />
                       </div>
                     )}
-                    
+
                     {/* Quote Content */}
                     <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
                       <p className="text-white/90 text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
@@ -264,4 +278,3 @@ export default function SkippedQuotesView({
     </div>
   );
 }
-

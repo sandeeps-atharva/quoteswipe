@@ -7,20 +7,14 @@ export async function GET(request: NextRequest) {
     const userId = getUserIdFromRequest(request);
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const usersCollection = await getCollection('users');
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Build response object
@@ -33,16 +27,16 @@ export async function GET(request: NextRequest) {
       profile_picture: user.profile_picture,
       auth_provider: user.google_id ? 'google' : 'email',
     };
-    
-    return NextResponse.json({ 
-      user: userResponse,
-      onboarding_complete: user.onboarding_complete ?? true  // Default true for existing users
-    }, { status: 200 });
+
+    return NextResponse.json(
+      {
+        user: userResponse,
+        onboarding_complete: user.onboarding_complete ?? true, // Default true for existing users
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Get user error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

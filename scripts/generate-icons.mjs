@@ -14,19 +14,16 @@ async function generateIcons() {
 
   // Generate essential sizes only
   const sizes = [
-    { name: 'icon-16.png', size: 16 },      // Tiny favicon
-    { name: 'icon-32.png', size: 32 },      // Standard favicon
-    { name: 'icon-192.png', size: 192 },    // Android/PWA
-    { name: 'icon-512.png', size: 512 },    // PWA splash
+    { name: 'icon-16.png', size: 16 }, // Tiny favicon
+    { name: 'icon-32.png', size: 32 }, // Standard favicon
+    { name: 'icon-192.png', size: 192 }, // Android/PWA
+    { name: 'icon-512.png', size: 512 }, // PWA splash
     { name: 'apple-touch-icon.png', size: 180 }, // iOS
   ];
 
   for (const { name, size } of sizes) {
     try {
-      await sharp(svgBuffer)
-        .resize(size, size)
-        .png()
-        .toFile(join(publicDir, name));
+      await sharp(svgBuffer).resize(size, size).png().toFile(join(publicDir, name));
       console.log(`✅ Generated ${name} (${size}x${size})`);
     } catch (error) {
       console.error(`❌ Failed to generate ${name}:`, error.message);
@@ -35,18 +32,12 @@ async function generateIcons() {
 
   // Generate favicon.ico (32x32 PNG renamed)
   try {
-    await sharp(svgBuffer)
-      .resize(32, 32)
-      .png()
-      .toFile(join(publicDir, 'favicon-32.png'));
-    
+    await sharp(svgBuffer).resize(32, 32).png().toFile(join(publicDir, 'favicon-32.png'));
+
     // For proper .ico, we'll just use the PNG as favicon
     // Modern browsers support PNG favicons
-    await sharp(svgBuffer)
-      .resize(32, 32)
-      .png()
-      .toFile(join(publicDir, 'favicon.png'));
-    
+    await sharp(svgBuffer).resize(32, 32).png().toFile(join(publicDir, 'favicon.png'));
+
     console.log('✅ Generated favicon.png (32x32)');
   } catch (error) {
     console.error('❌ Failed to generate favicon:', error.message);
@@ -118,11 +109,8 @@ async function generateIcons() {
       </svg>
     `;
 
-    await sharp(Buffer.from(ogSvg))
-      .resize(1200, 630)
-      .png()
-      .toFile(join(publicDir, 'og-image.png'));
-    
+    await sharp(Buffer.from(ogSvg)).resize(1200, 630).png().toFile(join(publicDir, 'og-image.png'));
+
     console.log('✅ Generated og-image.png (1200x630)');
   } catch (error) {
     console.error('❌ Failed to generate OG image:', error.message);

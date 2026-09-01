@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (search) {
       matchStage.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { email: { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -31,73 +31,69 @@ export async function GET(request: NextRequest) {
     const total = await usersCollection.countDocuments(matchStage);
 
     // Single aggregation with $lookup - replaces 3 separate queries
-    const formattedUsers = await usersCollection.aggregate([
-      // Match filter
-      { $match: matchStage },
-      { $sort: { created_at: -1 } },
-      { $skip: skip },
-      { $limit: limit },
-      
-      // Add string version of _id for lookups
-      { $addFields: { userIdStr: { $toString: '$_id' } } },
-      
-      // Lookup likes count
-      {
-        $lookup: {
-          from: 'user_likes',
-          let: { odId: '$_id', odIdStr: '$userIdStr' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $eq: ['$user_id', '$$odId'] },
-                    { $eq: ['$user_id', '$$odIdStr'] }
-                  ]
-                }
-              }
-            },
-            { $count: 'count' }
-          ],
-          as: 'likesData'
-        }
-      },
-      
-      // Lookup saved count
-      {
-        $lookup: {
-          from: 'user_saved',
-          let: { odId: '$_id', odIdStr: '$userIdStr' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $eq: ['$user_id', '$$odId'] },
-                    { $eq: ['$user_id', '$$odIdStr'] }
-                  ]
-                }
-              }
-            },
-            { $count: 'count' }
-          ],
-          as: 'savedData'
-        }
-      },
-      
-      // Project final shape (same as before)
-      {
-        $project: {
-          id: { $toString: '$_id' },
-          name: 1,
-          email: 1,
-          role: { $ifNull: ['$role', 'user'] },
-          created_at: 1,
-          likes_count: { $ifNull: [{ $arrayElemAt: ['$likesData.count', 0] }, 0] },
-          saved_count: { $ifNull: [{ $arrayElemAt: ['$savedData.count', 0] }, 0] }
-        }
-      }
-    ]).toArray() as any[];
+    const formattedUsers = (await usersCollection
+      .aggregate([
+        // Match filter
+        { $match: matchStage },
+        { $sort: { created_at: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+
+        // Add string version of _id for lookups
+        { $addFields: { userIdStr: { $toString: '$_id' } } },
+
+        // Lookup likes count
+        {
+          $lookup: {
+            from: 'user_likes',
+            let: { odId: '$_id', odIdStr: '$userIdStr' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $or: [{ $eq: ['$user_id', '$$odId'] }, { $eq: ['$user_id', '$$odIdStr'] }],
+                  },
+                },
+              },
+              { $count: 'count' },
+            ],
+            as: 'likesData',
+          },
+        },
+
+        // Lookup saved count
+        {
+          $lookup: {
+            from: 'user_saved',
+            let: { odId: '$_id', odIdStr: '$userIdStr' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $or: [{ $eq: ['$user_id', '$$odId'] }, { $eq: ['$user_id', '$$odIdStr'] }],
+                  },
+                },
+              },
+              { $count: 'count' },
+            ],
+            as: 'savedData',
+          },
+        },
+
+        // Project final shape (same as before)
+        {
+          $project: {
+            id: { $toString: '$_id' },
+            name: 1,
+            email: 1,
+            role: { $ifNull: ['$role', 'user'] },
+            created_at: 1,
+            likes_count: { $ifNull: [{ $arrayElemAt: ['$likesData.count', 0] }, 0] },
+            saved_count: { $ifNull: [{ $arrayElemAt: ['$savedData.count', 0] }, 0] },
+          },
+        },
+      ])
+      .toArray()) as any[];
 
     return NextResponse.json({
       users: formattedUsers,
@@ -111,7 +107,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get users error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

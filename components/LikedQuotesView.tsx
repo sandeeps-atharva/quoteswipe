@@ -56,46 +56,53 @@ export default function LikedQuotesView({
   const filteredQuotes = useMemo(() => {
     if (!searchQuery.trim()) return quotes;
     const q = searchQuery.toLowerCase();
-    return quotes.filter(quote =>
-      quote.text.toLowerCase().includes(q) ||
-      quote.author.toLowerCase().includes(q) ||
-      quote.category.toLowerCase().includes(q)
+    return quotes.filter(
+      (quote) =>
+        quote.text.toLowerCase().includes(q) ||
+        quote.author.toLowerCase().includes(q) ||
+        quote.category.toLowerCase().includes(q)
     );
   }, [quotes, searchQuery]);
 
   // Handle share
-  const handleShare = useCallback((e: React.MouseEvent, quote: LikedQuote) => {
-    e.stopPropagation();
-    setActiveActionsId(null);
-    onShareQuote(quote);
-  }, [onShareQuote]);
+  const handleShare = useCallback(
+    (e: React.MouseEvent, quote: LikedQuote) => {
+      e.stopPropagation();
+      setActiveActionsId(null);
+      onShareQuote(quote);
+    },
+    [onShareQuote]
+  );
 
   // Toggle actions menu (for mobile)
   const toggleActions = useCallback((e: React.MouseEvent, quoteId: string | number) => {
     e.stopPropagation();
-    setActiveActionsId(prev => prev === quoteId ? null : quoteId);
+    setActiveActionsId((prev) => (prev === quoteId ? null : quoteId));
   }, []);
 
   // Handle quote click with loading state
-  const handleQuoteClick = useCallback((quote: LikedQuote) => {
-    // On mobile with actions shown, close actions instead of navigating
-    if (activeActionsId === quote.id) {
-      setActiveActionsId(null);
-      return;
-    }
-    if (navigatingId) return;
-    setNavigatingId(quote.id);
-    onQuoteClick(quote.id, quote.category);
-    // Reset after navigation
-    setTimeout(() => setNavigatingId(null), 500);
-  }, [navigatingId, onQuoteClick, activeActionsId]);
+  const handleQuoteClick = useCallback(
+    (quote: LikedQuote) => {
+      // On mobile with actions shown, close actions instead of navigating
+      if (activeActionsId === quote.id) {
+        setActiveActionsId(null);
+        return;
+      }
+      if (navigatingId) return;
+      setNavigatingId(quote.id);
+      onQuoteClick(quote.id, quote.category);
+      // Reset after navigation
+      setTimeout(() => setNavigatingId(null), 500);
+    },
+    [navigatingId, onQuoteClick, activeActionsId]
+  );
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-30 bg-[#FFFBF7] dark:bg-[#0C0A09] flex flex-col"
-      style={{ 
+      style={{
         paddingBottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
-        paddingTop: 'env(safe-area-inset-top, 0px)'
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
       {/* Header */}
@@ -158,7 +165,9 @@ export default function LikedQuotesView({
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-rose-100 to-rose-200 dark:from-rose-900/30 dark:to-rose-800/30 flex items-center justify-center mb-4">
                 <Heart size={36} className="text-rose-500" />
               </div>
-              <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-2">No liked quotes yet</h3>
+              <h3 className="text-lg font-semibold text-stone-900 dark:text-white mb-2">
+                No liked quotes yet
+              </h3>
               <p className="text-sm text-stone-500 dark:text-stone-400 max-w-xs">
                 Swipe right on quotes you love to add them here
               </p>
@@ -186,11 +195,14 @@ export default function LikedQuotesView({
                   'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
                   'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
                 ];
-                const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+                const bgIndex =
+                  typeof quote.id === 'string'
+                    ? quote.id.charCodeAt(0) % defaultBgs.length
+                    : Number(quote.id) % defaultBgs.length;
                 const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
-                
+
                 const isActionsVisible = activeActionsId === quote.id;
-                
+
                 return (
                   <div
                     key={quote.id}
@@ -200,19 +212,23 @@ export default function LikedQuotesView({
                     }`}
                   >
                     {/* Background Image */}
-                    <div 
+                    <div
                       className="absolute inset-0 bg-cover bg-center"
                       style={{ backgroundImage: `url(${backgroundUrl})` }}
                     />
-                    
+
                     {/* Dark Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    
+
                     {/* Heart Icon */}
                     <div className="absolute top-2 right-2 z-10">
-                      <Heart size={18} className="text-rose-500 drop-shadow-lg" fill="currentColor" />
+                      <Heart
+                        size={18}
+                        className="text-rose-500 drop-shadow-lg"
+                        fill="currentColor"
+                      />
                     </div>
-                    
+
                     {/* Mobile Menu Button - Hidden when actions shown */}
                     {!isActionsVisible && (
                       <button
@@ -222,13 +238,15 @@ export default function LikedQuotesView({
                         <MoreVertical size={14} className="text-white" />
                       </button>
                     )}
-                    
+
                     {/* Share Button - Shows instantly on mobile when active, with transition on desktop hover */}
-                    <div className={`absolute top-2 left-2 flex gap-1 z-10 ${
-                      isActionsVisible 
-                        ? 'flex' 
-                        : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
-                    }`}>
+                    <div
+                      className={`absolute top-2 left-2 flex gap-1 z-10 ${
+                        isActionsVisible
+                          ? 'flex'
+                          : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
+                      }`}
+                    >
                       <button
                         onClick={(e) => handleShare(e, quote)}
                         className="p-2 sm:p-1.5 bg-black/40 backdrop-blur-sm hover:bg-black/60 active:bg-black/60 rounded-lg"
@@ -237,14 +255,14 @@ export default function LikedQuotesView({
                         <Share2 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
                       </button>
                     </div>
-                    
+
                     {/* Loading Overlay */}
                     {navigatingId === quote.id && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-20">
                         <Loader2 size={24} className="animate-spin text-white" />
                       </div>
                     )}
-                    
+
                     {/* Quote Content */}
                     <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
                       <p className="text-white text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">
@@ -264,4 +282,3 @@ export default function LikedQuotesView({
     </div>
   );
 }
-

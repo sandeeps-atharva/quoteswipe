@@ -6,7 +6,9 @@
 import { MongoClient, Db, Collection, ObjectId, ServerApiVersion } from 'mongodb';
 
 // MongoDB URI
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sandeep:root@quoteswipe.glnm5hr.mongodb.net/?retryWrites=true&w=majority&appName=quoteswipe';
+const MONGODB_URI =
+  process.env.MONGODB_URI ||
+  'mongodb+srv://sandeep:root@quoteswipe.glnm5hr.mongodb.net/?retryWrites=true&w=majority&appName=quoteswipe';
 const MONGODB_DB = process.env.MONGODB_DB || 'quoteswipe';
 
 // Connection pooling configuration
@@ -48,12 +50,12 @@ export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db
   // Fast path: return cached connection without blocking ping
   if (cachedClient && cachedDb) {
     const now = Date.now();
-    
+
     // Only validate periodically, not on every request (saves 50-100ms)
     if (now - lastValidated < VALIDATION_INTERVAL) {
       return { client: cachedClient, db: cachedDb };
     }
-    
+
     // Background validation - don't block the request
     lastValidated = now;
     cachedDb.command({ ping: 1 }).catch(() => {
@@ -63,7 +65,7 @@ export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db
       connectionPromise = null;
       lastValidated = 0;
     });
-    
+
     return { client: cachedClient, db: cachedDb };
   }
 
@@ -75,7 +77,7 @@ export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db
       lastValidated = global._mongoLastValidated || Date.now();
       return { client: cachedClient, db: cachedDb };
     }
-    
+
     // Reuse connection promise to prevent duplicate connections
     if (global._mongoConnectionPromise) {
       return global._mongoConnectionPromise;
@@ -90,7 +92,7 @@ export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db
   // Create new connection promise
   connectionPromise = (async () => {
     const startTime = Date.now();
-    
+
     const client = new MongoClient(MONGODB_URI, {
       serverApi: {
         version: ServerApiVersion.v1,
@@ -143,7 +145,9 @@ export async function getDb(): Promise<Db> {
  * Get a specific collection
  * Optimized: reuses connection automatically
  */
-export async function getCollection<T extends Document = Document>(name: string): Promise<Collection<T>> {
+export async function getCollection<T extends Document = Document>(
+  name: string
+): Promise<Collection<T>> {
   const db = await getDb();
   return db.collection<T>(name);
 }
@@ -208,10 +212,7 @@ export function buildIdMatch(fieldName: string, id: string | ObjectId): Record<s
   const stringId = normalizeId(id);
   if (isValidObjectId(stringId)) {
     return {
-      $or: [
-        { [fieldName]: new ObjectId(stringId) },
-        { [fieldName]: stringId }
-      ]
+      $or: [{ [fieldName]: new ObjectId(stringId) }, { [fieldName]: stringId }],
     };
   }
   return { [fieldName]: stringId };

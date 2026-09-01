@@ -29,12 +29,12 @@ interface UseCategoriesReturn {
   categoryGroups: CategoryGroup[];
   onboardingCategories: Category[];
   isLoading: boolean;
-  
+
   // Fetch functions
   fetchCategories: (force?: boolean) => Promise<Category[]>;
   fetchCategoryGroups: (force?: boolean) => Promise<CategoryGroup[]>;
   fetchOnboardingCategories: (force?: boolean) => Promise<Category[]>;
-  
+
   // Invalidate
   invalidateCategories: () => void;
 }
@@ -49,7 +49,7 @@ export function useCategories(): UseCategoriesReturn {
     try {
       setIsLoading(true);
       if (force) apiCache.invalidate(CACHE_KEYS.CATEGORIES);
-      
+
       const data = await apiCache.getOrFetch<Category[]>(
         CACHE_KEYS.CATEGORIES,
         async () => {
@@ -60,7 +60,7 @@ export function useCategories(): UseCategoriesReturn {
         },
         { ttl: CACHE_TTL.LONG } // Categories don't change often
       );
-      
+
       setCategories(data);
       return data;
     } catch (error) {
@@ -74,7 +74,7 @@ export function useCategories(): UseCategoriesReturn {
   const fetchCategoryGroups = useCallback(async (force = false): Promise<CategoryGroup[]> => {
     try {
       if (force) apiCache.invalidate(CACHE_KEYS.CATEGORY_GROUPS);
-      
+
       const data = await apiCache.getOrFetch<CategoryGroup[]>(
         CACHE_KEYS.CATEGORY_GROUPS,
         async () => {
@@ -85,7 +85,7 @@ export function useCategories(): UseCategoriesReturn {
         },
         { ttl: CACHE_TTL.LONG } // Category groups don't change often
       );
-      
+
       setCategoryGroups(data);
       return data;
     } catch (error) {
@@ -96,10 +96,10 @@ export function useCategories(): UseCategoriesReturn {
 
   const fetchOnboardingCategories = useCallback(async (force = false): Promise<Category[]> => {
     const cacheKey = `${CACHE_KEYS.CATEGORIES}-onboarding`;
-    
+
     try {
       if (force) apiCache.invalidate(cacheKey);
-      
+
       const data = await apiCache.getOrFetch<Category[]>(
         cacheKey,
         async () => {
@@ -110,7 +110,7 @@ export function useCategories(): UseCategoriesReturn {
         },
         { ttl: CACHE_TTL.VERY_LONG } // Onboarding categories rarely change
       );
-      
+
       setOnboardingCategories(data);
       return data;
     } catch (error) {
@@ -136,4 +136,3 @@ export function useCategories(): UseCategoriesReturn {
     invalidateCategories,
   };
 }
-

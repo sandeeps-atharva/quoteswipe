@@ -16,4 +16,3 @@ export function isQuotePublic(isPublic: boolean | number | undefined | null): bo
 export function normalizeIsPublic(value: boolean | number | undefined | null): boolean {
   return value === true || value === 1;
 }
-

@@ -11,12 +11,9 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 export async function PUT(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -24,10 +21,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate profile picture
     if (!profile_picture) {
-      return NextResponse.json(
-        { error: 'Profile picture is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Profile picture is required' }, { status: 400 });
     }
 
     // Check if it's a valid base64 data URL
@@ -39,10 +33,7 @@ export async function PUT(request: NextRequest) {
         // Base64 validation
         const matches = profile_picture.match(/^data:([^;]+);base64,(.+)$/);
         if (!matches) {
-          return NextResponse.json(
-            { error: 'Invalid image format' },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: 'Invalid image format' }, { status: 400 });
         }
 
         const mimeType = matches[1];
@@ -59,22 +50,13 @@ export async function PUT(request: NextRequest) {
         // Check file size (base64 is ~33% larger than binary)
         const estimatedSize = (base64Data.length * 3) / 4;
         if (estimatedSize > MAX_FILE_SIZE) {
-          return NextResponse.json(
-            { error: 'Image size must be less than 5MB' },
-            { status: 400 }
-          );
+          return NextResponse.json({ error: 'Image size must be less than 5MB' }, { status: 400 });
         }
       } else {
-        return NextResponse.json(
-          { error: 'Invalid image URL or format' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Invalid image URL or format' }, { status: 400 });
       }
     } else {
-      return NextResponse.json(
-        { error: 'Profile picture must be a string' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Profile picture must be a string' }, { status: 400 });
     }
 
     const usersCollection = await getCollection('users');
@@ -104,10 +86,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error('Update profile picture error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -115,12 +94,9 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const usersCollection = await getCollection('users');
@@ -150,10 +126,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     console.error('Delete profile picture error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-

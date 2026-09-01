@@ -35,14 +35,14 @@ export function BackgroundsProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
-    
+
     const promise = (async () => {
       try {
         const response = await fetch('/api/user/upload-background', {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
+            Pragma: 'no-cache',
           },
         });
         if (response.ok) {
@@ -78,12 +78,12 @@ export function BackgroundsProvider({ children }: { children: ReactNode }) {
 
   // Add a new background to the list (after upload)
   const addBackground = useCallback((background: UserBackground) => {
-    setUserBackgrounds(prev => [background, ...prev]);
+    setUserBackgrounds((prev) => [background, ...prev]);
   }, []);
 
   // Remove a background from the list (after delete)
   const removeBackground = useCallback((backgroundId: string) => {
-    setUserBackgrounds(prev => prev.filter(bg => bg.id !== backgroundId));
+    setUserBackgrounds((prev) => prev.filter((bg) => bg.id !== backgroundId));
   }, []);
 
   // NO automatic fetch on mount - lazy loading only!
@@ -121,4 +121,3 @@ export function useBackgroundsSafe() {
 
 // Re-export type for convenience
 export type { BackgroundsContextType };
-

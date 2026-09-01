@@ -26,11 +26,11 @@ interface UseStatsReturn {
   reviews: Review[];
   isLoadingStats: boolean;
   isLoadingReviews: boolean;
-  
+
   // Fetch functions
   fetchStats: (force?: boolean) => Promise<Stats | null>;
   fetchReviews: (force?: boolean) => Promise<Review[]>;
-  
+
   // Invalidate
   invalidateStats: () => void;
   invalidateReviews: () => void;
@@ -46,7 +46,7 @@ export function useStats(): UseStatsReturn {
     try {
       setIsLoadingStats(true);
       if (force) apiCache.invalidate(CACHE_KEYS.STATS);
-      
+
       const data = await apiCache.getOrFetch<Stats | null>(
         CACHE_KEYS.STATS,
         async () => {
@@ -56,7 +56,7 @@ export function useStats(): UseStatsReturn {
         },
         { ttl: CACHE_TTL.VERY_LONG } // Stats don't change often
       );
-      
+
       setStats(data);
       return data;
     } catch (error) {
@@ -71,7 +71,7 @@ export function useStats(): UseStatsReturn {
     try {
       setIsLoadingReviews(true);
       if (force) apiCache.invalidate(CACHE_KEYS.REVIEWS);
-      
+
       const data = await apiCache.getOrFetch<Review[]>(
         CACHE_KEYS.REVIEWS,
         async () => {
@@ -82,7 +82,7 @@ export function useStats(): UseStatsReturn {
         },
         { ttl: CACHE_TTL.LONG } // Reviews don't change often
       );
-      
+
       setReviews(data);
       return data;
     } catch (error) {
@@ -112,4 +112,3 @@ export function useStats(): UseStatsReturn {
     invalidateReviews,
   };
 }
-

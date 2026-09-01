@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCollection, toObjectId } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
-import { festivalEmailTemplate, festivalEmailText, customEmailTemplate, customEmailText } from '@/lib/email-templates';
+import {
+  festivalEmailTemplate,
+  festivalEmailText,
+  customEmailTemplate,
+  customEmailText,
+} from '@/lib/email-templates';
 
 // This endpoint is called by Vercel cron every 15 minutes
 // See vercel.json for cron configuration
@@ -10,7 +15,7 @@ export async function GET(request: NextRequest) {
   // Verify cron secret (optional security)
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
-  
+
   // Allow without secret for Vercel cron (it uses different auth)
   // But block if secret is set and doesn't match
   if (cronSecret && authHeader && authHeader !== `Bearer ${cronSecret}`) {
@@ -41,32 +46,35 @@ export async function GET(request: NextRequest) {
     endOfDay.setHours(23, 59, 59, 999);
 
     // Find emails scheduled for today (or past days that weren't sent)
-    const scheduledEmails = await scheduledEmailsCollection.find({
-      status: 'pending',
-      $or: [
-        // Date object comparison
-        { scheduled_date: { $lte: endOfDay } },
-        // String date comparison (for backwards compatibility)
-        { scheduled_date: { $lte: currentDate } }
-      ]
-    }).toArray() as any[];
+    const scheduledEmails = (await scheduledEmailsCollection
+      .find({
+        status: 'pending',
+        $or: [
+          // Date object comparison
+          { scheduled_date: { $lte: endOfDay } },
+          // String date comparison (for backwards compatibility)
+          { scheduled_date: { $lte: currentDate } },
+        ],
+      })
+      .toArray()) as any[];
 
     // Filter by time - only send if scheduled time has passed
     const emailsToSend = scheduledEmails.filter((email: any) => {
-      const scheduledDate = email.scheduled_date instanceof Date 
-        ? email.scheduled_date.toISOString().split('T')[0]
-        : email.scheduled_date?.split('T')[0] || email.scheduled_date;
-      
+      const scheduledDate =
+        email.scheduled_date instanceof Date
+          ? email.scheduled_date.toISOString().split('T')[0]
+          : email.scheduled_date?.split('T')[0] || email.scheduled_date;
+
       const scheduledTime = email.scheduled_time || '00:00:00';
-      
+
       // If it's a past date, send it
       if (scheduledDate < currentDate) return true;
-      
+
       // If it's today, check if the time has passed
       if (scheduledDate === currentDate) {
         return scheduledTime <= currentTimeStr;
       }
-      
+
       return false;
     });
 
@@ -91,14 +99,14 @@ export async function GET(request: NextRequest) {
 
       if (scheduled.quote_id) {
         const quote: any = await quotesCollection.findOne({
-          $or: [{ id: scheduled.quote_id }, { _id: toObjectId(scheduled.quote_id) as any }]
+          $or: [{ id: scheduled.quote_id }, { _id: toObjectId(scheduled.quote_id) as any }],
         });
         if (quote) {
           quoteText = quote.text;
           quoteAuthor = quote.author;
           if (quote.category_id) {
             const category: any = await categoriesCollection.findOne({
-              $or: [{ id: quote.category_id }, { _id: quote.category_id }]
+              $or: [{ id: quote.category_id }, { _id: quote.category_id }],
             });
             categoryName = category?.name || '';
           }
@@ -110,15 +118,19 @@ export async function GET(request: NextRequest) {
 
       if (scheduled.send_to_all) {
         // Send to all non-admin users
-        usersToEmail = await usersCollection.find({ 
-          role: { $ne: 'admin' } 
-        }).toArray() as any[];
+        usersToEmail = (await usersCollection
+          .find({
+            role: { $ne: 'admin' },
+          })
+          .toArray()) as any[];
         console.log(`[CRON] Sending to all ${usersToEmail.length} users`);
       } else {
         // Get specific recipients from the recipients collection
-        const recipients = await recipientsCollection.find({
-          scheduled_email_id: scheduledEmailId
-        }).toArray() as any[];
+        const recipients = (await recipientsCollection
+          .find({
+            scheduled_email_id: scheduledEmailId,
+          })
+          .toArray()) as any[];
 
         if (recipients.length === 0) {
           console.log(`[CRON] No recipients found for ${scheduled.title}, marking as failed`);
@@ -131,9 +143,11 @@ export async function GET(request: NextRequest) {
 
         // Get user details for recipients
         const userIds = recipients.map((r: any) => toObjectId(r.user_id) as any);
-        usersToEmail = await usersCollection.find({
-          _id: { $in: userIds }
-        }).toArray() as any[];
+        usersToEmail = (await usersCollection
+          .find({
+            _id: { $in: userIds },
+          })
+          .toArray()) as any[];
         console.log(`[CRON] Sending to ${usersToEmail.length} specific users`);
       }
 
@@ -153,90 +167,92 @@ export async function GET(request: NextRequest) {
       const batchSize = 10;
       for (let i = 0; i < usersToEmail.length; i += batchSize) {
         const batch = usersToEmail.slice(i, i + batchSize);
-        
-        await Promise.all(batch.map(async (user) => {
-          try {
-            let html: string;
-            let text: string;
 
-            // Determine email type based on whether quote exists
-            if (quoteText && quoteAuthor) {
-              // Festival-style email with quote
-              html = festivalEmailTemplate(
-                { name: user.name, email: user.email },
-                scheduled.title,
-                { text: quoteText, author: quoteAuthor, category: categoryName },
-                appUrl,
-                scheduled.custom_message
-              );
-              text = festivalEmailText(
-                { name: user.name, email: user.email },
-                scheduled.title,
-                { text: quoteText, author: quoteAuthor },
-                appUrl,
-                scheduled.custom_message
-              );
-            } else {
-              // Custom email without quote
-              html = customEmailTemplate(
-                { name: user.name, email: user.email },
-                scheduled.subject,
-                scheduled.custom_message || 'Check out QuoteSwipe for daily inspiration!',
-                appUrl
-              );
-              text = customEmailText(
-                { name: user.name, email: user.email },
-                scheduled.subject,
-                scheduled.custom_message || 'Check out QuoteSwipe for daily inspiration!',
-                appUrl
-              );
-            }
+        await Promise.all(
+          batch.map(async (user) => {
+            try {
+              let html: string;
+              let text: string;
 
-            // Send email
-            const result = await sendEmail({
-              to: user.email,
-              subject: scheduled.subject,
-              html,
-              text,
-            });
+              // Determine email type based on whether quote exists
+              if (quoteText && quoteAuthor) {
+                // Festival-style email with quote
+                html = festivalEmailTemplate(
+                  { name: user.name, email: user.email },
+                  scheduled.title,
+                  { text: quoteText, author: quoteAuthor, category: categoryName },
+                  appUrl,
+                  scheduled.custom_message
+                );
+                text = festivalEmailText(
+                  { name: user.name, email: user.email },
+                  scheduled.title,
+                  { text: quoteText, author: quoteAuthor },
+                  appUrl,
+                  scheduled.custom_message
+                );
+              } else {
+                // Custom email without quote
+                html = customEmailTemplate(
+                  { name: user.name, email: user.email },
+                  scheduled.subject,
+                  scheduled.custom_message || 'Check out QuoteSwipe for daily inspiration!',
+                  appUrl
+                );
+                text = customEmailText(
+                  { name: user.name, email: user.email },
+                  scheduled.subject,
+                  scheduled.custom_message || 'Check out QuoteSwipe for daily inspiration!',
+                  appUrl
+                );
+              }
 
-            // Log the email
-            await logsCollection.insertOne({
-              scheduled_email_id: scheduledEmailId,
-              user_id: user._id.toString(),
-              email: user.email,
-              email_type: 'scheduled',
-              status: result.success ? 'sent' : 'failed',
-              error_message: result.error || null,
-              sent_at: result.success ? new Date() : null,
-              created_at: new Date()
-            } as any);
+              // Send email
+              const result = await sendEmail({
+                to: user.email,
+                subject: scheduled.subject,
+                html,
+                text,
+              });
 
-            if (result.success) {
-              sentCount++;
-            } else {
+              // Log the email
+              await logsCollection.insertOne({
+                scheduled_email_id: scheduledEmailId,
+                user_id: user._id.toString(),
+                email: user.email,
+                email_type: 'scheduled',
+                status: result.success ? 'sent' : 'failed',
+                error_message: result.error || null,
+                sent_at: result.success ? new Date() : null,
+                created_at: new Date(),
+              } as any);
+
+              if (result.success) {
+                sentCount++;
+              } else {
+                failedCount++;
+                console.error(`[CRON] Failed to send to ${user.email}: ${result.error}`);
+              }
+            } catch (error) {
+              console.error(`[CRON] Error sending to ${user.email}:`, error);
               failedCount++;
-              console.error(`[CRON] Failed to send to ${user.email}: ${result.error}`);
+
+              await logsCollection.insertOne({
+                scheduled_email_id: scheduledEmailId,
+                user_id: user._id.toString(),
+                email: user.email,
+                email_type: 'scheduled',
+                status: 'failed',
+                error_message: error instanceof Error ? error.message : 'Unknown error',
+                created_at: new Date(),
+              } as any);
             }
-          } catch (error) {
-            console.error(`[CRON] Error sending to ${user.email}:`, error);
-            failedCount++;
-            
-            await logsCollection.insertOne({
-              scheduled_email_id: scheduledEmailId,
-              user_id: user._id.toString(),
-              email: user.email,
-              email_type: 'scheduled',
-              status: 'failed',
-              error_message: error instanceof Error ? error.message : 'Unknown error',
-              created_at: new Date()
-            } as any);
-          }
-        }));
+          })
+        );
 
         // Small delay between batches to avoid rate limiting
         if (i + batchSize < usersToEmail.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
 
@@ -249,8 +265,8 @@ export async function GET(request: NextRequest) {
             status: allFailed ? 'failed' : 'sent',
             sent_count: sentCount,
             failed_count: failedCount,
-            sent_at: new Date()
-          }
+            sent_at: new Date(),
+          },
         }
       );
 
@@ -272,7 +288,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[CRON] Error processing scheduled emails:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

@@ -10,7 +10,7 @@ export default function Contact() {
     name: '',
     email: '',
     subject: '',
-    message: ''
+    message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -23,11 +23,11 @@ export default function Contact() {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         setIsSubmitted(true);
         toast.success('Message sent successfully!');
@@ -42,32 +42,34 @@ export default function Contact() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
   const contactInfo = [
     {
       icon: <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />,
-      title: "Email Us",
-      value: "hello.quoteswipe@gmail.com",
-      description: "We'll respond within 24-48 hours"
+      title: 'Email Us',
+      value: 'hello.quoteswipe@gmail.com',
+      description: "We'll respond within 24-48 hours",
     },
     {
       icon: <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />,
-      title: "Location",
-      value: "India",
-      description: "Serving users worldwide"
+      title: 'Location',
+      value: 'India',
+      description: 'Serving users worldwide',
     },
     {
       icon: <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />,
-      title: "Support Hours",
-      value: "24/7 Online Support",
-      description: "Always here to help"
-    }
+      title: 'Support Hours',
+      value: '24/7 Online Support',
+      description: 'Always here to help',
+    },
   ];
 
   return (
@@ -86,9 +88,15 @@ export default function Contact() {
                   {info.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{info.title}</p>
-                  <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate">{info.value}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500">{info.description}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                    {info.title}
+                  </p>
+                  <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white truncate">
+                    {info.value}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500">
+                    {info.description}
+                  </p>
                 </div>
               </div>
             </SectionCard>
@@ -96,7 +104,9 @@ export default function Contact() {
 
           {/* Social Links */}
           <SectionCard>
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">Follow Us</h3>
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">
+              Follow Us
+            </h3>
             <div className="flex flex-wrap gap-2 sm:gap-3">
               {[
                 { name: 'Twitter', url: 'https://twitter.com/quoteswipe' },

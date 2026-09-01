@@ -28,10 +28,10 @@ export default function Review() {
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
             name: data.user.name,
-            email: data.user.email
+            email: data.user.email,
           }));
         }
       } catch (error) {
@@ -43,28 +43,28 @@ export default function Review() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.rating === 0) {
       toast.error('Please select a rating');
       return;
     }
-    
+
     if (!formData.message.trim()) {
       toast.error('Please write your review');
       return;
     }
-    
+
     setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         setIsSubmitted(true);
         toast.success('Review submitted successfully!');
@@ -80,9 +80,9 @@ export default function Review() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -92,15 +92,22 @@ export default function Review() {
     return (
       <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#0C0A09]' : 'bg-[#FFFBF7]'}`}>
         <div className="max-w-2xl mx-auto px-3 sm:px-4 py-8 sm:py-12">
-          <div className={`rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 text-center ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-xl`}>
+          <div
+            className={`rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 text-center ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-xl`}
+          >
             <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
               <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
             </div>
-            <h1 className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            <h1
+              className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+            >
               Thank You for Your Review! ⭐
             </h1>
-            <p className={`text-sm sm:text-base mb-5 sm:mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-              Your review has been submitted and is pending approval. Once approved, it will be visible to other users on our website.
+            <p
+              className={`text-sm sm:text-base mb-5 sm:mb-6 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}
+            >
+              Your review has been submitted and is pending approval. Once approved, it will be
+              visible to other users on our website.
             </p>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
               <Link
@@ -112,8 +119,8 @@ export default function Review() {
               <Link
                 href="/about"
                 className={`px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-medium text-sm sm:text-base transition-all ${
-                  theme === 'dark' 
-                    ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                  theme === 'dark'
+                    ? 'bg-gray-700 text-white hover:bg-gray-600'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -134,29 +141,37 @@ export default function Review() {
           <Link
             href="/"
             className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all ${
-              theme === 'dark' 
-                ? 'bg-gray-800 hover:bg-gray-700 text-white' 
+              theme === 'dark'
+                ? 'bg-gray-800 hover:bg-gray-700 text-white'
                 : 'bg-white hover:bg-gray-50 text-gray-700 shadow-sm'
             }`}
           >
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </Link>
           <div>
-            <h1 className={`text-xl sm:text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            <h1
+              className={`text-xl sm:text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+            >
               Write a Review
             </h1>
-            <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p
+              className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+            >
               Share your experience with QuoteSwipe
             </p>
           </div>
         </div>
 
         {/* Form */}
-        <div className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-xl`}>
+        <div
+          className={`rounded-xl sm:rounded-2xl p-4 sm:p-6 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} shadow-xl`}
+        >
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Rating */}
             <div>
-              <label className={`block text-xs sm:text-sm font-medium mb-2 sm:mb-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+              <label
+                className={`block text-xs sm:text-sm font-medium mb-2 sm:mb-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+              >
                 Your Rating *
               </label>
               <div className="flex flex-col items-center gap-2 sm:gap-3">
@@ -165,7 +180,7 @@ export default function Review() {
                     <button
                       key={star}
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                      onClick={() => setFormData((prev) => ({ ...prev, rating: star }))}
                       onMouseEnter={() => setHoveredRating(star)}
                       onMouseLeave={() => setHoveredRating(0)}
                       className="p-0.5 sm:p-1 transition-transform hover:scale-110 active:scale-95"
@@ -183,9 +198,11 @@ export default function Review() {
                   ))}
                 </div>
                 {(hoveredRating > 0 || formData.rating > 0) && (
-                  <span className={`text-xs sm:text-sm font-medium ${
-                    theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                  }`}>
+                  <span
+                    className={`text-xs sm:text-sm font-medium ${
+                      theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}
+                  >
                     {ratingLabels[hoveredRating || formData.rating]}
                   </span>
                 )}
@@ -195,7 +212,9 @@ export default function Review() {
             {/* Name & Email */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label
+                  className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                >
                   Your Name *
                 </label>
                 <input
@@ -214,7 +233,9 @@ export default function Review() {
                 />
               </div>
               <div>
-                <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                <label
+                  className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                >
                   Email Address *
                 </label>
                 <input
@@ -231,7 +252,9 @@ export default function Review() {
                   } focus:ring-2 focus:ring-amber-500 focus:border-transparent ${user ? 'opacity-60' : ''}`}
                   placeholder="john@example.com"
                 />
-                <p className={`text-[10px] sm:text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                <p
+                  className={`text-[10px] sm:text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}
+                >
                   Email won't be displayed publicly
                 </p>
               </div>
@@ -239,7 +262,9 @@ export default function Review() {
 
             {/* Title */}
             <div>
-              <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+              <label
+                className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+              >
                 Review Title
               </label>
               <input
@@ -259,7 +284,9 @@ export default function Review() {
 
             {/* Review Message */}
             <div>
-              <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+              <label
+                className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+              >
                 Your Review *
               </label>
               <textarea
@@ -278,9 +305,14 @@ export default function Review() {
             </div>
 
             {/* Info Box */}
-            <div className={`p-3 sm:p-4 rounded-lg sm:rounded-xl ${theme === 'dark' ? 'bg-yellow-900/20 border border-yellow-800' : 'bg-yellow-50 border border-yellow-200'}`}>
-              <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-yellow-200' : 'text-yellow-800'}`}>
-                ⭐ Your review will be published on our website after approval. Only your name and review will be visible to others.
+            <div
+              className={`p-3 sm:p-4 rounded-lg sm:rounded-xl ${theme === 'dark' ? 'bg-yellow-900/20 border border-yellow-800' : 'bg-yellow-50 border border-yellow-200'}`}
+            >
+              <p
+                className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-yellow-200' : 'text-yellow-800'}`}
+              >
+                ⭐ Your review will be published on our website after approval. Only your name and
+                review will be visible to others.
               </p>
             </div>
 
@@ -305,8 +337,12 @@ export default function Review() {
           </form>
 
           {/* Have feedback? */}
-          <div className={`mt-4 sm:mt-6 pt-4 sm:pt-6 border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} text-center`}>
-            <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+          <div
+            className={`mt-4 sm:mt-6 pt-4 sm:pt-6 border-t ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} text-center`}
+          >
+            <p
+              className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}
+            >
               Have a bug report or suggestion?{' '}
               <Link href="/feedback" className="text-amber-500 hover:text-amber-600 font-medium">
                 Send private feedback →
@@ -318,4 +354,3 @@ export default function Review() {
     </div>
   );
 }
-

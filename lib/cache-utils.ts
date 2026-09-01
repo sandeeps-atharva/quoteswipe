@@ -7,10 +7,10 @@ export const CACHE_PREFIX = 'qs_cache_';
 
 // Cache durations
 export const CACHE_DURATIONS = {
-  QUOTES: 5 * 60 * 1000,      // 5 minutes
+  QUOTES: 5 * 60 * 1000, // 5 minutes
   CATEGORIES: 10 * 60 * 1000, // 10 minutes
   PREFERENCES: 60 * 60 * 1000, // 1 hour
-  DEFAULT: 60 * 60 * 1000,    // 1 hour
+  DEFAULT: 60 * 60 * 1000, // 1 hour
 } as const;
 
 interface CacheEntry<T> {
@@ -25,7 +25,7 @@ export function getFromCache<T>(key: string, maxAge: number = CACHE_DURATIONS.DE
   try {
     const cached = sessionStorage.getItem(CACHE_PREFIX + key);
     if (!cached) return null;
-    
+
     const entry: CacheEntry<T> = JSON.parse(cached);
     if (Date.now() - entry.timestamp > maxAge) {
       sessionStorage.removeItem(CACHE_PREFIX + key);
@@ -72,7 +72,7 @@ export function clearUserCache(): void {
         keysToRemove.push(key);
       }
     }
-    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+    keysToRemove.forEach((key) => sessionStorage.removeItem(key));
   } catch {
     // Ignore errors
   }
@@ -90,7 +90,7 @@ export function clearAllCache(): void {
         keysToRemove.push(key);
       }
     }
-    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+    keysToRemove.forEach((key) => sessionStorage.removeItem(key));
   } catch {
     // Ignore errors
   }
@@ -104,7 +104,7 @@ export function canShowInstagramModal(): boolean {
   try {
     const lastShown = localStorage.getItem(INSTAGRAM_MODAL_KEY);
     if (!lastShown) return true;
-    
+
     const lastShownTime = parseInt(lastShown, 10);
     return Date.now() - lastShownTime >= INSTAGRAM_MODAL_COOLDOWN;
   } catch {
@@ -119,4 +119,3 @@ export function markInstagramModalShown(): void {
     // Ignore storage errors
   }
 }
-

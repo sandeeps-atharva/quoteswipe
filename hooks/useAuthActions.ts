@@ -3,7 +3,14 @@
 import { useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { User, Category } from '@/types/quotes';
-import { CARD_THEMES, FONT_STYLES, BACKGROUND_IMAGES, CardTheme, FontStyle, BackgroundImage } from '@/lib/constants';
+import {
+  CARD_THEMES,
+  FONT_STYLES,
+  BACKGROUND_IMAGES,
+  CardTheme,
+  FontStyle,
+  BackgroundImage,
+} from '@/lib/constants';
 import { clearUserCache, setToCache, CACHE_PREFIX } from '@/lib/cache-utils';
 import { resolveBackground } from './useCardStyle';
 
@@ -76,78 +83,106 @@ export function useAuthActions({
     setAllCategoriesForOnboarding,
   } = setters;
 
-  const handleAuthSuccess = useCallback(async (user: User, isNewUser: boolean) => {
-    isLoggingIn.current = true;
-    setIsAuthenticated(true);
-    setUser(user);
-    setShowAuthModal(false);
-    setSwipeCount(0);
-    setAuthenticatedSwipeCount(0);
-    
-    try { sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest'); } catch {}
-    
-    await Promise.all([fetchUserData(), fetchCategories(), ...(isNewUser ? [] : [fetchAllPreferences()])]);
-    
-    if (isNewUser) {
-      isLoadingPreferences.current = false;
-      isLoggingIn.current = false;
-    }
-  }, [setters, fetchUserData, fetchCategories, fetchAllPreferences, isLoadingPreferences, isLoggingIn]);
+  const handleAuthSuccess = useCallback(
+    async (user: User, isNewUser: boolean) => {
+      isLoggingIn.current = true;
+      setIsAuthenticated(true);
+      setUser(user);
+      setShowAuthModal(false);
+      setSwipeCount(0);
+      setAuthenticatedSwipeCount(0);
 
-  const checkOnboarding = useCallback(async (needsOnboarding: boolean) => {
-    if (needsOnboarding) {
       try {
-        const res = await fetch('/api/categories?onboarding=true');
-        if (res.ok) {
-          const data = await res.json();
-          setAllCategoriesForOnboarding(data.categories || []);
-        }
+        sessionStorage.removeItem(CACHE_PREFIX + 'categories_guest');
       } catch {}
-      setShowOnboarding(true);
-    }
-  }, [setAllCategoriesForOnboarding, setShowOnboarding]);
 
-  const handleLogin = useCallback(async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Login failed');
-    
-    toast.success(`Welcome back, ${data.user.name}! 👋`);
-    await handleAuthSuccess(data.user, false);
-    await checkOnboarding(data.onboarding_complete === false);
-  }, [handleAuthSuccess, checkOnboarding]);
+      await Promise.all([
+        fetchUserData(),
+        fetchCategories(),
+        ...(isNewUser ? [] : [fetchAllPreferences()]),
+      ]);
 
-  const handleRegister = useCallback(async (name: string, email: string, password: string) => {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Registration failed');
-    
-    toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
-    await handleAuthSuccess(data.user, true);
-    await checkOnboarding(data.onboarding_complete === false);
-  }, [handleAuthSuccess, checkOnboarding]);
+      if (isNewUser) {
+        isLoadingPreferences.current = false;
+        isLoggingIn.current = false;
+      }
+    },
+    [
+      setters,
+      fetchUserData,
+      fetchCategories,
+      fetchAllPreferences,
+      isLoadingPreferences,
+      isLoggingIn,
+    ]
+  );
 
-  const handleGoogleSuccess = useCallback(async (googleUser: User) => {
-    toast.success(`Welcome, ${googleUser.name}! 🎉`);
-    await handleAuthSuccess(googleUser, false);
-  }, [handleAuthSuccess]);
+  const checkOnboarding = useCallback(
+    async (needsOnboarding: boolean) => {
+      if (needsOnboarding) {
+        try {
+          const res = await fetch('/api/categories?onboarding=true');
+          if (res.ok) {
+            const data = await res.json();
+            setAllCategoriesForOnboarding(data.categories || []);
+          }
+        } catch {}
+        setShowOnboarding(true);
+      }
+    },
+    [setAllCategoriesForOnboarding, setShowOnboarding]
+  );
+
+  const handleLogin = useCallback(
+    async (email: string, password: string) => {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Login failed');
+
+      toast.success(`Welcome back, ${data.user.name}! 👋`);
+      await handleAuthSuccess(data.user, false);
+      await checkOnboarding(data.onboarding_complete === false);
+    },
+    [handleAuthSuccess, checkOnboarding]
+  );
+
+  const handleRegister = useCallback(
+    async (name: string, email: string, password: string) => {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Registration failed');
+
+      toast.success(`Welcome to QuoteSwipe, ${data.user.name}! 🎉`);
+      await handleAuthSuccess(data.user, true);
+      await checkOnboarding(data.onboarding_complete === false);
+    },
+    [handleAuthSuccess, checkOnboarding]
+  );
+
+  const handleGoogleSuccess = useCallback(
+    async (googleUser: User) => {
+      toast.success(`Welcome, ${googleUser.name}! 🎉`);
+      await handleAuthSuccess(googleUser, false);
+    },
+    [handleAuthSuccess]
+  );
 
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
-    
+
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       toast.success('You have been logged out. See you soon! 👋');
       clearUserCache();
-      
+
       // Reset all state
       setIsAuthenticated(false);
       setUser(null);
@@ -165,7 +200,7 @@ export function useAuthActions({
       setBackgroundImage(BACKGROUND_IMAGES[0]);
       setSavedQuoteBackgrounds({});
       setViewMode('swipe');
-      
+
       // Fetch guest data in background
       fetch('/api/categories', { credentials: 'include' })
         .then(async (response) => {
@@ -174,10 +209,15 @@ export function useAuthActions({
             const newCategories = data.categories || [];
             setCategories(newCategories);
             setTotalCategories(data.totalCategories || newCategories.length || 0);
-            setToCache('categories_guest', { categories: newCategories, totalCategories: data.totalCategories || newCategories.length || 0 });
-            
+            setToCache('categories_guest', {
+              categories: newCategories,
+              totalCategories: data.totalCategories || newCategories.length || 0,
+            });
+
             if (newCategories.length > 0) {
-              const quotesResponse = await fetch(`/api/quotes?categories=${encodeURIComponent(newCategories[0].name)}`);
+              const quotesResponse = await fetch(
+                `/api/quotes?categories=${encodeURIComponent(newCategories[0].name)}`
+              );
               if (quotesResponse.ok) {
                 const quotesData = await quotesResponse.json();
                 setQuotes(quotesData.quotes || []);
@@ -202,4 +242,3 @@ export function useAuthActions({
     handleLogout,
   };
 }
-

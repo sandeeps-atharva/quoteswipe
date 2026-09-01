@@ -51,7 +51,7 @@ type EmailType = 'festival' | 'custom';
 export default function EmailPage() {
   // Email type
   const [emailType, setEmailType] = useState<EmailType>('custom');
-  
+
   // Users state
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -73,7 +73,7 @@ export default function EmailPage() {
   const [customMessage, setCustomMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  
+
   // Step state
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -181,10 +181,11 @@ export default function EmailPage() {
 
   // Can proceed to next step
   const canProceedStep1 = sendToAll || selectedUsers.length > 0;
-  const canProceedStep2 = emailType === 'custom' 
-    ? subject.trim().length > 0 
-    : (selectedFestival && selectedQuote && subject.trim().length > 0);
-  
+  const canProceedStep2 =
+    emailType === 'custom'
+      ? subject.trim().length > 0
+      : selectedFestival && selectedQuote && subject.trim().length > 0;
+
   // Send emails
   const handleSendEmails = async () => {
     if (!subject) {
@@ -265,11 +266,11 @@ export default function EmailPage() {
           <div className="flex items-center justify-between relative">
             {/* Progress Line */}
             <div className="absolute top-5 left-0 right-0 h-0.5 bg-slate-800" />
-            <div 
+            <div
               className="absolute top-5 left-0 h-0.5 bg-violet-500 transition-all duration-500"
               style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
             />
-            
+
             {steps.map((step) => (
               <div key={step.number} className="relative z-10 flex flex-col items-center">
                 <button
@@ -281,19 +282,17 @@ export default function EmailPage() {
                     step.number < currentStep
                       ? 'bg-violet-500 text-white cursor-pointer hover:bg-violet-600'
                       : step.number === currentStep
-                      ? 'bg-violet-500 text-white ring-4 ring-violet-500/30'
-                      : 'bg-slate-800 text-slate-500'
+                        ? 'bg-violet-500 text-white ring-4 ring-violet-500/30'
+                        : 'bg-slate-800 text-slate-500'
                   }`}
                 >
-                  {step.number < currentStep ? (
-                    <Check size={18} />
-                  ) : (
-                    <step.icon size={18} />
-                  )}
+                  {step.number < currentStep ? <Check size={18} /> : <step.icon size={18} />}
                 </button>
-                <span className={`mt-2 text-xs font-medium ${
-                  step.number <= currentStep ? 'text-white' : 'text-slate-500'
-                }`}>
+                <span
+                  className={`mt-2 text-xs font-medium ${
+                    step.number <= currentStep ? 'text-white' : 'text-slate-500'
+                  }`}
+                >
                   {step.title}
                 </span>
               </div>
@@ -393,12 +392,16 @@ export default function EmailPage() {
                               : 'bg-slate-800/50 border-2 border-transparent hover:bg-slate-800 hover:border-slate-700'
                           }`}
                         >
-                          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                            selectedUsers.includes(user.id)
-                              ? 'bg-violet-500 border-violet-500'
-                              : 'border-slate-600'
-                          }`}>
-                            {selectedUsers.includes(user.id) && <Check size={14} className="text-white" />}
+                          <div
+                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                              selectedUsers.includes(user.id)
+                                ? 'bg-violet-500 border-violet-500'
+                                : 'border-slate-600'
+                            }`}
+                          >
+                            {selectedUsers.includes(user.id) && (
+                              <Check size={14} className="text-white" />
+                            )}
                           </div>
                           <div className="w-11 h-11 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold shrink-0">
                             {user.name?.charAt(0).toUpperCase() || 'U'}
@@ -426,7 +429,9 @@ export default function EmailPage() {
                         Page {userPage} of {userPagination.totalPages}
                       </span>
                       <button
-                        onClick={() => setUserPage((p) => Math.min(userPagination.totalPages, p + 1))}
+                        onClick={() =>
+                          setUserPage((p) => Math.min(userPagination.totalPages, p + 1))
+                        }
                         disabled={userPage === userPagination.totalPages}
                         className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-300"
                       >
@@ -492,7 +497,9 @@ export default function EmailPage() {
                         ))}
                       </select>
                       {selectedFestivalObj && (
-                        <p className="mt-2 text-xs text-slate-400">{selectedFestivalObj.description}</p>
+                        <p className="mt-2 text-xs text-slate-400">
+                          {selectedFestivalObj.description}
+                        </p>
                       )}
                     </div>
 
@@ -559,9 +566,10 @@ export default function EmailPage() {
                   <textarea
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
-                    placeholder={emailType === 'festival' 
-                      ? "Add a personal message (optional)..." 
-                      : "Write your email message..."
+                    placeholder={
+                      emailType === 'festival'
+                        ? 'Add a personal message (optional)...'
+                        : 'Write your email message...'
                     }
                     rows={6}
                     className="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-white placeholder-slate-500 resize-none"
@@ -582,7 +590,9 @@ export default function EmailPage() {
                   <div className="p-4 bg-slate-800/50 rounded-xl">
                     <p className="text-sm text-slate-400 mb-1">Recipients</p>
                     <p className="text-lg font-semibold text-white">
-                      {sendToAll ? `All Users (${userPagination.total})` : `${selectedUsers.length} Selected`}
+                      {sendToAll
+                        ? `All Users (${userPagination.total})`
+                        : `${selectedUsers.length} Selected`}
                     </p>
                   </div>
 
@@ -620,7 +630,9 @@ export default function EmailPage() {
                         {selectedQuoteObj && (
                           <div className="bg-gradient-to-br from-violet-100 to-pink-100 rounded-xl p-4 mb-4">
                             <p className="italic text-slate-700">"{selectedQuoteObj.text}"</p>
-                            <p className="text-sm text-slate-500 mt-2 text-right">— {selectedQuoteObj.author}</p>
+                            <p className="text-sm text-slate-500 mt-2 text-right">
+                              — {selectedQuoteObj.author}
+                            </p>
                           </div>
                         )}
 
@@ -633,12 +645,16 @@ export default function EmailPage() {
                     ) : (
                       <>
                         <h3 className="text-xl font-bold mb-4">{subject}</h3>
-                        <p className="text-slate-700 whitespace-pre-wrap">{customMessage || 'No message content'}</p>
+                        <p className="text-slate-700 whitespace-pre-wrap">
+                          {customMessage || 'No message content'}
+                        </p>
                       </>
                     )}
 
                     <div className="mt-6 pt-4 border-t border-slate-200 text-center">
-                      <p className="text-xs text-slate-400">QuoteSwipe • Discover Daily Inspiration</p>
+                      <p className="text-xs text-slate-400">
+                        QuoteSwipe • Discover Daily Inspiration
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -650,8 +666,9 @@ export default function EmailPage() {
                 <div>
                   <p className="text-amber-200 font-medium">Please review carefully</p>
                   <p className="text-sm text-slate-400 mt-1">
-                    This action will send emails to {sendToAll ? 'all users' : `${selectedUsers.length} users`}. 
-                    This cannot be undone.
+                    This action will send emails to{' '}
+                    {sendToAll ? 'all users' : `${selectedUsers.length} users`}. This cannot be
+                    undone.
                   </p>
                 </div>
               </div>

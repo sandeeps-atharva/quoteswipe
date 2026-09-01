@@ -28,14 +28,20 @@ export default function LegalPageLayout({
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center gap-2 sm:gap-4">
-          <Link 
+          <Link
             href="/"
             className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <Image src="/logo.svg" alt="QuoteSwipe" width={32} height={32} className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
+            <Image
+              src="/logo.svg"
+              alt="QuoteSwipe"
+              width={32}
+              height={32}
+              className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0"
+            />
             <h1 className="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent truncate">
               {title}
             </h1>
@@ -73,12 +79,42 @@ export default function LegalPageLayout({
       <footer className="border-t border-gray-200/50 dark:border-gray-800/50 mt-10 sm:mt-12 md:mt-16 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8">
           <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-6 text-xs sm:text-sm text-stone-600 dark:text-stone-400">
-            <Link href="/about" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">About</Link>
-            <Link href="/privacy-policy" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Privacy</Link>
-            <Link href="/terms-of-service" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Terms</Link>
-            <Link href="/cookie-policy" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Cookies</Link>
-            <Link href="/contact" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Contact</Link>
-            <Link href="/feedback" className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors">Feedback</Link>
+            <Link
+              href="/about"
+              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            >
+              About
+            </Link>
+            <Link
+              href="/privacy-policy"
+              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms-of-service"
+              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            >
+              Terms
+            </Link>
+            <Link
+              href="/cookie-policy"
+              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            >
+              Cookies
+            </Link>
+            <Link
+              href="/contact"
+              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            >
+              Contact
+            </Link>
+            <Link
+              href="/feedback"
+              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            >
+              Feedback
+            </Link>
           </div>
           <p className="text-center text-xs sm:text-sm text-gray-500 dark:text-gray-600 mt-3 sm:mt-4">
             © {new Date().getFullYear()} QuoteSwipe. All rights reserved.
@@ -90,26 +126,26 @@ export default function LegalPageLayout({
 }
 
 // Card component for sections
-export function SectionCard({ 
-  children, 
-  icon, 
+export function SectionCard({
+  children,
+  icon,
   title,
-  className = '' 
-}: { 
-  children: ReactNode; 
-  icon?: ReactNode; 
+  className = '',
+}: {
+  children: ReactNode;
+  icon?: ReactNode;
   title?: string;
   className?: string;
 }) {
   return (
-    <div className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-md sm:shadow-lg shadow-blue-500/5 dark:shadow-pink-500/5 border border-white/50 dark:border-gray-700/50 ${className}`}>
+    <div
+      className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-md sm:shadow-lg shadow-blue-500/5 dark:shadow-pink-500/5 border border-white/50 dark:border-gray-700/50 ${className}`}
+    >
       {(icon || title) && (
         <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
           {icon && (
             <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-amber-500/10 to-rose-500/10 dark:from-amber-500/20 dark:to-rose-500/20 flex-shrink-0">
-              <div className="w-5 h-5 sm:w-6 sm:h-6 [&>*]:w-full [&>*]:h-full">
-                {icon}
-              </div>
+              <div className="w-5 h-5 sm:w-6 sm:h-6 [&>*]:w-full [&>*]:h-full">{icon}</div>
             </div>
           )}
           {title && (
@@ -125,17 +161,17 @@ export function SectionCard({
 }
 
 // Gradient button component
-export function GradientButton({ 
-  children, 
+export function GradientButton({
+  children,
   href,
-  className = '' 
-}: { 
-  children: ReactNode; 
+  className = '',
+}: {
+  children: ReactNode;
   href?: string;
   className?: string;
 }) {
   const buttonClasses = `inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-amber-600 to-rose-600 text-white text-sm sm:text-base font-medium rounded-lg sm:rounded-xl hover:from-amber-600 hover:to-rose-600 transition-all shadow-lg shadow-amber-500/25 dark:shadow-rose-500/20 ${className}`;
-  
+
   if (href) {
     return (
       <Link href={href} className={buttonClasses}>
@@ -143,12 +179,8 @@ export function GradientButton({
       </Link>
     );
   }
-  
-  return (
-    <button className={buttonClasses}>
-      {children}
-    </button>
-  );
+
+  return <button className={buttonClasses}>{children}</button>;
 }
 
 // Contact CTA section
@@ -161,9 +193,7 @@ export function ContactCTA() {
       <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">
         We're here to help. Feel free to reach out to us.
       </p>
-      <GradientButton href="/contact">
-        Contact Us
-      </GradientButton>
+      <GradientButton href="/contact">Contact Us</GradientButton>
     </div>
   );
 }

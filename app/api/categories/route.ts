@@ -26,7 +26,7 @@ async function getCategoriesFromCache() {
 
   const [categoriesCollection, quotesCollection] = await Promise.all([
     getCollection('categories'),
-    getCollection('quotes')
+    getCollection('quotes'),
   ]);
 
   // Parallel indexed queries (much faster than $lookup with $expr)
@@ -39,9 +39,7 @@ async function getCategoriesFromCache() {
       .toArray(),
 
     // Aggregation uses category_id index for grouping
-    quotesCollection.aggregate([
-      { $group: { _id: '$category_id', count: { $sum: 1 } } }
-    ]).toArray()
+    quotesCollection.aggregate([{ $group: { _id: '$category_id', count: { $sum: 1 } } }]).toArray(),
   ]);
 
   // Build count map - O(n) in memory, not in DB
@@ -104,7 +102,7 @@ export async function GET(request: NextRequest) {
         categories: limitedCategories,
         totalCategories: totalCategories,
         isLimited: false,
-        _meta: { responseTime: duration, cached }
+        _meta: { responseTime: duration, cached },
       },
       { status: 200 }
     );
@@ -120,9 +118,6 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Get categories error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

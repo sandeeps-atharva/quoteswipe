@@ -19,10 +19,7 @@ export async function POST(request: NextRequest) {
     const { text, targetLanguage, sourceLanguage = 'en' } = await request.json();
 
     if (!text || !targetLanguage) {
-      return NextResponse.json(
-        { error: 'Text and target language are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Text and target language are required' }, { status: 400 });
     }
 
     // If target language is same as source, return original
@@ -42,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     // Try Google Translate API (requires GOOGLE_TRANSLATE_API_KEY env variable)
     const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
-    
+
     if (apiKey) {
       // Use Google Cloud Translation API
       const response = await fetch(
@@ -62,7 +59,7 @@ export async function POST(request: NextRequest) {
       if (response.ok) {
         const data = await response.json();
         const translatedText = data.data.translations[0].translatedText;
-        
+
         // Cache the translation
         translationCache.set(cacheKey, {
           text: translatedText,
@@ -76,9 +73,9 @@ export async function POST(request: NextRequest) {
     // Fallback: Use free Google Translate (unofficial, for demo purposes)
     // Note: This may have rate limits and is not recommended for production
     const freeTranslateUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLanguage}&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`;
-    
+
     const freeResponse = await fetch(freeTranslateUrl);
-    
+
     if (freeResponse.ok) {
       const data = await freeResponse.json();
       // Extract translated text from the response
@@ -90,31 +87,26 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-      
+
       if (translatedText) {
         // Cache the translation
         translationCache.set(cacheKey, {
           text: translatedText,
           timestamp: Date.now(),
         });
-        
+
         return NextResponse.json({ translatedText });
       }
     }
 
     // If all translation methods fail, return original text
-    return NextResponse.json({ 
-      translatedText: text, 
+    return NextResponse.json({
+      translatedText: text,
       error: 'Translation service unavailable',
-      fallback: true 
+      fallback: true,
     });
-
   } catch (error) {
     console.error('Translation error:', error);
-    return NextResponse.json(
-      { error: 'Translation failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Translation failed' }, { status: 500 });
   }
 }
-

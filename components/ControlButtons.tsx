@@ -1,7 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Heart, X, Bookmark, Sparkles, RotateCcw, Send, Palette, MoreVertical, Film } from 'lucide-react';
+import {
+  Heart,
+  X,
+  Bookmark,
+  Sparkles,
+  RotateCcw,
+  Send,
+  Palette,
+  MoreVertical,
+  Film,
+} from 'lucide-react';
 
 interface ControlButtonsProps {
   onLike: () => void;
@@ -58,8 +68,8 @@ export default function ControlButtons({
           !canUndo
             ? 'bg-orange-50/60 dark:bg-orange-950/20 text-orange-200 dark:text-orange-800 cursor-not-allowed'
             : isUndoing
-            ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 text-white scale-110 shadow-xl shadow-orange-500/30'
-            : 'bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl text-amber-600 dark:text-amber-400 border-2 border-amber-300/60 dark:border-amber-700/40 hover:border-amber-500 dark:hover:border-amber-500 hover:scale-110 hover:shadow-lg hover:shadow-amber-500/25 active:scale-95'
+              ? 'bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 text-white scale-110 shadow-xl shadow-orange-500/30'
+              : 'bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl text-amber-600 dark:text-amber-400 border-2 border-amber-300/60 dark:border-amber-700/40 hover:border-amber-500 dark:hover:border-amber-500 hover:scale-110 hover:shadow-lg hover:shadow-amber-500/25 active:scale-95'
         }`}
         aria-label="Undo last swipe"
         title={canUndo ? 'Undo' : 'Nothing to undo'}
@@ -68,15 +78,15 @@ export default function ControlButtons({
         {canUndo && !isUndoing && (
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400/0 to-orange-500/0 group-hover:from-amber-400/20 group-hover:to-orange-500/20 transition-all duration-300" />
         )}
-        <RotateCcw 
-          size={18} 
+        <RotateCcw
+          size={18}
           className={`sm:w-5 sm:h-5 transition-all duration-500 ${
-            isUndoing 
-              ? 'animate-[spin_0.5s_ease-in-out_reverse]' 
-              : canUndo 
-              ? 'group-hover:-rotate-180' 
-              : ''
-          }`} 
+            isUndoing
+              ? 'animate-[spin_0.5s_ease-in-out_reverse]'
+              : canUndo
+                ? 'group-hover:-rotate-180'
+                : ''
+          }`}
           strokeWidth={2.5}
         />
       </button>
@@ -96,16 +106,18 @@ export default function ControlButtons({
           <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-orange-400/50 dark:group-hover:border-orange-500/50 scale-100 group-hover:scale-110 opacity-0 group-hover:opacity-100 transition-all duration-300" />
         )}
         {/* Inner glow */}
-        <div className={`absolute inset-1 rounded-full transition-all duration-300 ${
-          isSwipingLeft 
-            ? 'bg-gradient-to-t from-black/20 to-transparent' 
-            : 'bg-gradient-to-br from-orange-50/0 to-amber-100/0 dark:from-orange-950/0 dark:to-amber-900/0 group-hover:from-orange-50 group-hover:to-amber-100/50 dark:group-hover:from-orange-950/50 dark:group-hover:to-amber-900/30'
-        }`} />
-        <X 
-          size={24} 
+        <div
+          className={`absolute inset-1 rounded-full transition-all duration-300 ${
+            isSwipingLeft
+              ? 'bg-gradient-to-t from-black/20 to-transparent'
+              : 'bg-gradient-to-br from-orange-50/0 to-amber-100/0 dark:from-orange-950/0 dark:to-amber-900/0 group-hover:from-orange-50 group-hover:to-amber-100/50 dark:group-hover:from-orange-950/50 dark:group-hover:to-amber-900/30'
+          }`}
+        />
+        <X
+          size={24}
           className={`sm:w-7 sm:h-7 relative z-10 transition-all duration-300 ${
             isSwipingLeft ? 'rotate-90 scale-110' : 'group-hover:rotate-90 group-hover:scale-110'
-          }`} 
+          }`}
           strokeWidth={3}
         />
       </button>
@@ -121,9 +133,9 @@ export default function ControlButtons({
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/40 to-transparent dark:via-yellow-500/15 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
         {/* Inner glow */}
         <div className="absolute inset-1 rounded-full bg-gradient-to-br from-yellow-50/0 to-amber-100/0 dark:from-yellow-950/0 dark:to-amber-900/0 group-hover:from-yellow-50 group-hover:to-amber-100/50 dark:group-hover:from-yellow-950/50 dark:group-hover:to-amber-900/30 transition-all duration-300" />
-        <Bookmark 
-          size={18} 
-          className="sm:w-5 sm:h-5 relative z-10 transition-all duration-300 group-hover:scale-110 group-hover:fill-current" 
+        <Bookmark
+          size={18}
+          className="sm:w-5 sm:h-5 relative z-10 transition-all duration-300 group-hover:scale-110 group-hover:fill-current"
           strokeWidth={2}
         />
       </button>
@@ -139,34 +151,36 @@ export default function ControlButtons({
         aria-label="Love"
       >
         {/* Outer glow ring */}
-        <div className={`absolute -inset-1 rounded-full bg-gradient-to-br from-rose-400 to-orange-500 opacity-0 blur-md transition-all duration-300 ${
-          isSwipingRight ? 'opacity-60' : 'group-hover:opacity-40'
-        }`} />
-        
+        <div
+          className={`absolute -inset-1 rounded-full bg-gradient-to-br from-rose-400 to-orange-500 opacity-0 blur-md transition-all duration-300 ${
+            isSwipingRight ? 'opacity-60' : 'group-hover:opacity-40'
+          }`}
+        />
+
         {/* Shine effect */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/40 via-white/10 to-transparent" />
-        
+
         {/* Sparkles */}
-        <Sparkles 
-          size={10} 
+        <Sparkles
+          size={10}
           className={`absolute top-2 right-2 sm:top-2.5 sm:right-2.5 text-white/80 transition-all duration-300 ${
-            isSwipingRight ? 'animate-ping scale-125' : 'opacity-60 group-hover:opacity-100 group-hover:animate-pulse'
-          }`} 
+            isSwipingRight
+              ? 'animate-ping scale-125'
+              : 'opacity-60 group-hover:opacity-100 group-hover:animate-pulse'
+          }`}
         />
-        <Sparkles 
-          size={8} 
+        <Sparkles
+          size={8}
           className={`absolute bottom-3 left-2.5 text-white/60 transition-all duration-500 ${
             isSwipingRight ? 'animate-ping delay-100' : 'opacity-40 group-hover:opacity-80'
-          }`} 
+          }`}
         />
-        
+
         {/* Heart icon */}
-        <Heart 
-          size={28} 
+        <Heart
+          size={28}
           className={`sm:w-8 sm:h-8 relative z-10 text-white transition-all duration-300 ${
-            isSwipingRight 
-              ? 'scale-125 animate-pulse fill-current' 
-              : 'group-hover:scale-110'
+            isSwipingRight ? 'scale-125 animate-pulse fill-current' : 'group-hover:scale-110'
           }`}
           fill={isSwipingRight ? 'currentColor' : 'none'}
           strokeWidth={2.5}
@@ -186,9 +200,9 @@ export default function ControlButtons({
           title="More options"
         >
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-100/0 to-orange-100/0 dark:from-amber-900/0 dark:to-orange-900/0 group-hover:from-amber-100/50 group-hover:to-orange-100/30 dark:group-hover:from-amber-900/30 dark:group-hover:to-orange-900/20 transition-all duration-300" />
-          <MoreVertical 
-            size={18} 
-            className="sm:w-5 sm:h-5 transition-all duration-300" 
+          <MoreVertical
+            size={18}
+            className="sm:w-5 sm:h-5 transition-all duration-300"
             strokeWidth={2.5}
           />
         </button>
@@ -205,7 +219,11 @@ export default function ControlButtons({
               className="group relative w-10 h-10 rounded-full flex items-center justify-center text-amber-500 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:text-amber-600 dark:hover:text-amber-300 hover:scale-110 active:scale-95 transition-all duration-200"
               title="Share Quote"
             >
-              <Send size={18} strokeWidth={2.5} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <Send
+                size={18}
+                strokeWidth={2.5}
+                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
             </button>
 
             {/* Edit Background Option */}
@@ -218,7 +236,11 @@ export default function ControlButtons({
                 className="group relative w-10 h-10 rounded-full flex items-center justify-center text-orange-500 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 hover:text-orange-600 dark:hover:text-orange-300 hover:scale-110 active:scale-95 transition-all duration-200"
                 title="Edit Background"
               >
-                <Palette size={18} strokeWidth={2.5} className="transition-transform group-hover:rotate-12" />
+                <Palette
+                  size={18}
+                  strokeWidth={2.5}
+                  className="transition-transform group-hover:rotate-12"
+                />
               </button>
             )}
 
@@ -232,7 +254,11 @@ export default function ControlButtons({
                 className="group relative w-10 h-10 rounded-full flex items-center justify-center text-purple-500 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 hover:text-purple-600 dark:hover:text-purple-300 hover:scale-110 active:scale-95 transition-all duration-200"
                 title="Create Reel"
               >
-                <Film size={18} strokeWidth={2.5} className="transition-transform group-hover:scale-110" />
+                <Film
+                  size={18}
+                  strokeWidth={2.5}
+                  className="transition-transform group-hover:scale-110"
+                />
               </button>
             )}
           </div>
@@ -274,11 +300,11 @@ export function ActionButtons({
         {!isSwipingLeft && (
           <div className="absolute inset-0 bg-gradient-to-r from-orange-50/0 to-amber-50/0 dark:from-orange-950/0 dark:to-amber-950/0 group-hover:from-orange-50 group-hover:to-amber-50 dark:group-hover:from-orange-950/50 dark:group-hover:to-amber-950/30 transition-all duration-300" />
         )}
-        <X 
-          size={16} 
+        <X
+          size={16}
           className={`sm:w-[18px] sm:h-[18px] relative z-10 transition-all duration-300 ${
-            isSwipingLeft 
-              ? 'text-white rotate-90' 
+            isSwipingLeft
+              ? 'text-white rotate-90'
               : 'text-orange-400 dark:text-orange-500 group-hover:text-orange-600 dark:group-hover:text-orange-400 group-hover:rotate-90'
           }`}
           strokeWidth={2.5}
@@ -298,12 +324,12 @@ export function ActionButtons({
       >
         {/* Shine sweep */}
         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
-        
+
         {/* Top shine */}
         <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent rounded-t-full" />
-        
-        <Heart 
-          size={16} 
+
+        <Heart
+          size={16}
           className={`sm:w-[18px] sm:h-[18px] relative z-10 transition-all duration-300 ${
             isSwipingRight ? 'scale-110 fill-current' : 'group-hover:scale-110'
           }`}
@@ -311,13 +337,15 @@ export function ActionButtons({
           strokeWidth={2.5}
         />
         <span className="relative z-10 text-sm sm:text-base tracking-wide">Love</span>
-        
+
         {/* Sparkle accent */}
-        <Sparkles 
-          size={12} 
+        <Sparkles
+          size={12}
           className={`sm:w-3.5 sm:h-3.5 relative z-10 transition-all duration-300 ${
-            isSwipingRight ? 'animate-spin text-white' : 'text-white/80 group-hover:text-white group-hover:animate-pulse'
-          }`} 
+            isSwipingRight
+              ? 'animate-spin text-white'
+              : 'text-white/80 group-hover:text-white group-hover:animate-pulse'
+          }`}
         />
       </button>
     </div>

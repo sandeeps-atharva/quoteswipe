@@ -25,7 +25,9 @@ export default function CookieConsent() {
   if (!isVisible) return null;
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 z-[100] transition-transform duration-300 ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}>
+    <div
+      className={`fixed bottom-0 left-0 right-0 z-[100] transition-transform duration-300 ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}
+    >
       <div className="bg-stone-900 dark:bg-stone-950 border-t border-stone-800 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           {/* Message */}
@@ -35,8 +37,8 @@ export default function CookieConsent() {
             </div>
             <p className="text-sm text-stone-300">
               🍪 We use cookies to enhance your experience.{' '}
-              <Link 
-                href="/cookie-policy" 
+              <Link
+                href="/cookie-policy"
                 className="text-amber-400 hover:text-amber-300 hover:underline"
               >
                 Learn more

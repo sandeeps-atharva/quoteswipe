@@ -18,7 +18,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // Get initial theme from localStorage or system preference (matches blocking script)
 function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'light';
-  
+
   try {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || savedTheme === 'light') {
@@ -114,36 +114,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const newTheme: Theme = prevTheme === 'light' ? 'dark' : 'light';
       localStorage.setItem('theme', newTheme);
       applyTheme(newTheme);
-      
+
       // Save to API if authenticated
       if (isAuthenticated) {
         saveThemeToAPI(newTheme);
       }
-      
+
       return newTheme;
     });
   }, [applyTheme, isAuthenticated, saveThemeToAPI]);
 
-  const setTheme = useCallback((newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
-    applyTheme(newTheme);
-    
-    // Save to API if authenticated
-    if (isAuthenticated) {
-      saveThemeToAPI(newTheme);
-    }
-  }, [applyTheme, isAuthenticated, saveThemeToAPI]);
+  const setTheme = useCallback(
+    (newTheme: Theme) => {
+      setThemeState(newTheme);
+      localStorage.setItem('theme', newTheme);
+      applyTheme(newTheme);
+
+      // Save to API if authenticated
+      if (isAuthenticated) {
+        saveThemeToAPI(newTheme);
+      }
+    },
+    [applyTheme, isAuthenticated, saveThemeToAPI]
+  );
 
   return (
-    <ThemeContext.Provider value={{ 
-      theme, 
-      toggleTheme, 
-      setTheme, 
-      syncWithUser,
-      isAuthenticated,
-      setIsAuthenticated 
-    }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        toggleTheme,
+        setTheme,
+        syncWithUser,
+        isAuthenticated,
+        setIsAuthenticated,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
@@ -156,4 +161,3 @@ export function useTheme() {
   }
   return context;
 }
-

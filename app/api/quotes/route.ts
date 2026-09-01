@@ -82,9 +82,9 @@
 //   // Get user names for user quotes
 //   const userIds = [...new Set(publicUserQuotes.map((uq: any) => uq.user_id).filter(Boolean))];
 //   let userMap = new Map();
-  
+
 //   if (userIds.length > 0) {
-//     const users = await usersCollection.find({ 
+//     const users = await usersCollection.find({
 //       $or: userIds.map(id => {
 //         try {
 //           if (ObjectId.isValid(id)) return { _id: new ObjectId(id) };
@@ -208,7 +208,7 @@ import { recordMetric, startTimer } from '@/lib/perf';
 // Enhanced cache with separate storage for different data types
 interface QuoteCache {
   data: any[];
-  shuffledData: any[];  // Pre-shuffled version for faster responses
+  shuffledData: any[]; // Pre-shuffled version for faster responses
   timestamp: number;
 }
 
@@ -250,9 +250,9 @@ async function getOptimizedQuotes(categoriesParam: string | null): Promise<any[]
   if (categoriesParam && categoriesParam !== 'All') {
     const categoryNames = categoriesParam
       .split(',')
-      .map(c => c.trim())
-      .filter(c => c && c !== 'All');
-    
+      .map((c) => c.trim())
+      .filter((c) => c && c !== 'All');
+
     if (categoryNames.length > 0) {
       const cats = await categoriesCollection
         .find({ name: { $in: categoryNames } })
@@ -267,83 +267,80 @@ async function getOptimizedQuotes(categoriesParam: string | null): Promise<any[]
   // ========================================================================
   // PARALLEL EXECUTION: Run all independent queries simultaneously
   // ========================================================================
-  const [
-    allCategories,
-    regularQuotes,
-    publicUserQuotes,
-    likeCounts,
-    dislikeCounts
-  ] = await Promise.all([
-    // 1. Get all categories (for mapping)
-    categoriesCollection.find({}).toArray(),
+  const [allCategories, regularQuotes, publicUserQuotes, likeCounts, dislikeCounts] =
+    await Promise.all([
+      // 1. Get all categories (for mapping)
+      categoriesCollection.find({}).toArray(),
 
-    // 2. Get regular quotes with optimized aggregation pipeline
-    quotesCollection.aggregate([
-      { $match: categoryIds.length > 0 ? { category_id: { $in: categoryIds } } : {} },
-      {
-        $project: {
-          _id: 1,
-          id: 1,
-          text: 1,
-          author: 1,
-          category_id: 1
-        }
-      }
-    ]).toArray(),
-
-    // 3. Get public user quotes with optimized aggregation
-    userQuotesCollection.aggregate([
-      {
-        $match: {
-          $or: [{ is_public: true }, { is_public: 1 }],
-          ...(categoryIds.length > 0 ? { category_id: categoryFilter } : {})
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          let: { userId: '$user_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $eq: [{ $toString: '$_id' }, { $toString: '$$userId' }] },
-                    { $eq: ['$id', '$$userId'] }
-                  ]
-                }
-              }
+      // 2. Get regular quotes with optimized aggregation pipeline
+      quotesCollection
+        .aggregate([
+          { $match: categoryIds.length > 0 ? { category_id: { $in: categoryIds } } : {} },
+          {
+            $project: {
+              _id: 1,
+              id: 1,
+              text: 1,
+              author: 1,
+              category_id: 1,
             },
-            { $project: { name: 1 } }
-          ],
-          as: 'user'
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          id: 1,
-          text: 1,
-          author: 1,
-          category_id: 1,
-          user_id: 1,
-          is_public: 1,
-          custom_background: 1,
-          creator_name: { $ifNull: [{ $arrayElemAt: ['$user.name', 0] }, 'Anonymous'] }
-        }
-      }
-    ]).toArray(),
+          },
+        ])
+        .toArray(),
 
-    // 4. Get like counts using aggregation (more efficient than separate queries)
-    likesCollection.aggregate([
-      { $group: { _id: '$quote_id', count: { $sum: 1 } } }
-    ]).toArray(),
+      // 3. Get public user quotes with optimized aggregation
+      userQuotesCollection
+        .aggregate([
+          {
+            $match: {
+              $or: [{ is_public: true }, { is_public: 1 }],
+              ...(categoryIds.length > 0 ? { category_id: categoryFilter } : {}),
+            },
+          },
+          {
+            $lookup: {
+              from: 'users',
+              let: { userId: '$user_id' },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $or: [
+                        { $eq: [{ $toString: '$_id' }, { $toString: '$$userId' }] },
+                        { $eq: ['$id', '$$userId'] },
+                      ],
+                    },
+                  },
+                },
+                { $project: { name: 1 } },
+              ],
+              as: 'user',
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              id: 1,
+              text: 1,
+              author: 1,
+              category_id: 1,
+              user_id: 1,
+              is_public: 1,
+              custom_background: 1,
+              creator_name: { $ifNull: [{ $arrayElemAt: ['$user.name', 0] }, 'Anonymous'] },
+            },
+          },
+        ])
+        .toArray(),
 
-    // 5. Get dislike counts
-    dislikesCollection.aggregate([
-      { $group: { _id: '$quote_id', count: { $sum: 1 } } }
-    ]).toArray()
-  ]);
+      // 4. Get like counts using aggregation (more efficient than separate queries)
+      likesCollection.aggregate([{ $group: { _id: '$quote_id', count: { $sum: 1 } } }]).toArray(),
+
+      // 5. Get dislike counts
+      dislikesCollection
+        .aggregate([{ $group: { _id: '$quote_id', count: { $sum: 1 } } }])
+        .toArray(),
+    ]);
 
   // ========================================================================
   // FAST LOOKUPS: Create maps for O(1) lookups instead of O(n) searches
@@ -357,13 +354,9 @@ async function getOptimizedQuotes(categoriesParam: string | null): Promise<any[]
     if (legacyId) categoryMap.set(legacyId, data);
   });
 
-  const likeCountMap = new Map(
-    likeCounts.map((l: any) => [normalizeId(l._id), l.count])
-  );
+  const likeCountMap = new Map(likeCounts.map((l: any) => [normalizeId(l._id), l.count]));
 
-  const dislikeCountMap = new Map(
-    dislikeCounts.map((d: any) => [normalizeId(d._id), d.count])
-  );
+  const dislikeCountMap = new Map(dislikeCounts.map((d: any) => [normalizeId(d._id), d.count]));
 
   // ========================================================================
   // TRANSFORM DATA: Single-pass transformation for efficiency
@@ -372,7 +365,7 @@ async function getOptimizedQuotes(categoriesParam: string | null): Promise<any[]
     const quoteId = normalizeId(q.id || q._id);
     const catId = normalizeId(q.category_id);
     const category = categoryMap.get(catId);
-    
+
     return {
       id: quoteId,
       text: q.text,
@@ -391,7 +384,7 @@ async function getOptimizedQuotes(categoriesParam: string | null): Promise<any[]
   const formattedUserQuotes = publicUserQuotes.map((uq: any) => {
     const catId = normalizeId(uq.category_id);
     const category = categoryMap.get(catId);
-    
+
     return {
       id: `user_${normalizeId(uq.id || uq._id)}`,
       text: uq.text,
@@ -426,25 +419,22 @@ async function getUserSpecificData(userId: string): Promise<UserDataCache> {
 
   const [likesCollection, savedCollection] = await Promise.all([
     getCollection('user_likes'),
-    getCollection('user_saved')
+    getCollection('user_saved'),
   ]);
 
   // Fetch user likes and saves in parallel with index hints
   const [userLikes, userSaves] = await Promise.all([
     likesCollection
       .find({ user_id: userId })
-      .project({ quote_id: 1, _id: 0 })  // Exclude _id for smaller response
+      .project({ quote_id: 1, _id: 0 }) // Exclude _id for smaller response
       .toArray(),
-    savedCollection
-      .find({ user_id: userId })
-      .project({ quote_id: 1, _id: 0 })
-      .toArray()
+    savedCollection.find({ user_id: userId }).project({ quote_id: 1, _id: 0 }).toArray(),
   ]);
 
   const userData: UserDataCache = {
     likes: new Set(userLikes.map((l: any) => normalizeId(l.quote_id))),
     saves: new Set(userSaves.map((s: any) => normalizeId(s.quote_id))),
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 
   // Cache the user data
@@ -455,12 +445,12 @@ async function getUserSpecificData(userId: string): Promise<UserDataCache> {
 
 export async function GET(request: NextRequest) {
   const endTimer = startTimer();
-  
+
   try {
     const { searchParams } = new URL(request.url);
     const categoriesParam = searchParams.get('categories');
     const userId = getUserIdFromRequest(request);
-    
+
     // PAGINATION SUPPORT
     const limit = parseInt(searchParams.get('limit') || '0', 10); // 0 = no limit (legacy)
     const offset = parseInt(searchParams.get('offset') || '0', 10);
@@ -476,7 +466,7 @@ export async function GET(request: NextRequest) {
     let quotes: any[];
     let fromCache = false;
     const cached = quotesCache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       // Use pre-shuffled data from cache
       quotes = cached.shuffledData;
@@ -486,10 +476,10 @@ export async function GET(request: NextRequest) {
       const rawQuotes = await getOptimizedQuotes(categoriesParam);
       // Shuffle once when caching
       const shuffled = shuffleArray(rawQuotes);
-      quotesCache.set(cacheKey, { 
-        data: rawQuotes, 
+      quotesCache.set(cacheKey, {
+        data: rawQuotes,
         shuffledData: shuffled,
-        timestamp: Date.now() 
+        timestamp: Date.now(),
       });
       quotes = shuffled;
     }
@@ -499,7 +489,7 @@ export async function GET(request: NextRequest) {
     // Apply cursor-based pagination if cursor is provided
     let startIdx = offset;
     if (cursor) {
-      const cursorIdx = quotes.findIndex(q => q.id === cursor);
+      const cursorIdx = quotes.findIndex((q) => q.id === cursor);
       if (cursorIdx >= 0) {
         startIdx = cursorIdx + 1;
       }
@@ -534,27 +524,30 @@ export async function GET(request: NextRequest) {
     }
 
     const duration = endTimer();
-    
+
     // Record performance metrics
     recordMetric('/api/quotes', duration, fromCache, userId || undefined);
 
     // Calculate next cursor for cursor-based pagination
-    const nextCursor = paginated && quotes.length === limit 
-      ? quotes[quotes.length - 1]?.id 
-      : null;
+    const nextCursor = paginated && quotes.length === limit ? quotes[quotes.length - 1]?.id : null;
 
     // Return with pagination info
-    const response = NextResponse.json({ 
-      quotes,
-      pagination: paginated ? {
-        total: totalQuotes,
-        limit,
-        offset: startIdx,
-        hasMore: startIdx + limit < totalQuotes,
-        nextCursor,
-      } : undefined,
-      _meta: { responseTime: duration, cached: fromCache }
-    }, { status: 200 });
+    const response = NextResponse.json(
+      {
+        quotes,
+        pagination: paginated
+          ? {
+              total: totalQuotes,
+              limit,
+              offset: startIdx,
+              hasMore: startIdx + limit < totalQuotes,
+              nextCursor,
+            }
+          : undefined,
+        _meta: { responseTime: duration, cached: fromCache },
+      },
+      { status: 200 }
+    );
 
     // Aggressive caching headers
     if (userId) {
@@ -566,10 +559,7 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Get quotes error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -578,7 +568,7 @@ export async function GET(request: NextRequest) {
 // ============================================================================
 export function invalidateQuotesCache(userId?: string) {
   quotesCache.clear();
-  
+
   if (userId) {
     // Invalidate specific user's cache
     userDataCache.delete(userId);

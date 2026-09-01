@@ -11,19 +11,19 @@ async function getQuoteIds(): Promise<{ id: string; updated_at: Date }[]> {
       .limit(5000)
       .project({ id: 1, _id: 1, updated_at: 1, created_at: 1 })
       .toArray();
-    
+
     return quotes
-      .map(q => {
+      .map((q) => {
         // Ensure we have a valid ID
         const id = q.id || q._id?.toString();
         if (!id) return null; // Skip invalid entries
-        
+
         // Ensure valid date
         let date = q.updated_at || q.created_at;
         if (!date || !(date instanceof Date)) {
           date = new Date();
         }
-        
+
         return {
           id: String(id), // Ensure it's a string
           updated_at: date instanceof Date ? date : new Date(),
@@ -44,16 +44,19 @@ async function getCategories(): Promise<{ slug: string; name: string }[]> {
       .find({ is_active: { $ne: false } })
       .project({ slug: 1, name: 1 })
       .toArray();
-    
+
     return categories
-      .map(c => {
+      .map((c) => {
         // Ensure we have a valid slug
         let slug = c.slug;
         if (!slug && c.name) {
-          slug = c.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+          slug = c.name
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '');
         }
         if (!slug) return null; // Skip invalid entries
-        
+
         return {
           slug: String(slug),
           name: c.name || '',
@@ -70,19 +73,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // IMPORTANT: Always use production domain for sitemap
   // Google Search Console requires sitemap URLs to match the verified property domain
   // Set NEXT_PUBLIC_SITE_URL to your production domain in Vercel environment variables
-  
+
   let baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://quoteswipe.in';
-  
+
   // Force production domain - never use Vercel preview URLs or localhost in sitemap
   // This ensures Google Search Console can validate the sitemap
-  if (baseUrl.includes('vercel.app') || baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+  if (
+    baseUrl.includes('vercel.app') ||
+    baseUrl.includes('localhost') ||
+    baseUrl.includes('127.0.0.1')
+  ) {
     // Use your actual production domain here (.in domain)
     baseUrl = process.env.SITEMAP_DOMAIN || 'https://quoteswipe.in';
   }
-  
+
   // Ensure baseUrl doesn't have trailing slash
   const cleanBaseUrl = baseUrl.replace(/\/$/, '');
-  
+
   // Static pages - Core
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -163,7 +170,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const categories = await getCategories();
     categoryPages = categories
-      .filter((category) => category.slug && category.slug !== 'undefined' && category.slug !== 'null')
+      .filter(
+        (category) => category.slug && category.slug !== 'undefined' && category.slug !== 'null'
+      )
       .map((category) => ({
         url: `${cleanBaseUrl}/category/${encodeURIComponent(category.slug)}`,
         lastModified: new Date(),
@@ -176,10 +185,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Combine all pages
   const allPages = [...staticPages, ...categoryPages, ...quotePages];
-  
+
   // Log for debugging
-  console.log(`[Sitemap] Generated ${allPages.length} URLs (${staticPages.length} static, ${categoryPages.length} categories, ${quotePages.length} quotes)`);
-  
+  console.log(
+    `[Sitemap] Generated ${allPages.length} URLs (${staticPages.length} static, ${categoryPages.length} categories, ${quotePages.length} quotes)`
+  );
+
   return allPages;
 }
 

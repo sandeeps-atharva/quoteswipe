@@ -57,19 +57,19 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
-    
+
     const reviewsCollection = await getCollection('reviews');
     const usersCollection = await getCollection('users');
-    
+
     if (type === 'featured' || !type) {
       // Get approved reviews for public display
       // Handle both boolean true and number 1 (from MySQL migration)
-      const reviews = await reviewsCollection
+      const reviews = (await reviewsCollection
         .find({ $or: [{ is_approved: true }, { is_approved: 1 }] })
         .sort({ is_featured: -1, rating: -1, created_at: -1 })
         .limit(10)
-        .toArray() as any[];
-      
+        .toArray()) as any[];
+
       const formattedReviews = reviews.map((r: any) => ({
         id: r.id || r._id?.toString(),
         name: r.name,
@@ -77,73 +77,78 @@ export async function GET(request: NextRequest) {
         title: r.title,
         message: r.message,
         is_featured: r.is_featured,
-        created_at: r.created_at
+        created_at: r.created_at,
       }));
-      
-      return NextResponse.json({ reviews: formattedReviews }, { 
-        status: 200,
-        headers: {
-          'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+
+      return NextResponse.json(
+        { reviews: formattedReviews },
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+          },
         }
-      });
+      );
     }
-    
+
     // For admin - get all reviews with $lookup optimization
     const userId = getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
-    
+
     if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     // Single aggregation with $lookup - replaces 2 separate queries
-    const formattedReviews = await reviewsCollection.aggregate([
-      { $sort: { created_at: -1 } },
-      
-      // Lookup user details
-      {
-        $lookup: {
-          from: 'users',
-          let: { odId: '$user_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $eq: ['$_id', '$$odId'] },
-                    { $eq: [{ $toString: '$_id' }, { $toString: '$$odId' }] }
-                  ]
-                }
-              }
-            },
-            { $project: { name: 1 } }
-          ],
-          as: 'userData'
-        }
-      },
-      
-      // Project final shape
-      {
-        $project: {
-          id: { $ifNull: ['$id', { $toString: '$_id' }] },
-          user_id: 1,
-          name: 1,
-          email: 1,
-          rating: 1,
-          title: 1,
-          message: 1,
-          is_approved: 1,
-          is_featured: 1,
-          created_at: 1,
-          user_name: { $ifNull: [{ $arrayElemAt: ['$userData.name', 0] }, null] }
-        }
-      }
-    ]).toArray() as any[];
-    
+    const formattedReviews = (await reviewsCollection
+      .aggregate([
+        { $sort: { created_at: -1 } },
+
+        // Lookup user details
+        {
+          $lookup: {
+            from: 'users',
+            let: { odId: '$user_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $or: [
+                      { $eq: ['$_id', '$$odId'] },
+                      { $eq: [{ $toString: '$_id' }, { $toString: '$$odId' }] },
+                    ],
+                  },
+                },
+              },
+              { $project: { name: 1 } },
+            ],
+            as: 'userData',
+          },
+        },
+
+        // Project final shape
+        {
+          $project: {
+            id: { $ifNull: ['$id', { $toString: '$_id' }] },
+            user_id: 1,
+            name: 1,
+            email: 1,
+            rating: 1,
+            title: 1,
+            message: 1,
+            is_approved: 1,
+            is_featured: 1,
+            created_at: 1,
+            user_name: { $ifNull: [{ $arrayElemAt: ['$userData.name', 0] }, null] },
+          },
+        },
+      ])
+      .toArray()) as any[];
+
     return NextResponse.json({ reviews: formattedReviews }, { status: 200 });
   } catch (error) {
     console.error('Get reviews error:', error);
@@ -156,7 +161,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { name, email, rating, title, message } = body;
-    
+
     // Validation
     if (!name || !email || !rating || !message) {
       return NextResponse.json(
@@ -164,19 +169,16 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     if (rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: 'Rating must be between 1 and 5' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
     }
-    
+
     // Get user ID if authenticated
     const userId = getUserIdFromRequest(request);
-    
+
     const reviewsCollection = await getCollection('reviews');
-    
+
     // Insert review
     await reviewsCollection.insertOne({
       user_id: userId || null,
@@ -187,19 +189,19 @@ export async function POST(request: NextRequest) {
       message: message.trim(),
       is_approved: false,
       is_featured: false,
-      created_at: new Date()
+      created_at: new Date(),
     } as any);
-    
+
     // Send email notification to admin
     const adminEmail = process.env.ADMIN_EMAIL || 'hello.quoteswipe@gmail.com';
-    
+
     sendEmail({
       to: adminEmail,
       subject: `🌟 New Review (${rating} stars) from ${name}`,
       html: getReviewNotificationHtml({ name, email, rating, title: title || '', message }),
       text: `New Review Submitted\n\nRating: ${'⭐'.repeat(rating)}\nTitle: ${title || 'N/A'}\nMessage: ${message}\nFrom: ${name} (${email})\n\nPlease review in the admin panel.`,
-    }).catch(err => console.error('Failed to send review notification:', err));
-    
+    }).catch((err) => console.error('Failed to send review notification:', err));
+
     return NextResponse.json(
       { message: 'Thank you for your review! It will be published after approval.' },
       { status: 201 }
@@ -217,28 +219,28 @@ export async function PATCH(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const usersCollection = await getCollection('users');
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
-    
+
     if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     const body = await request.json();
     const { reviewId, is_approved, is_featured } = body;
-    
+
     if (!reviewId) {
       return NextResponse.json({ error: 'Review ID required' }, { status: 400 });
     }
-    
+
     const reviewsCollection = await getCollection('reviews');
-    
+
     await reviewsCollection.updateOne(
       { $or: [{ id: reviewId }, { _id: toObjectId(reviewId) as any }] },
       { $set: { is_approved: is_approved ?? false, is_featured: is_featured ?? false } }
     );
-    
+
     return NextResponse.json({ message: 'Review updated' }, { status: 200 });
   } catch (error) {
     console.error('Update review error:', error);
@@ -253,26 +255,26 @@ export async function DELETE(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const usersCollection = await getCollection('users');
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
-    
+
     if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     const { searchParams } = new URL(request.url);
     const reviewId = searchParams.get('id');
-    
+
     if (!reviewId) {
       return NextResponse.json({ error: 'Review ID required' }, { status: 400 });
     }
-    
+
     const reviewsCollection = await getCollection('reviews');
-    await reviewsCollection.deleteOne({ 
-      $or: [{ id: reviewId }, { _id: toObjectId(reviewId) as any }] 
+    await reviewsCollection.deleteOne({
+      $or: [{ id: reviewId }, { _id: toObjectId(reviewId) as any }],
     });
-    
+
     return NextResponse.json({ message: 'Review deleted' }, { status: 200 });
   } catch (error) {
     console.error('Delete review error:', error);

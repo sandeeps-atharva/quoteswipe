@@ -5,10 +5,7 @@ import { invalidateQuotesCache } from '@/app/api/quotes/route';
 import { isQuotePublic } from '@/lib/helpers';
 
 // GET - Fetch a single quote
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -22,10 +19,7 @@ export async function GET(
 
     // Find quote by id or _id
     const quote: any = await userQuotesCollection.findOne({
-      $and: [
-        { user_id: userId },
-        { $or: [{ id: id }, { _id: toObjectId(id) as any }] }
-      ]
+      $and: [{ user_id: userId }, { $or: [{ id: id }, { _id: toObjectId(id) as any }] }],
     });
 
     if (!quote) {
@@ -37,11 +31,7 @@ export async function GET(
     if (quote.category_id) {
       const catId = quote.category_id;
       category = await categoriesCollection.findOne({
-        $or: [
-          { id: catId },
-          { id: String(catId) },
-          { _id: toObjectId(catId) as any }
-        ]
+        $or: [{ id: catId }, { id: String(catId) }, { _id: toObjectId(catId) as any }],
       });
     }
 
@@ -58,24 +48,18 @@ export async function GET(
       updated_at: quote.updated_at,
       category: category?.name || 'Personal',
       category_icon: category?.icon || '✨',
-      custom_background: quote.custom_background
+      custom_background: quote.custom_background,
     };
 
     return NextResponse.json({ quote: formattedQuote }, { status: 200 });
   } catch (error) {
     console.error('Get user quote error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // PUT - Update a quote
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -89,10 +73,7 @@ export async function PUT(
 
     // Check if quote exists and belongs to user
     const existing: any = await userQuotesCollection.findOne({
-      $and: [
-        { user_id: userId },
-        { $or: [{ id: id }, { _id: toObjectId(id) as any }] }
-      ]
+      $and: [{ user_id: userId }, { $or: [{ id: id }, { _id: toObjectId(id) as any }] }],
     });
 
     if (!existing) {
@@ -101,15 +82,13 @@ export async function PUT(
 
     const wasPublic = isQuotePublic(existing.is_public);
     const body = await request.json();
-    const { text, author, categoryId, themeId, fontId, backgroundId, isPublic, customBackground } = body;
+    const { text, author, categoryId, themeId, fontId, backgroundId, isPublic, customBackground } =
+      body;
 
     // Validation
     if (text !== undefined) {
       if (text.trim().length === 0) {
-        return NextResponse.json(
-          { error: 'Quote text cannot be empty' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Quote text cannot be empty' }, { status: 400 });
       }
       if (text.length < 10) {
         return NextResponse.json(
@@ -137,22 +116,17 @@ export async function PUT(
     if (isPublic !== undefined) updates.is_public = isPublic ? true : false;
     if (customBackground !== undefined) updates.custom_background = customBackground;
 
-    if (Object.keys(updates).length === 1) { // Only updated_at
-      return NextResponse.json(
-        { error: 'No fields to update' },
-        { status: 400 }
-      );
+    if (Object.keys(updates).length === 1) {
+      // Only updated_at
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
 
     // Update quote using the exact _id from found document
-    await userQuotesCollection.updateOne(
-      { _id: existing._id },
-      { $set: updates }
-    );
+    await userQuotesCollection.updateOne({ _id: existing._id }, { $set: updates });
 
     // Fetch updated quote using exact _id
     const updatedQuote: any = await userQuotesCollection.findOne({
-      _id: existing._id
+      _id: existing._id,
     });
 
     // Get category info - handle both string and ObjectId
@@ -160,11 +134,7 @@ export async function PUT(
     if (updatedQuote?.category_id) {
       const catId = updatedQuote.category_id;
       category = await categoriesCollection.findOne({
-        $or: [
-          { id: catId },
-          { id: String(catId) },
-          { _id: toObjectId(catId) as any }
-        ]
+        $or: [{ id: catId }, { id: String(catId) }, { _id: toObjectId(catId) as any }],
       });
     }
 
@@ -188,19 +158,20 @@ export async function PUT(
       updated_at: updatedQuote?.updated_at,
       category: category?.name || 'Personal',
       category_icon: category?.icon || '✨',
-      custom_background: updatedQuote?.custom_background
+      custom_background: updatedQuote?.custom_background,
     };
 
     return NextResponse.json(
-      { message: 'Quote updated successfully', quote: formattedQuote, cacheInvalidated: wasPublic || isNowPublic },
+      {
+        message: 'Quote updated successfully',
+        quote: formattedQuote,
+        cacheInvalidated: wasPublic || isNowPublic,
+      },
       { status: 200 }
     );
   } catch (error) {
     console.error('Update user quote error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -221,10 +192,7 @@ export async function DELETE(
 
     // Check if quote exists and belongs to user
     const existing: any = await userQuotesCollection.findOne({
-      $and: [
-        { user_id: userId },
-        { $or: [{ id: id }, { _id: toObjectId(id) as any }] }
-      ]
+      $and: [{ user_id: userId }, { $or: [{ id: id }, { _id: toObjectId(id) as any }] }],
     });
 
     if (!existing) {
@@ -235,10 +203,7 @@ export async function DELETE(
 
     // Delete the quote
     await userQuotesCollection.deleteOne({
-      $and: [
-        { user_id: userId },
-        { $or: [{ id: id }, { _id: toObjectId(id) as any }] }
-      ]
+      $and: [{ user_id: userId }, { $or: [{ id: id }, { _id: toObjectId(id) as any }] }],
     });
 
     // If the quote was public, invalidate the quotes cache
@@ -252,9 +217,6 @@ export async function DELETE(
     );
   } catch (error) {
     console.error('Delete user quote error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

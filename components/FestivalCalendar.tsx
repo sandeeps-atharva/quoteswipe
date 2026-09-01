@@ -1,9 +1,19 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { 
-  ChevronLeft, ChevronRight, Calendar, Plus, Clock, 
-  Send, Trash2, Users, X, Check, Loader2, Mail
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Plus,
+  Clock,
+  Send,
+  Trash2,
+  Users,
+  X,
+  Check,
+  Loader2,
+  Mail,
 } from 'lucide-react';
 
 interface ScheduledEmail {
@@ -55,7 +65,7 @@ const COMMON_HOLIDAYS: Record<string, { name: string; emoji: string }> = {
   '02-14': { name: "Valentine's Day", emoji: '❤️' },
   '03-08': { name: "Women's Day", emoji: '👩' },
   '03-17': { name: "St. Patrick's Day", emoji: '☘️' },
-  '04-01': { name: "April Fools", emoji: '🃏' },
+  '04-01': { name: 'April Fools', emoji: '🃏' },
   '05-01': { name: 'Labour Day', emoji: '👷' },
   '06-21': { name: 'Yoga Day', emoji: '🧘' },
   '07-04': { name: 'Independence Day (US)', emoji: '🇺🇸' },
@@ -68,8 +78,18 @@ const COMMON_HOLIDAYS: Record<string, { name: string; emoji: string }> = {
 };
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -81,7 +101,7 @@ export default function FestivalCalendar({
   onTriggerSend,
   onScheduleEmail,
   onDeleteScheduled,
-  onRefresh
+  onRefresh,
 }: FestivalCalendarProps) {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -107,18 +127,18 @@ export default function FestivalCalendar({
   const goToPrevMonth = () => {
     if (currentMonth === 0) {
       setCurrentMonth(11);
-      setCurrentYear(y => y - 1);
+      setCurrentYear((y) => y - 1);
     } else {
-      setCurrentMonth(m => m - 1);
+      setCurrentMonth((m) => m - 1);
     }
   };
 
   const goToNextMonth = () => {
     if (currentMonth === 11) {
       setCurrentMonth(0);
-      setCurrentYear(y => y + 1);
+      setCurrentYear((y) => y + 1);
     } else {
-      setCurrentMonth(m => m + 1);
+      setCurrentMonth((m) => m + 1);
     }
   };
 
@@ -132,9 +152,15 @@ export default function FestivalCalendar({
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
-    
-    const days: { day: number; month: number; year: number; isCurrentMonth: boolean; dateStr: string }[] = [];
-    
+
+    const days: {
+      day: number;
+      month: number;
+      year: number;
+      isCurrentMonth: boolean;
+      dateStr: string;
+    }[] = [];
+
     // Previous month days
     for (let i = firstDay - 1; i >= 0; i--) {
       const day = daysInPrevMonth - i;
@@ -143,13 +169,13 @@ export default function FestivalCalendar({
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       days.push({ day, month, year, isCurrentMonth: false, dateStr });
     }
-    
+
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       days.push({ day, month: currentMonth, year: currentYear, isCurrentMonth: true, dateStr });
     }
-    
+
     // Next month days
     const remainingDays = 42 - days.length;
     for (let day = 1; day <= remainingDays; day++) {
@@ -158,13 +184,13 @@ export default function FestivalCalendar({
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       days.push({ day, month, year, isCurrentMonth: false, dateStr });
     }
-    
+
     return days;
   }, [currentMonth, currentYear]);
 
   // Get scheduled emails for a date
   const getScheduledForDate = (dateStr: string): ScheduledEmail[] => {
-    return scheduledEmails.filter(e => e.scheduled_date === dateStr);
+    return scheduledEmails.filter((e) => e.scheduled_date === dateStr);
   };
 
   // Get holiday for a date
@@ -178,14 +204,14 @@ export default function FestivalCalendar({
     setSelectedDate(dateStr);
     const holiday = getHoliday(month, day);
     if (holiday) {
-      setScheduleForm(prev => ({
+      setScheduleForm((prev) => ({
         ...prev,
         title: `${holiday.emoji} ${holiday.name} Email`,
         subject: `${holiday.emoji} Happy ${holiday.name} from QuoteSwipe!`,
       }));
     } else {
       const date = new Date(dateStr);
-      setScheduleForm(prev => ({
+      setScheduleForm((prev) => ({
         ...prev,
         title: `Email for ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
         subject: '',
@@ -207,9 +233,9 @@ export default function FestivalCalendar({
         scheduled_time: scheduleForm.scheduled_time,
         quote_id: scheduleForm.quote_id,
         custom_message: scheduleForm.custom_message,
-        user_ids: scheduleForm.selectAll ? users.map(u => u.id) : scheduleForm.user_ids,
+        user_ids: scheduleForm.selectAll ? users.map((u) => u.id) : scheduleForm.user_ids,
       });
-      
+
       // Reset form
       setScheduleForm({
         title: '',
@@ -233,10 +259,10 @@ export default function FestivalCalendar({
   // Handle trigger send
   const handleTriggerSend = async () => {
     if (!onTriggerSend || isTriggering) return;
-    
+
     setIsTriggering(true);
     setTriggerResult(null);
-    
+
     try {
       const result = await onTriggerSend();
       if (result.processed > 0) {
@@ -245,7 +271,7 @@ export default function FestivalCalendar({
       } else {
         setTriggerResult('No pending emails to send');
       }
-      
+
       // Clear message after 3 seconds
       setTimeout(() => setTriggerResult(null), 3000);
     } catch (error) {
@@ -258,10 +284,10 @@ export default function FestivalCalendar({
 
   // Toggle user selection
   const toggleUser = (userId: number) => {
-    setScheduleForm(prev => ({
+    setScheduleForm((prev) => ({
       ...prev,
       user_ids: prev.user_ids.includes(userId)
-        ? prev.user_ids.filter(id => id !== userId)
+        ? prev.user_ids.filter((id) => id !== userId)
         : [...prev.user_ids, userId],
       selectAll: false,
     }));
@@ -269,7 +295,9 @@ export default function FestivalCalendar({
 
   // Selected date details
   const selectedDateObj = selectedDate ? new Date(selectedDate) : null;
-  const selectedHoliday = selectedDateObj ? getHoliday(selectedDateObj.getMonth(), selectedDateObj.getDate()) : null;
+  const selectedHoliday = selectedDateObj
+    ? getHoliday(selectedDateObj.getMonth(), selectedDateObj.getDate())
+    : null;
   const selectedDateScheduled = selectedDate ? getScheduledForDate(selectedDate) : [];
 
   return (
@@ -327,7 +355,7 @@ export default function FestivalCalendar({
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-1">
           {/* Day Headers */}
-          {DAYS.map(day => (
+          {DAYS.map((day) => (
             <div key={day} className="text-center text-xs font-medium text-gray-400 py-2">
               {day}
             </div>
@@ -335,9 +363,9 @@ export default function FestivalCalendar({
 
           {/* Calendar Days */}
           {calendarDays.map((item, index) => {
-            const isToday = 
-              item.day === today.getDate() && 
-              item.month === today.getMonth() && 
+            const isToday =
+              item.day === today.getDate() &&
+              item.month === today.getMonth() &&
               item.year === today.getFullYear();
             const holiday = getHoliday(item.month, item.day);
             const scheduled = getScheduledForDate(item.dateStr);
@@ -359,14 +387,18 @@ export default function FestivalCalendar({
                 `}
               >
                 <div className="flex items-start justify-between">
-                  <span className={`
+                  <span
+                    className={`
                     text-sm font-medium
                     ${isToday ? 'bg-amber-500 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}
-                  `}>
+                  `}
+                  >
                     {item.day}
                   </span>
                   {holiday && (
-                    <span className="text-lg" title={holiday.name}>{holiday.emoji}</span>
+                    <span className="text-lg" title={holiday.name}>
+                      {holiday.emoji}
+                    </span>
                   )}
                 </div>
 
@@ -383,9 +415,11 @@ export default function FestivalCalendar({
                         <div
                           key={i}
                           className={`w-2 h-2 rounded-full ${
-                            s.status === 'sent' ? 'bg-green-500' :
-                            s.status === 'failed' ? 'bg-red-500' :
-                            'bg-amber-500'
+                            s.status === 'sent'
+                              ? 'bg-green-500'
+                              : s.status === 'failed'
+                                ? 'bg-red-500'
+                                : 'bg-amber-500'
                           }`}
                           title={s.title}
                         />
@@ -425,16 +459,14 @@ export default function FestivalCalendar({
             <div>
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 {selectedHoliday && <span className="text-2xl">{selectedHoliday.emoji}</span>}
-                {selectedDateObj?.toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  month: 'long', 
+                {selectedDateObj?.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
                   day: 'numeric',
-                  year: 'numeric'
+                  year: 'numeric',
                 })}
               </h3>
-              {selectedHoliday && (
-                <p className="text-sm text-pink-400">{selectedHoliday.name}</p>
-              )}
+              {selectedHoliday && <p className="text-sm text-pink-400">{selectedHoliday.name}</p>}
             </div>
             <button
               onClick={() => setSelectedDate(null)}
@@ -449,22 +481,30 @@ export default function FestivalCalendar({
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-400 mb-3">Scheduled Emails</h4>
               <div className="space-y-2">
-                {selectedDateScheduled.map(scheduled => (
+                {selectedDateScheduled.map((scheduled) => (
                   <div
                     key={scheduled.id}
                     className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${
-                        scheduled.status === 'sent' ? 'bg-green-500/20' :
-                        scheduled.status === 'failed' ? 'bg-red-500/20' :
-                        'bg-amber-500/20'
-                      }`}>
-                        <Mail className={`w-4 h-4 ${
-                          scheduled.status === 'sent' ? 'text-green-400' :
-                          scheduled.status === 'failed' ? 'text-red-400' :
-                          'text-amber-400'
-                        }`} />
+                      <div
+                        className={`p-2 rounded-lg ${
+                          scheduled.status === 'sent'
+                            ? 'bg-green-500/20'
+                            : scheduled.status === 'failed'
+                              ? 'bg-red-500/20'
+                              : 'bg-amber-500/20'
+                        }`}
+                      >
+                        <Mail
+                          className={`w-4 h-4 ${
+                            scheduled.status === 'sent'
+                              ? 'text-green-400'
+                              : scheduled.status === 'failed'
+                                ? 'text-red-400'
+                                : 'text-amber-400'
+                          }`}
+                        />
                       </div>
                       <div>
                         <p className="font-medium">{scheduled.title}</p>
@@ -507,10 +547,10 @@ export default function FestivalCalendar({
               <div>
                 <h3 className="text-xl font-bold">Schedule Email</h3>
                 <p className="text-sm text-gray-400">
-                  {selectedDateObj?.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    month: 'long', 
-                    day: 'numeric' 
+                  {selectedDateObj?.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
                   })}
                 </p>
               </div>
@@ -530,7 +570,7 @@ export default function FestivalCalendar({
                 <input
                   type="text"
                   value={scheduleForm.title}
-                  onChange={(e) => setScheduleForm(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={(e) => setScheduleForm((prev) => ({ ...prev, title: e.target.value }))}
                   placeholder="e.g., Christmas Email Campaign"
                   className="w-full p-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
@@ -542,7 +582,9 @@ export default function FestivalCalendar({
                 <input
                   type="text"
                   value={scheduleForm.subject}
-                  onChange={(e) => setScheduleForm(prev => ({ ...prev, subject: e.target.value }))}
+                  onChange={(e) =>
+                    setScheduleForm((prev) => ({ ...prev, subject: e.target.value }))
+                  }
                   placeholder="e.g., 🎄 Merry Christmas from QuoteSwipe!"
                   className="w-full p-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
@@ -560,9 +602,9 @@ export default function FestivalCalendar({
                     value={scheduleForm.scheduled_time.split(':')[0] || '09'}
                     onChange={(e) => {
                       const minute = scheduleForm.scheduled_time.split(':')[1] || '00';
-                      setScheduleForm(prev => ({ 
-                        ...prev, 
-                        scheduled_time: `${e.target.value}:${minute}` 
+                      setScheduleForm((prev) => ({
+                        ...prev,
+                        scheduled_time: `${e.target.value}:${minute}`,
                       }));
                     }}
                     className="flex-1 p-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
@@ -582,9 +624,9 @@ export default function FestivalCalendar({
                     value={scheduleForm.scheduled_time.split(':')[1] || '00'}
                     onChange={(e) => {
                       const hour = scheduleForm.scheduled_time.split(':')[0] || '09';
-                      setScheduleForm(prev => ({ 
-                        ...prev, 
-                        scheduled_time: `${hour}:${e.target.value}` 
+                      setScheduleForm((prev) => ({
+                        ...prev,
+                        scheduled_time: `${hour}:${e.target.value}`,
                       }));
                     }}
                     className="flex-1 p-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
@@ -601,7 +643,9 @@ export default function FestivalCalendar({
                   <span className="text-sm text-gray-400 ml-2">hrs</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  📅 Scheduled for <span className="text-amber-400 font-mono">{scheduleForm.scheduled_time}</span> hours
+                  📅 Scheduled for{' '}
+                  <span className="text-amber-400 font-mono">{scheduleForm.scheduled_time}</span>{' '}
+                  hours
                 </p>
               </div>
 
@@ -610,16 +654,19 @@ export default function FestivalCalendar({
                 <label className="block text-sm text-gray-400 mb-2">Select Quote (Optional)</label>
                 <select
                   value={scheduleForm.quote_id || ''}
-                  onChange={(e) => setScheduleForm(prev => ({ 
-                    ...prev, 
-                    quote_id: e.target.value ? Number(e.target.value) : null 
-                  }))}
+                  onChange={(e) =>
+                    setScheduleForm((prev) => ({
+                      ...prev,
+                      quote_id: e.target.value ? Number(e.target.value) : null,
+                    }))
+                  }
                   className="w-full p-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="">No quote</option>
-                  {quotes.slice(0, 50).map(quote => (
+                  {quotes.slice(0, 50).map((quote) => (
                     <option key={quote.id} value={quote.id}>
-                      {quote.text.substring(0, 50)}{quote.author ? `... — ${quote.author}` : '...'}
+                      {quote.text.substring(0, 50)}
+                      {quote.author ? `... — ${quote.author}` : '...'}
                     </option>
                   ))}
                 </select>
@@ -627,10 +674,14 @@ export default function FestivalCalendar({
 
               {/* Custom Message */}
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Custom Message (Optional)</label>
+                <label className="block text-sm text-gray-400 mb-2">
+                  Custom Message (Optional)
+                </label>
                 <textarea
                   value={scheduleForm.custom_message}
-                  onChange={(e) => setScheduleForm(prev => ({ ...prev, custom_message: e.target.value }))}
+                  onChange={(e) =>
+                    setScheduleForm((prev) => ({ ...prev, custom_message: e.target.value }))
+                  }
                   placeholder="Add a personal message..."
                   rows={3}
                   className="w-full p-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
@@ -648,20 +699,22 @@ export default function FestivalCalendar({
                     <input
                       type="checkbox"
                       checked={scheduleForm.selectAll}
-                      onChange={(e) => setScheduleForm(prev => ({
-                        ...prev,
-                        selectAll: e.target.checked,
-                        user_ids: e.target.checked ? [] : prev.user_ids,
-                      }))}
+                      onChange={(e) =>
+                        setScheduleForm((prev) => ({
+                          ...prev,
+                          selectAll: e.target.checked,
+                          user_ids: e.target.checked ? [] : prev.user_ids,
+                        }))
+                      }
                       className="w-4 h-4 rounded"
                     />
                     <span className="text-sm">Select All ({users.length})</span>
                   </label>
                 </div>
-                
+
                 {!scheduleForm.selectAll && (
                   <div className="max-h-[200px] overflow-y-auto space-y-1 bg-white/5 rounded-lg p-2">
-                    {users.map(user => (
+                    {users.map((user) => (
                       <label
                         key={user.id}
                         className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${
@@ -684,10 +737,10 @@ export default function FestivalCalendar({
                     ))}
                   </div>
                 )}
-                
+
                 <p className="text-xs text-gray-500 mt-2">
-                  {scheduleForm.selectAll 
-                    ? `All ${users.length} users selected` 
+                  {scheduleForm.selectAll
+                    ? `All ${users.length} users selected`
                     : `${scheduleForm.user_ids.length} users selected`}
                 </p>
               </div>
@@ -703,8 +756,12 @@ export default function FestivalCalendar({
               </button>
               <button
                 onClick={handleScheduleSubmit}
-                disabled={isSubmitting || !scheduleForm.title || !scheduleForm.subject || 
-                  (scheduleForm.user_ids.length === 0 && !scheduleForm.selectAll)}
+                disabled={
+                  isSubmitting ||
+                  !scheduleForm.title ||
+                  !scheduleForm.subject ||
+                  (scheduleForm.user_ids.length === 0 && !scheduleForm.selectAll)
+                }
                 className="flex-1 py-3 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-xl font-medium flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
@@ -726,4 +783,3 @@ export default function FestivalCalendar({
     </div>
   );
 }
-

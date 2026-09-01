@@ -4,14 +4,14 @@
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
-  hash?: string;           // Data integrity hash
-  sensitive?: boolean;     // Flag for sensitive data
+  hash?: string; // Data integrity hash
+  sensitive?: boolean; // Flag for sensitive data
   promise?: Promise<T>;
 }
 
 interface CacheConfig {
-  maxEntries?: number;     // Prevent memory exhaustion attacks
-  maxAge?: number;         // Default TTL
+  maxEntries?: number; // Prevent memory exhaustion attacks
+  maxAge?: number; // Default TTL
   clearOnHidden?: boolean; // Clear when tab hidden (security)
 }
 
@@ -21,7 +21,7 @@ const generateHash = (data: unknown): string => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32bit integer
   }
   return hash.toString(36);
@@ -98,9 +98,10 @@ class SecureAPICache {
   private enforceLimit(): void {
     if (this.cache.size >= this.config.maxEntries) {
       // Remove oldest entries first
-      const entries = Array.from(this.cache.entries())
-        .sort((a, b) => a[1].timestamp - b[1].timestamp);
-      
+      const entries = Array.from(this.cache.entries()).sort(
+        (a, b) => a[1].timestamp - b[1].timestamp
+      );
+
       // Remove 20% of oldest entries
       const toRemove = Math.ceil(this.config.maxEntries * 0.2);
       entries.slice(0, toRemove).forEach(([key]) => {
@@ -123,18 +124,18 @@ class SecureAPICache {
   has(key: string, ttl?: number): boolean {
     const entry = this.cache.get(key);
     if (!entry) return false;
-    
+
     // timestamp 0 means it's a pending promise, not actual cached data
     if (entry.timestamp === 0) return false;
-    
+
     const maxAge = ttl ?? this.config.maxAge;
     const isExpired = Date.now() - entry.timestamp > maxAge;
-    
+
     if (isExpired) {
       this.cache.delete(key);
       return false;
     }
-    
+
     return true;
   }
 
@@ -142,13 +143,13 @@ class SecureAPICache {
   get<T>(key: string, ttl?: number): T | null {
     const entry = this.cache.get(key) as CacheEntry<T> | undefined;
     if (!entry) return null;
-    
+
     // timestamp 0 means it's a pending promise
     if (entry.timestamp === 0) return null;
 
     const maxAge = ttl ?? this.config.maxAge;
     const isExpired = Date.now() - entry.timestamp > maxAge;
-    
+
     if (isExpired) {
       this.cache.delete(key);
       return null;
@@ -167,7 +168,7 @@ class SecureAPICache {
   // Set cache data with integrity hash
   set<T>(key: string, data: T, sensitive: boolean = false): void {
     this.enforceLimit();
-    
+
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -197,7 +198,7 @@ class SecureAPICache {
 
     // Create new fetch promise
     const promise = fetcher();
-    
+
     // Store the promise temporarily
     this.cache.set(key, {
       data: null as T,
@@ -208,7 +209,7 @@ class SecureAPICache {
 
     try {
       const data = await promise;
-      
+
       // Allow null as valid response (e.g., for unauthenticated users)
       // Only reject undefined which indicates a programming error
       if (data === undefined) {
@@ -234,7 +235,7 @@ class SecureAPICache {
     // Sanitize pattern to prevent ReDoS attacks
     const safePattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(safePattern);
-    
+
     for (const key of this.cache.keys()) {
       if (regex.test(key)) {
         this.cache.delete(key);
@@ -263,12 +264,12 @@ class SecureAPICache {
       CACHE_KEYS.USER_QUOTES,
       CACHE_KEYS.USER_THEME,
     ];
-    
-    userKeys.forEach(key => this.cache.delete(key));
-    
+
+    userKeys.forEach((key) => this.cache.delete(key));
+
     // Also clear any pattern matches
     this.invalidatePattern('user-');
-    
+
     // Broadcast logout to other tabs
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('logout-event', Date.now().toString());
@@ -311,7 +312,7 @@ export const CACHE_KEYS = {
   CATEGORY_GROUPS: 'category-groups',
   STATS: 'stats',
   REVIEWS: 'reviews',
-  
+
   // User data (cleared on logout, not stored in localStorage)
   USER: 'user',
   USER_PROFILE: 'user-profile',
@@ -325,9 +326,9 @@ export const CACHE_KEYS = {
 
 // TTL constants (in milliseconds)
 export const CACHE_TTL = {
-  SHORT: 30 * 1000,         // 30 seconds - for frequently changing data
-  MEDIUM: 2 * 60 * 1000,    // 2 minutes - for user data
-  LONG: 5 * 60 * 1000,      // 5 minutes - for semi-static data
+  SHORT: 30 * 1000, // 30 seconds - for frequently changing data
+  MEDIUM: 2 * 60 * 1000, // 2 minutes - for user data
+  LONG: 5 * 60 * 1000, // 5 minutes - for semi-static data
   VERY_LONG: 15 * 60 * 1000, // 15 minutes - for static data
 } as const;
 

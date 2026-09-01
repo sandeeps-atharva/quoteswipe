@@ -16,10 +16,7 @@ export async function POST(request: NextRequest) {
 
     const { quoteId, customBackground } = await request.json();
     if (!quoteId) {
-      return NextResponse.json(
-        { error: 'Quote ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Quote ID is required' }, { status: 400 });
     }
 
     const userSavedCollection = await getCollection('user_saved');
@@ -27,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Check if already saved (upsert behavior)
     const existing: any = await userSavedCollection.findOne({
       user_id: userId,
-      quote_id: quoteId
+      quote_id: quoteId,
     });
 
     if (!existing) {
@@ -35,7 +32,7 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         quote_id: quoteId,
         custom_background: customBackground || null,
-        created_at: new Date()
+        created_at: new Date(),
       } as any);
     } else if (customBackground && existing.custom_background !== customBackground) {
       await userSavedCollection.updateOne(
@@ -47,16 +44,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Quote saved' }, { status: 200 });
   } catch (error) {
     console.error('Save quote error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function GET(request: NextRequest) {
   const endTimer = startTimer();
-  
+
   try {
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -67,17 +61,14 @@ export async function GET(request: NextRequest) {
     const [userSavedCollection, quotesCollection, categoriesCollection] = await Promise.all([
       getCollection('user_saved'),
       getCollection('quotes'),
-      getCollection('categories')
+      getCollection('categories'),
     ]);
 
     // Step 1: Get user's saved - handle both string and ObjectId user_id formats
     const userObjId = toObjectId(userId);
     const userSaved = await userSavedCollection
-      .find({ 
-        $or: [
-          { user_id: userId },
-          { user_id: userObjId }
-        ]
+      .find({
+        $or: [{ user_id: userId }, { user_id: userObjId }],
       })
       .project({ quote_id: 1, custom_background: 1, created_at: 1, _id: 0 })
       .sort({ created_at: -1 })
@@ -92,12 +83,12 @@ export async function GET(request: NextRequest) {
     // Step 2: Build quote ID queries - handle multiple formats
     const quoteQueries: any[] = [];
     const bgMap = new Map<string, any>();
-    
+
     for (const saved of userSaved) {
       const qid = saved.quote_id;
       const normalizedId = normalizeId(qid);
       bgMap.set(normalizedId, saved.custom_background);
-      
+
       if (typeof qid === 'string') {
         try {
           const objId = toObjectId(qid);
@@ -116,10 +107,7 @@ export async function GET(request: NextRequest) {
         .find({ $or: quoteQueries })
         .project({ _id: 1, text: 1, author: 1, category_id: 1 })
         .toArray(),
-      categoriesCollection
-        .find({})
-        .project({ _id: 1, name: 1, icon: 1 })
-        .toArray()
+      categoriesCollection.find({}).project({ _id: 1, name: 1, icon: 1 }).toArray(),
     ]);
 
     // Step 4: Create lookup maps
@@ -127,7 +115,7 @@ export async function GET(request: NextRequest) {
     for (const q of quotes) {
       quoteMap.set(normalizeId(q._id), q);
     }
-    
+
     const categoryMap = new Map<string, any>();
     for (const c of categories) {
       categoryMap.set(normalizeId(c._id), c);
@@ -139,33 +127,33 @@ export async function GET(request: NextRequest) {
       const qid = normalizeId(saved.quote_id);
       const quote = quoteMap.get(qid);
       if (!quote) continue;
-      
+
       const catId = normalizeId(quote.category_id);
       const category = categoryMap.get(catId);
-      
+
       result.push({
         id: normalizeId(quote._id),
         text: quote.text,
         author: quote.author,
         category: category?.name || 'Unknown',
         category_icon: category?.icon || '📚',
-        custom_background: bgMap.get(qid) || null
+        custom_background: bgMap.get(qid) || null,
       });
     }
 
     const duration = endTimer();
     recordMetric('/api/user/saved', duration, duration < 50, userId);
 
-    return NextResponse.json({ 
-      quotes: result,
-      _meta: { responseTime: duration, count: result.length }
-    }, { status: 200 });
+    return NextResponse.json(
+      {
+        quotes: result,
+        _meta: { responseTime: duration, count: result.length },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Get saved quotes error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -178,25 +166,19 @@ export async function DELETE(request: NextRequest) {
 
     const { quoteId } = await request.json();
     if (!quoteId) {
-      return NextResponse.json(
-        { error: 'Quote ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Quote ID is required' }, { status: 400 });
     }
 
     const userSavedCollection = await getCollection('user_saved');
     await userSavedCollection.deleteOne({
       user_id: userId,
-      quote_id: quoteId
+      quote_id: quoteId,
     });
 
     return NextResponse.json({ message: 'Quote removed from collection' }, { status: 200 });
   } catch (error) {
     console.error('Delete saved quote error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -209,24 +191,18 @@ export async function PATCH(request: NextRequest) {
 
     const { quoteId, customBackground } = await request.json();
     if (!quoteId) {
-      return NextResponse.json(
-        { error: 'Quote ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Quote ID is required' }, { status: 400 });
     }
 
     const userSavedCollection = await getCollection('user_saved');
-    
+
     const existing = await userSavedCollection.findOne({
       user_id: userId,
-      quote_id: quoteId
+      quote_id: quoteId,
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Quote not found in your collection' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Quote not found in your collection' }, { status: 404 });
     }
 
     await userSavedCollection.updateOne(
@@ -234,15 +210,15 @@ export async function PATCH(request: NextRequest) {
       { $set: { custom_background: customBackground || null, updated_at: new Date() } }
     );
 
-    return NextResponse.json({ 
-      message: 'Background updated',
-      custom_background: customBackground || null
-    }, { status: 200 });
+    return NextResponse.json(
+      {
+        message: 'Background updated',
+        custom_background: customBackground || null,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Update saved quote background error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

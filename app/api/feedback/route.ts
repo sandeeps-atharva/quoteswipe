@@ -11,15 +11,15 @@ function getFeedbackNotificationHtml(feedback: {
   message: string;
 }): string {
   const categoryEmoji: Record<string, string> = {
-    'bug': '🐛',
-    'feature': '💡',
-    'improvement': '🔧',
-    'question': '❓',
-    'general': '📝',
+    bug: '🐛',
+    feature: '💡',
+    improvement: '🔧',
+    question: '❓',
+    general: '📝',
   };
-  
+
   const emoji = categoryEmoji[feedback.category] || '📝';
-  
+
   return `
 <!DOCTYPE html>
 <html>
@@ -70,85 +70,90 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const usersCollection = await getCollection('users');
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
-    
+
     if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    
+
     const feedbackCollection = await getCollection('feedback');
     const filter = status && status !== 'all' ? { status } : {};
 
     // Single aggregation with $lookup and $facet - replaces 7 separate queries!
-    const result = await feedbackCollection.aggregate([
-      {
-        $facet: {
-          // Get feedback with user lookup
-          feedback: [
-            { $match: filter },
-            { $sort: { created_at: -1 } },
-            {
-              $lookup: {
-                from: 'users',
-                let: { odId: '$user_id' },
-                pipeline: [
-                  {
-                    $match: {
-                      $expr: {
-                        $or: [
-                          { $eq: ['$_id', '$$odId'] },
-                          { $eq: [{ $toString: '$_id' }, { $toString: '$$odId' }] }
-                        ]
-                      }
-                    }
-                  },
-                  { $project: { name: 1 } }
-                ],
-                as: 'userData'
-              }
-            },
-            {
-              $project: {
-                id: { $ifNull: ['$id', { $toString: '$_id' }] },
-                user_id: 1,
-                name: 1,
-                email: 1,
-                category: 1,
-                message: 1,
-                status: 1,
-                admin_notes: 1,
-                created_at: 1,
-                user_name: { $ifNull: [{ $arrayElemAt: ['$userData.name', 0] }, null] }
-              }
-            }
-          ],
-          // Get all counts in one pass
-          totalCount: [{ $count: 'count' }],
-          newCount: [{ $match: { status: 'new' } }, { $count: 'count' }],
-          readCount: [{ $match: { status: 'read' } }, { $count: 'count' }],
-          repliedCount: [{ $match: { status: 'replied' } }, { $count: 'count' }],
-          resolvedCount: [{ $match: { status: 'resolved' } }, { $count: 'count' }]
-        }
-      }
-    ]).toArray() as any[];
+    const result = (await feedbackCollection
+      .aggregate([
+        {
+          $facet: {
+            // Get feedback with user lookup
+            feedback: [
+              { $match: filter },
+              { $sort: { created_at: -1 } },
+              {
+                $lookup: {
+                  from: 'users',
+                  let: { odId: '$user_id' },
+                  pipeline: [
+                    {
+                      $match: {
+                        $expr: {
+                          $or: [
+                            { $eq: ['$_id', '$$odId'] },
+                            { $eq: [{ $toString: '$_id' }, { $toString: '$$odId' }] },
+                          ],
+                        },
+                      },
+                    },
+                    { $project: { name: 1 } },
+                  ],
+                  as: 'userData',
+                },
+              },
+              {
+                $project: {
+                  id: { $ifNull: ['$id', { $toString: '$_id' }] },
+                  user_id: 1,
+                  name: 1,
+                  email: 1,
+                  category: 1,
+                  message: 1,
+                  status: 1,
+                  admin_notes: 1,
+                  created_at: 1,
+                  user_name: { $ifNull: [{ $arrayElemAt: ['$userData.name', 0] }, null] },
+                },
+              },
+            ],
+            // Get all counts in one pass
+            totalCount: [{ $count: 'count' }],
+            newCount: [{ $match: { status: 'new' } }, { $count: 'count' }],
+            readCount: [{ $match: { status: 'read' } }, { $count: 'count' }],
+            repliedCount: [{ $match: { status: 'replied' } }, { $count: 'count' }],
+            resolvedCount: [{ $match: { status: 'resolved' } }, { $count: 'count' }],
+          },
+        },
+      ])
+      .toArray()) as any[];
 
     const data = result[0];
-    
-    return NextResponse.json({ 
-      feedback: data.feedback || [],
-      counts: {
-        total: data.totalCount[0]?.count || 0,
-        new_count: data.newCount[0]?.count || 0,
-        read_count: data.readCount[0]?.count || 0,
-        replied_count: data.repliedCount[0]?.count || 0,
-        resolved_count: data.resolvedCount[0]?.count || 0
-      }
-    }, { status: 200 });
+
+    return NextResponse.json(
+      {
+        feedback: data.feedback || [],
+        counts: {
+          total: data.totalCount[0]?.count || 0,
+          new_count: data.newCount[0]?.count || 0,
+          read_count: data.readCount[0]?.count || 0,
+          replied_count: data.repliedCount[0]?.count || 0,
+          resolved_count: data.resolvedCount[0]?.count || 0,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Get feedback error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -160,20 +165,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { name, email, category, message } = body;
-    
+
     // Validation
     if (!name || !email || !message) {
-      return NextResponse.json(
-        { error: 'Name, email, and message are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Name, email, and message are required' }, { status: 400 });
     }
-    
+
     // Get user ID if authenticated
     const userId = getUserIdFromRequest(request);
-    
+
     const feedbackCollection = await getCollection('feedback');
-    
+
     // Insert feedback
     await feedbackCollection.insertOne({
       user_id: userId || null,
@@ -182,21 +184,21 @@ export async function POST(request: NextRequest) {
       category: category || 'general',
       message: message.trim(),
       status: 'new',
-      created_at: new Date()
+      created_at: new Date(),
     } as any);
-    
+
     // Send email notification to admin
     const adminEmail = process.env.ADMIN_EMAIL || 'hello.quoteswipe@gmail.com';
-    
+
     sendEmail({
       to: adminEmail,
       subject: `📝 New Feedback: ${category || 'General'} from ${name}`,
       html: getFeedbackNotificationHtml({ name, email, category: category || 'general', message }),
       text: `New Feedback Received\n\nCategory: ${category || 'General'}\nMessage: ${message}\nFrom: ${name} (${email})\n\nView in admin panel.`,
-    }).catch(err => console.error('Failed to send feedback notification:', err));
-    
+    }).catch((err) => console.error('Failed to send feedback notification:', err));
+
     return NextResponse.json(
-      { message: 'Thank you for your feedback! We\'ll review it soon.' },
+      { message: "Thank you for your feedback! We'll review it soon." },
       { status: 201 }
     );
   } catch (error) {
@@ -212,46 +214,46 @@ export async function PATCH(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const usersCollection = await getCollection('users');
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
-    
+
     if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     const body = await request.json();
     const { feedbackId, status, admin_notes } = body;
-    
+
     if (!feedbackId) {
       return NextResponse.json({ error: 'Feedback ID required' }, { status: 400 });
     }
-    
+
     const validStatuses = ['new', 'read', 'replied', 'resolved'];
     if (status && !validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
-    
+
     const updates: any = {};
-    
+
     if (status) {
       updates.status = status;
     }
-    
+
     if (admin_notes !== undefined) {
       updates.admin_notes = admin_notes;
     }
-    
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
     }
-    
+
     const feedbackCollection = await getCollection('feedback');
     await feedbackCollection.updateOne(
       { $or: [{ id: feedbackId }, { _id: toObjectId(feedbackId) as any }] },
       { $set: updates }
     );
-    
+
     return NextResponse.json({ message: 'Feedback updated' }, { status: 200 });
   } catch (error) {
     console.error('Update feedback error:', error);
@@ -266,26 +268,26 @@ export async function DELETE(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const usersCollection = await getCollection('users');
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
-    
+
     if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     const { searchParams } = new URL(request.url);
     const feedbackId = searchParams.get('id');
-    
+
     if (!feedbackId) {
       return NextResponse.json({ error: 'Feedback ID required' }, { status: 400 });
     }
-    
+
     const feedbackCollection = await getCollection('feedback');
-    await feedbackCollection.deleteOne({ 
-      $or: [{ id: feedbackId }, { _id: toObjectId(feedbackId) as any }] 
+    await feedbackCollection.deleteOne({
+      $or: [{ id: feedbackId }, { _id: toObjectId(feedbackId) as any }],
     });
-    
+
     return NextResponse.json({ message: 'Feedback deleted' }, { status: 200 });
   } catch (error) {
     console.error('Delete feedback error:', error);

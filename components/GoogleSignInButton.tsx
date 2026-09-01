@@ -22,10 +22,10 @@ declare global {
   }
 }
 
-export default function GoogleSignInButton({ 
-  onSuccess, 
-  onError, 
-  disabled = false 
+export default function GoogleSignInButton({
+  onSuccess,
+  onError,
+  disabled = false,
 }: GoogleSignInButtonProps) {
   const buttonRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +65,7 @@ export default function GoogleSignInButton({
     }
 
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    
+
     if (!clientId) {
       console.error('Google Client ID not configured');
       return;
@@ -133,8 +133,8 @@ export default function GoogleSignInButton({
           <span className="ml-2 text-stone-600 dark:text-stone-400">Signing in...</span>
         </div>
       )}
-      <div 
-        ref={buttonRef} 
+      <div
+        ref={buttonRef}
         className={`w-full flex justify-center ${isLoading || disabled ? 'opacity-50 pointer-events-none' : ''}`}
         style={{ minHeight: '44px' }}
       />
@@ -168,4 +168,3 @@ export default function GoogleSignInButton({
     </div>
   );
 }
-

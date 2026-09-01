@@ -68,7 +68,9 @@ export default function Testimonials() {
 
   const fetchStats = async () => {
     try {
-      const data = await apiCache.getOrFetch<{ stats: { users: string; avgRating: string; saved: string } }>(
+      const data = await apiCache.getOrFetch<{
+        stats: { users: string; avgRating: string; saved: string };
+      }>(
         CACHE_KEYS.STATS,
         async () => {
           const response = await fetch('/api/stats');
@@ -80,7 +82,7 @@ export default function Testimonials() {
       setStats({
         users: data.stats.users,
         avgRating: data.stats.avgRating,
-        saved: data.stats.saved
+        saved: data.stats.saved,
       });
     } catch (error) {
       console.error('Failed to fetch stats:', error);
@@ -91,7 +93,7 @@ export default function Testimonials() {
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map(n => n[0])
+      .map((n) => n[0])
       .slice(0, 2)
       .join('')
       .toUpperCase();
@@ -110,9 +112,7 @@ export default function Testimonials() {
     arrows: true,
     prevArrow: <PrevArrow />,
     nextArrow: <NextArrow />,
-    customPaging: () => (
-      <div className="slick-dot-custom" />
-    ),
+    customPaging: () => <div className="slick-dot-custom" />,
     dotsClass: 'slick-dots !flex justify-center gap-2 !bottom-[-40px] sm:!bottom-[-50px]',
     responsive: [
       {
@@ -121,7 +121,7 @@ export default function Testimonials() {
           slidesToShow: 2,
           slidesToScroll: 1,
           arrows: true,
-        }
+        },
       },
       {
         breakpoint: 768, // Mobile (< 768px shows 1)
@@ -129,7 +129,7 @@ export default function Testimonials() {
           slidesToShow: 1,
           slidesToScroll: 1,
           arrows: true,
-        }
+        },
       },
       {
         breakpoint: 480, // Small mobile
@@ -138,9 +138,9 @@ export default function Testimonials() {
           slidesToScroll: 1,
           arrows: false,
           dots: true,
-        }
-      }
-    ]
+        },
+      },
+    ],
   };
 
   if (isLoading) {
@@ -178,14 +178,14 @@ export default function Testimonials() {
               <div className="h-full bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-md hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700 relative overflow-hidden">
                 {/* Gradient Border Top */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-rose-500" />
-                
+
                 {/* Featured Badge */}
                 {review.is_featured && (
                   <div className="absolute top-3 right-3 px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-bold rounded-full">
                     ⭐ Featured
                   </div>
                 )}
-                
+
                 {/* Quote Icon - Hidden on very small screens */}
                 <div className="absolute top-2 right-2 sm:top-4 sm:right-4 opacity-5">
                   <Quote size={40} className="sm:w-16 sm:h-16 md:w-20 md:h-20 text-amber-500" />
@@ -200,8 +200,8 @@ export default function Testimonials() {
                         key={star}
                         size={14}
                         className={`sm:w-4 sm:h-4 md:w-[18px] md:h-[18px] ${
-                          star <= review.rating 
-                            ? 'text-yellow-400 fill-yellow-400' 
+                          star <= review.rating
+                            ? 'text-yellow-400 fill-yellow-400'
                             : 'text-gray-200 dark:text-gray-700'
                         }`}
                       />

@@ -14,60 +14,59 @@ export async function GET(request: NextRequest) {
     const userQuotesCollection = await getCollection('user_quotes');
 
     // Single aggregation with $lookup - replaces 2 separate queries
-    const formattedQuotes = await userQuotesCollection.aggregate([
-      // Match user's quotes
-      { $match: { user_id: userId } },
-      { $sort: { created_at: -1 } },
-      
-      // Lookup category details
-      {
-        $lookup: {
-          from: 'categories',
-          let: { catId: '$category_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $eq: ['$_id', '$$catId'] },
-                    { $eq: ['$id', { $toString: '$$catId' }] },
-                    { $eq: [{ $toString: '$_id' }, { $toString: '$$catId' }] }
-                  ]
-                }
-              }
-            }
-          ],
-          as: 'categoryInfo'
-        }
-      },
-      
-      // Project final shape (same as before)
-      {
-        $project: {
-          id: { $ifNull: ['$id', { $toString: '$_id' }] },
-          text: 1,
-          author: 1,
-          theme_id: 1,
-          font_id: 1,
-          background_id: 1,
-          is_public: 1,
-          category_id: 1,
-          created_at: 1,
-          updated_at: 1,
-          category: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Personal'] },
-          category_icon: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.icon', 0] }, '✨'] },
-          custom_background: { $ifNull: ['$custom_background', null] }
-        }
-      }
-    ]).toArray() as any[];
+    const formattedQuotes = (await userQuotesCollection
+      .aggregate([
+        // Match user's quotes
+        { $match: { user_id: userId } },
+        { $sort: { created_at: -1 } },
+
+        // Lookup category details
+        {
+          $lookup: {
+            from: 'categories',
+            let: { catId: '$category_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $or: [
+                      { $eq: ['$_id', '$$catId'] },
+                      { $eq: ['$id', { $toString: '$$catId' }] },
+                      { $eq: [{ $toString: '$_id' }, { $toString: '$$catId' }] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'categoryInfo',
+          },
+        },
+
+        // Project final shape (same as before)
+        {
+          $project: {
+            id: { $ifNull: ['$id', { $toString: '$_id' }] },
+            text: 1,
+            author: 1,
+            theme_id: 1,
+            font_id: 1,
+            background_id: 1,
+            is_public: 1,
+            category_id: 1,
+            created_at: 1,
+            updated_at: 1,
+            category: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.name', 0] }, 'Personal'] },
+            category_icon: { $ifNull: [{ $arrayElemAt: ['$categoryInfo.icon', 0] }, '✨'] },
+            custom_background: { $ifNull: ['$custom_background', null] },
+          },
+        },
+      ])
+      .toArray()) as any[];
 
     return NextResponse.json({ quotes: formattedQuotes }, { status: 200 });
   } catch (error) {
     console.error('Get user quotes error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -80,21 +79,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { text, author, categoryId, themeId, fontId, backgroundId, isPublic, customBackground } = body;
+    const { text, author, categoryId, themeId, fontId, backgroundId, isPublic, customBackground } =
+      body;
 
     // Validation
     if (!text || text.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Quote text is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Quote text is required' }, { status: 400 });
     }
 
     if (text.length < 10) {
-      return NextResponse.json(
-        { error: 'Quote must be at least 10 characters' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Quote must be at least 10 characters' }, { status: 400 });
     }
 
     if (text.length > 500) {
@@ -112,14 +106,11 @@ export async function POST(request: NextRequest) {
     today.setHours(0, 0, 0, 0);
     const quotesToday = await userQuotesCollection.countDocuments({
       user_id: userId,
-      created_at: { $gte: today }
+      created_at: { $gte: today },
     });
 
     if (quotesToday >= 10) {
-      return NextResponse.json(
-        { error: 'You can only create 10 quotes per day' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'You can only create 10 quotes per day' }, { status: 429 });
     }
 
     // Insert the quote
@@ -134,7 +125,7 @@ export async function POST(request: NextRequest) {
       is_public: isPublic ? true : false,
       custom_background: customBackground || null,
       created_at: new Date(),
-      updated_at: new Date()
+      updated_at: new Date(),
     };
 
     const result = await userQuotesCollection.insertOne(newQuote as any);
@@ -142,8 +133,8 @@ export async function POST(request: NextRequest) {
     // Get category info
     let category: any = null;
     if (categoryId) {
-      category = await categoriesCollection.findOne({ 
-        $or: [{ id: categoryId }, { _id: categoryId }] 
+      category = await categoriesCollection.findOne({
+        $or: [{ id: categoryId }, { _id: categoryId }],
       });
     }
 
@@ -156,7 +147,7 @@ export async function POST(request: NextRequest) {
       id: result.insertedId.toString(),
       ...newQuote,
       category: category?.name || 'Personal',
-      category_icon: category?.icon || '✨'
+      category_icon: category?.icon || '✨',
     };
 
     return NextResponse.json(
@@ -165,9 +156,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Create user quote error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

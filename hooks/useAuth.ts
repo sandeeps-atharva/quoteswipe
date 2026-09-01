@@ -18,7 +18,11 @@ interface UseAuthReturn {
   isLoggingIn: React.MutableRefObject<boolean>;
   setIsAuthenticated: (value: boolean) => void;
   setUser: (user: User | null) => void;
-  checkAuth: () => Promise<{ isAuthenticated: boolean; user: User | null; onboardingComplete: boolean }>;
+  checkAuth: () => Promise<{
+    isAuthenticated: boolean;
+    user: User | null;
+    onboardingComplete: boolean;
+  }>;
   logout: () => Promise<void>;
   handleLoginSuccess: (userData: User) => void;
 }
@@ -59,7 +63,7 @@ export function useAuth(): UseAuthReturn {
       await fetch('/api/auth/logout', { method: 'POST' });
       setIsAuthenticated(false);
       setUser(null);
-      
+
       // Clear user-specific cache
       try {
         const keysToRemove: string[] = [];
@@ -69,7 +73,7 @@ export function useAuth(): UseAuthReturn {
             keysToRemove.push(key);
           }
         }
-        keysToRemove.forEach(key => sessionStorage.removeItem(key));
+        keysToRemove.forEach((key) => sessionStorage.removeItem(key));
       } catch {
         // Ignore storage errors
       }
@@ -102,4 +106,3 @@ export function useAuth(): UseAuthReturn {
     handleLoginSuccess,
   };
 }
-

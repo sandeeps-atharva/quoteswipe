@@ -26,7 +26,8 @@ export default function Footer() {
             </span>
           </Link>
           <p className="text-sm text-stone-500 dark:text-stone-400 text-center max-w-md">
-            Discover inspiration, one swipe at a time. Explore thousands of curated quotes from the world's greatest minds.
+            Discover inspiration, one swipe at a time. Explore thousands of curated quotes from the
+            world's greatest minds.
           </p>
         </div>
 

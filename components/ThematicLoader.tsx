@@ -69,9 +69,7 @@ export default function ThematicLoader({
       </div>
 
       {/* Message */}
-      <p className={`text-gray-600 dark:text-gray-300 font-medium ${s.text}`}>
-        {message}
-      </p>
+      <p className={`text-gray-600 dark:text-gray-300 font-medium ${s.text}`}>{message}</p>
     </div>
   );
 
@@ -109,9 +107,7 @@ export function ModalLoader() {
  * Navigation loader - shown when navigating between quotes
  */
 export function NavigationLoader() {
-  return (
-    <ThematicLoader message="Opening quote..." size="md" overlay />
-  );
+  return <ThematicLoader message="Opening quote..." size="md" overlay />;
 }
 
 /**
@@ -141,9 +137,7 @@ export function AppLoader() {
           <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
             QuoteSwipe
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Loading your quotes...
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Loading your quotes...</p>
         </div>
       </div>
     </div>

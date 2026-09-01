@@ -1,27 +1,27 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Configure dark mode to use class selector */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Light mode (default) - Warm Sunset Theme */
 :root {
-  --background: #FFFBF7;
-  --foreground: #1C1917;
-  --accent-primary: #F59E0B;
-  --accent-secondary: #F97316;
-  --accent-tertiary: #E11D48;
-  --accent-gradient: linear-gradient(135deg, #F59E0B 0%, #F97316 50%, #E11D48 100%);
+  --background: #fffbf7;
+  --foreground: #1c1917;
+  --accent-primary: #f59e0b;
+  --accent-secondary: #f97316;
+  --accent-tertiary: #e11d48;
+  --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #e11d48 100%);
 }
 
 /* Dark mode - triggered by .dark class on html element */
 html.dark,
 .dark {
-  --background: #0C0A09;
-  --foreground: #FAFAF9;
-  --accent-primary: #FBBF24;
-  --accent-secondary: #FB923C;
-  --accent-tertiary: #F43F5E;
-  --accent-gradient: linear-gradient(135deg, #FBBF24 0%, #FB923C 50%, #F43F5E 100%);
+  --background: #0c0a09;
+  --foreground: #fafaf9;
+  --accent-primary: #fbbf24;
+  --accent-secondary: #fb923c;
+  --accent-tertiary: #f43f5e;
+  --accent-gradient: linear-gradient(135deg, #fbbf24 0%, #fb923c 50%, #f43f5e 100%);
 }
 
 @theme inline {
@@ -36,7 +36,8 @@ html {
   /* Prevent iOS bounce scroll */
   overscroll-behavior: none;
   /* Support for safe areas */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
 }
 
 body {
@@ -52,7 +53,9 @@ body {
 
 /* Disable text selection on interactive elements for mobile */
 @media (max-width: 639px) {
-  button, a, nav {
+  button,
+  a,
+  nav {
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
@@ -122,12 +125,12 @@ body {
 
 /* Hidden Scrollbar - allows scrolling without visible scrollbar */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+  display: none; /* Chrome, Safari and Opera */
 }
 
 /* Custom Scrollbar Styles - Warm Sunset Theme */
@@ -147,18 +150,18 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #F59E0B 0%, #F97316 50%, #E11D48 100%);
+  background: linear-gradient(180deg, #f59e0b 0%, #f97316 50%, #e11d48 100%);
   border-radius: 100px;
   box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #D97706 0%, #EA580C 50%, #BE123C 100%);
+  background: linear-gradient(180deg, #d97706 0%, #ea580c 50%, #be123c 100%);
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.5);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, #B45309 0%, #C2410C 50%, #9F1239 100%);
+  background: linear-gradient(180deg, #b45309 0%, #c2410c 50%, #9f1239 100%);
 }
 
 /* Dark mode scrollbar */
@@ -171,17 +174,17 @@ body {
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #FBBF24 0%, #FB923C 50%, #F43F5E 100%);
+  background: linear-gradient(180deg, #fbbf24 0%, #fb923c 50%, #f43f5e 100%);
   box-shadow: 0 2px 4px rgba(251, 191, 36, 0.4);
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #F59E0B 0%, #F97316 50%, #E11D48 100%);
+  background: linear-gradient(180deg, #f59e0b 0%, #f97316 50%, #e11d48 100%);
   box-shadow: 0 2px 8px rgba(251, 191, 36, 0.6);
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, #D97706 0%, #EA580C 50%, #BE123C 100%);
+  background: linear-gradient(180deg, #d97706 0%, #ea580c 50%, #be123c 100%);
 }
 
 /* ============================================
@@ -189,34 +192,74 @@ body {
    ============================================ */
 
 /* Serif Fonts (Elegant) */
-.font-playfair { font-family: var(--font-playfair), Georgia, serif; }
-.font-merriweather { font-family: var(--font-merriweather), Georgia, serif; }
-.font-lora { font-family: var(--font-lora), Georgia, serif; }
-.font-crimson { font-family: var(--font-crimson), Georgia, serif; }
-.font-cormorant { font-family: var(--font-cormorant), Georgia, serif; }
+.font-playfair {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+.font-merriweather {
+  font-family: var(--font-merriweather), Georgia, serif;
+}
+.font-lora {
+  font-family: var(--font-lora), Georgia, serif;
+}
+.font-crimson {
+  font-family: var(--font-crimson), Georgia, serif;
+}
+.font-cormorant {
+  font-family: var(--font-cormorant), Georgia, serif;
+}
 
 /* Sans-serif Fonts (Modern) */
-.font-roboto { font-family: var(--font-roboto), Arial, sans-serif; }
-.font-opensans { font-family: var(--font-opensans), Arial, sans-serif; }
-.font-lato { font-family: var(--font-lato), Arial, sans-serif; }
-.font-poppins { font-family: var(--font-poppins), Arial, sans-serif; }
-.font-montserrat { font-family: var(--font-montserrat), Arial, sans-serif; }
-.font-inter { font-family: var(--font-inter), Arial, sans-serif; }
-.font-nunito { font-family: var(--font-nunito), Arial, sans-serif; }
-.font-raleway { font-family: var(--font-raleway), Arial, sans-serif; }
-.font-sourcesans { font-family: var(--font-sourcesans), Arial, sans-serif; }
+.font-roboto {
+  font-family: var(--font-roboto), Arial, sans-serif;
+}
+.font-opensans {
+  font-family: var(--font-opensans), Arial, sans-serif;
+}
+.font-lato {
+  font-family: var(--font-lato), Arial, sans-serif;
+}
+.font-poppins {
+  font-family: var(--font-poppins), Arial, sans-serif;
+}
+.font-montserrat {
+  font-family: var(--font-montserrat), Arial, sans-serif;
+}
+.font-inter {
+  font-family: var(--font-inter), Arial, sans-serif;
+}
+.font-nunito {
+  font-family: var(--font-nunito), Arial, sans-serif;
+}
+.font-raleway {
+  font-family: var(--font-raleway), Arial, sans-serif;
+}
+.font-sourcesans {
+  font-family: var(--font-sourcesans), Arial, sans-serif;
+}
 
 /* Script/Handwriting Fonts */
-.font-dancing { font-family: var(--font-dancing), cursive; }
-.font-pacifico { font-family: var(--font-pacifico), cursive; }
-.font-greatvibes { font-family: var(--font-greatvibes), cursive; }
-.font-sacramento { font-family: var(--font-sacramento), cursive; }
+.font-dancing {
+  font-family: var(--font-dancing), cursive;
+}
+.font-pacifico {
+  font-family: var(--font-pacifico), cursive;
+}
+.font-greatvibes {
+  font-family: var(--font-greatvibes), cursive;
+}
+.font-sacramento {
+  font-family: var(--font-sacramento), cursive;
+}
 
 /* Monospace Fonts */
-.font-jetbrains { font-family: var(--font-jetbrains), monospace; }
+.font-jetbrains {
+  font-family: var(--font-jetbrains), monospace;
+}
 
 /* Legacy alias */
-.font-display { font-family: var(--font-playfair), Georgia, serif; }
+.font-display {
+  font-family: var(--font-playfair), Georgia, serif;
+}
 
 /* Gradient Border Support - Warm Sunset */
 .gradient-border {
@@ -232,7 +275,9 @@ body {
   border-radius: inherit;
   padding: 2px;
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(225, 29, 72, 0.3));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
@@ -392,7 +437,7 @@ body {
 .slick-dots li.slick-active .slick-dot-custom {
   width: 20px;
   border-radius: 10px;
-  background: linear-gradient(90deg, #F59E0B, #E11D48);
+  background: linear-gradient(90deg, #f59e0b, #e11d48);
 }
 
 @media (min-width: 640px) {
@@ -411,7 +456,7 @@ body {
 
 .slick-dots li.slick-active button:hover,
 .slick-dots li.slick-active .slick-dot-custom:hover {
-  background: linear-gradient(90deg, #D97706, #BE123C);
+  background: linear-gradient(90deg, #d97706, #be123c);
 }
 
 /* Dark mode dots */
@@ -427,7 +472,7 @@ body {
 
 .dark .slick-dots li.slick-active button,
 .dark .slick-dots li.slick-active .slick-dot-custom {
-  background: linear-gradient(90deg, #FBBF24, #F43F5E);
+  background: linear-gradient(90deg, #fbbf24, #f43f5e);
 }
 
 /* Slick Arrow Overrides */

@@ -1,23 +1,20 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   // Allow ngrok and other dev origins for cross-origin requests
-  allowedDevOrigins: [
-    "cc9f056fba92.ngrok-free.app",
-    "https://cc9f056fba92.ngrok-free.app",
-  ],
-  
+  allowedDevOrigins: ['cc9f056fba92.ngrok-free.app', 'https://cc9f056fba92.ngrok-free.app'],
+
   // Optimize for production
   reactStrictMode: false, // Disable strict mode to prevent double renders
-  
+
   // Enable gzip/brotli compression for responses
   compress: true,
-  
+
   // Reduce memory usage & optimize packages
   experimental: {
     optimizePackageImports: ['lucide-react', 'react-hot-toast'],
   },
-  
+
   // Configure external image domains
   images: {
     remotePatterns: [
@@ -40,9 +37,7 @@ const nextConfig: NextConfig = {
       {
         // API routes - enable caching
         source: '/api/:path*',
-        headers: [
-          { key: 'X-DNS-Prefetch-Control', value: 'on' },
-        ],
+        headers: [{ key: 'X-DNS-Prefetch-Control', value: 'on' }],
       },
       {
         // Public data endpoints - aggressive caching

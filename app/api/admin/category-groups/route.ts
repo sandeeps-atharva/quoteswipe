@@ -27,25 +27,30 @@ interface UserDoc {
 async function isAdmin(request: NextRequest): Promise<boolean> {
   const userId = getUserIdFromRequest(request);
   if (!userId) return false;
-  
+
   const usersCollection = await getCollection('users');
-  const user = await usersCollection.findOne({ _id: toObjectId(userId) as any }) as UserDoc | null;
+  const user = (await usersCollection.findOne({
+    _id: toObjectId(userId) as any,
+  })) as UserDoc | null;
   return user?.role === 'admin';
 }
 
 // GET /api/admin/category-groups - Get all groups (including inactive)
 export async function GET(request: NextRequest) {
   try {
-    if (!await isAdmin(request)) {
+    if (!(await isAdmin(request))) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const collection = await getCollection('category_groups');
-    const groups = await collection.find({}).sort({ order: 1 }).toArray() as unknown as CategoryGroupDoc[];
+    const groups = (await collection
+      .find({})
+      .sort({ order: 1 })
+      .toArray()) as unknown as CategoryGroupDoc[];
 
     return NextResponse.json({
       success: true,
-      groups: groups.map(g => ({
+      groups: groups.map((g) => ({
         id: g._id.toString(),
         name: g.name,
         label: g.label,
@@ -69,7 +74,7 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/category-groups - Create a new group
 export async function POST(request: NextRequest) {
   try {
-    if (!await isAdmin(request)) {
+    if (!(await isAdmin(request))) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -96,7 +101,11 @@ export async function POST(request: NextRequest) {
     // Get max order if not provided
     let groupOrder = order;
     if (!groupOrder) {
-      const maxOrderDocs = await collection.find({}).sort({ order: -1 }).limit(1).toArray() as unknown as CategoryGroupDoc[];
+      const maxOrderDocs = (await collection
+        .find({})
+        .sort({ order: -1 })
+        .limit(1)
+        .toArray()) as unknown as CategoryGroupDoc[];
       groupOrder = maxOrderDocs.length > 0 ? maxOrderDocs[0].order + 1 : 1;
     }
 
@@ -138,7 +147,7 @@ export async function POST(request: NextRequest) {
 // PUT /api/admin/category-groups - Update a group
 export async function PUT(request: NextRequest) {
   try {
-    if (!await isAdmin(request)) {
+    if (!(await isAdmin(request))) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -161,16 +170,10 @@ export async function PUT(request: NextRequest) {
     if (keywords !== undefined) updateData.keywords = keywords;
     if (is_active !== undefined) updateData.is_active = is_active;
 
-    const result = await collection.updateOne(
-      { _id: toObjectId(id) as any },
-      { $set: updateData }
-    );
+    const result = await collection.updateOne({ _id: toObjectId(id) as any }, { $set: updateData });
 
     if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Group not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Group not found' }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -189,7 +192,7 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/admin/category-groups - Delete a group
 export async function DELETE(request: NextRequest) {
   try {
-    if (!await isAdmin(request)) {
+    if (!(await isAdmin(request))) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -207,10 +210,7 @@ export async function DELETE(request: NextRequest) {
     const result = await collection.deleteOne({ _id: toObjectId(id) as any });
 
     if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Group not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Group not found' }, { status: 404 });
     }
 
     return NextResponse.json({

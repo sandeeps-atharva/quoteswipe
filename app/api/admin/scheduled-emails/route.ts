@@ -26,47 +26,47 @@ export async function GET(request: NextRequest) {
       filter.scheduled_date = { $gte: startDate, $lte: endDate };
     }
 
-    const emails = await scheduledEmailsCollection
+    const emails = (await scheduledEmailsCollection
       .find(filter)
       .sort({ scheduled_date: 1, scheduled_time: 1 })
-      .toArray() as any[];
+      .toArray()) as any[];
 
     // Get quote info and recipient counts
-    const formattedEmails = await Promise.all(emails.map(async (email: any) => {
-      let quote: any = null;
-      if (email.quote_id) {
-        quote = await quotesCollection.findOne({ 
-          $or: [{ id: email.quote_id }, { _id: toObjectId(email.quote_id) as any }] 
-        });
-      }
+    const formattedEmails = await Promise.all(
+      emails.map(async (email: any) => {
+        let quote: any = null;
+        if (email.quote_id) {
+          quote = await quotesCollection.findOne({
+            $or: [{ id: email.quote_id }, { _id: toObjectId(email.quote_id) as any }],
+          });
+        }
 
-      // Get recipient count - either from stored user_count or by counting recipients
-      let userCount = email.user_count;
-      if (!userCount && !email.send_to_all) {
-        userCount = await recipientsCollection.countDocuments({ 
-          scheduled_email_id: email._id.toString() 
-        });
-      }
+        // Get recipient count - either from stored user_count or by counting recipients
+        let userCount = email.user_count;
+        if (!userCount && !email.send_to_all) {
+          userCount = await recipientsCollection.countDocuments({
+            scheduled_email_id: email._id.toString(),
+          });
+        }
 
-      return {
-        ...email,
-        id: email.id || email._id?.toString(),
-        scheduled_date: email.scheduled_date instanceof Date 
-          ? email.scheduled_date.toISOString().split('T')[0] 
-          : email.scheduled_date,
-        user_count: email.send_to_all ? 'All users' : userCount,
-        quote_text: quote?.text || null,
-        quote_author: quote?.author || null
-      };
-    }));
+        return {
+          ...email,
+          id: email.id || email._id?.toString(),
+          scheduled_date:
+            email.scheduled_date instanceof Date
+              ? email.scheduled_date.toISOString().split('T')[0]
+              : email.scheduled_date,
+          user_count: email.send_to_all ? 'All users' : userCount,
+          quote_text: quote?.text || null,
+          quote_author: quote?.author || null,
+        };
+      })
+    );
 
     return NextResponse.json({ scheduledEmails: formattedEmails });
   } catch (error) {
     console.error('Get scheduled emails error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -78,15 +78,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { 
-      title, 
-      subject, 
-      scheduled_date, 
-      scheduled_time, 
-      quote_id, 
-      custom_message, 
+    const {
+      title,
+      subject,
+      scheduled_date,
+      scheduled_time,
+      quote_id,
+      custom_message,
       user_ids,
-      send_to_all = false
+      send_to_all = false,
     } = await request.json();
 
     if (!title || !subject || !scheduled_date) {
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       send_to_all,
       user_count: userCount,
       status: 'pending',
-      created_at: new Date()
+      created_at: new Date(),
     } as any);
 
     const scheduledEmailId = result.insertedId.toString();
@@ -138,23 +138,23 @@ export async function POST(request: NextRequest) {
       const recipientDocs = user_ids.map((userId: string) => ({
         scheduled_email_id: scheduledEmailId,
         user_id: userId,
-        created_at: new Date()
+        created_at: new Date(),
       }));
-      
+
       await recipientsCollection.insertMany(recipientDocs);
     }
 
-    return NextResponse.json({
-      message: 'Email scheduled successfully',
-      scheduledEmailId,
-      recipientCount: userCount,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        message: 'Email scheduled successfully',
+        scheduledEmailId,
+        recipientCount: userCount,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Create scheduled email error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -178,10 +178,7 @@ export async function DELETE(request: NextRequest) {
 
     // Only delete if status is pending
     const result = await scheduledEmailsCollection.deleteOne({
-      $and: [
-        { $or: [{ id: id }, { _id: toObjectId(id) as any }] },
-        { status: 'pending' }
-      ]
+      $and: [{ $or: [{ id: id }, { _id: toObjectId(id) as any }] }, { status: 'pending' }],
     });
 
     if (result.deletedCount === 0) {
@@ -197,9 +194,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ message: 'Scheduled email deleted' });
   } catch (error) {
     console.error('Delete scheduled email error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

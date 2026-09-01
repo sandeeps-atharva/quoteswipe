@@ -1,7 +1,17 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { X, Bookmark, Check, Loader2, ImageIcon, Type, ChevronRight, Sparkles, ArrowLeft } from 'lucide-react';
+import {
+  X,
+  Bookmark,
+  Check,
+  Loader2,
+  ImageIcon,
+  Type,
+  ChevronRight,
+  Sparkles,
+  ArrowLeft,
+} from 'lucide-react';
 import Image from 'next/image';
 import { BACKGROUND_IMAGES, FONT_STYLES, BackgroundImage, FontStyle } from '@/lib/constants';
 import ImageUploader, { UserBackground } from './ImageUploader';
@@ -53,7 +63,7 @@ export default function SaveQuoteModal({
   const [selectedFont, setSelectedFont] = useState<FontStyle>(currentFont);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'images' | 'fonts'>('images');
-  
+
   // Custom background URL for ImageUploader
   const [selectedCustomBgUrl, setSelectedCustomBgUrl] = useState<string | null>(null);
   const [userBackgroundsCount, setUserBackgroundsCount] = useState(0);
@@ -123,25 +133,23 @@ export default function SaveQuoteModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop with warm gradient */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-md"
-        onClick={onClose}
-      >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={onClose}>
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
       </div>
-      
+
       {/* Modal */}
-      <div className={`relative w-full bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 border border-stone-200/50 dark:border-stone-700/50 ${
-        step === 'confirm' ? 'sm:max-w-sm md:max-w-md' : 'sm:max-w-lg md:max-w-2xl'
-      } mx-0 sm:mx-4`}>
-        
+      <div
+        className={`relative w-full bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 border border-stone-200/50 dark:border-stone-700/50 ${
+          step === 'confirm' ? 'sm:max-w-sm md:max-w-md' : 'sm:max-w-lg md:max-w-2xl'
+        } mx-0 sm:mx-4`}
+      >
         {/* Decorative gradient orbs */}
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none" />
-        
+
         {/* Mobile drag handle */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-stone-300 dark:bg-stone-700 rounded-full sm:hidden" />
-        
+
         {/* STEP 1: Confirmation */}
         {step === 'confirm' && (
           <div className="p-5 pt-6 sm:p-6 md:p-8 relative">
@@ -149,25 +157,25 @@ export default function SaveQuoteModal({
             <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
               <Bookmark size={24} className="sm:w-7 sm:h-7 text-white" fill="currentColor" />
             </div>
-            
+
             {/* Title */}
             <h2 className="text-xl sm:text-2xl font-bold text-center text-stone-900 dark:text-white mb-2">
               Save This Quote
             </h2>
-            
+
             {/* Quote Preview */}
             <div className="bg-gradient-to-br from-amber-50 to-rose-50 dark:from-stone-800 dark:to-stone-800 rounded-xl p-4 mb-5 border border-amber-200/50 dark:border-stone-700">
-              <p className="text-sm text-stone-700 dark:text-stone-300 line-clamp-2">"{quote.text}"</p>
-              {quote.author && (
-                <p className="text-xs text-stone-500 mt-2">— {quote.author}</p>
-              )}
+              <p className="text-sm text-stone-700 dark:text-stone-300 line-clamp-2">
+                "{quote.text}"
+              </p>
+              {quote.author && <p className="text-xs text-stone-500 mt-2">— {quote.author}</p>}
             </div>
-            
+
             {/* Question */}
             <p className="text-center text-sm text-stone-600 dark:text-stone-400 mb-5">
               Would you like to customize the background?
             </p>
-            
+
             {/* Action Buttons */}
             <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
               <button
@@ -186,7 +194,7 @@ export default function SaveQuoteModal({
                 <ChevronRight size={16} />
               </button>
             </div>
-            
+
             {/* Close button */}
             <button
               onClick={onClose}
@@ -196,7 +204,7 @@ export default function SaveQuoteModal({
             </button>
           </div>
         )}
-        
+
         {/* STEP 2: Customization */}
         {step === 'customize' && (
           <div className="flex flex-col max-h-[92vh] sm:max-h-[85vh] relative">
@@ -210,7 +218,9 @@ export default function SaveQuoteModal({
                   <ArrowLeft size={18} className="text-stone-500" />
                 </button>
                 <div>
-                  <h2 className="text-lg font-bold text-stone-900 dark:text-white">Customize & Save</h2>
+                  <h2 className="text-lg font-bold text-stone-900 dark:text-white">
+                    Customize & Save
+                  </h2>
                   <p className="text-xs text-stone-500">Choose background & font</p>
                 </div>
               </div>
@@ -221,22 +231,29 @@ export default function SaveQuoteModal({
                 <X size={18} className="text-stone-500" />
               </button>
             </div>
-            
+
             {/* Preview */}
             <div className="p-3 sm:p-4 bg-stone-50 dark:bg-stone-800/50 shrink-0">
               <p className="text-xs text-stone-500 text-center mb-3">Preview</p>
               <div
                 className="mx-auto w-36 sm:w-48 aspect-[4/5] rounded-xl shadow-lg flex flex-col items-center justify-center p-4 relative overflow-hidden transition-all duration-500"
-                style={{ background: selectedBackground.id === 'none' ? 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #e11d48 100%)' : undefined }}
+                style={{
+                  background:
+                    selectedBackground.id === 'none'
+                      ? 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #e11d48 100%)'
+                      : undefined,
+                }}
               >
                 {/* Background Image with smooth transition */}
                 {selectedBackground.id !== 'none' && selectedBackground.url && (
                   <>
-                    <div 
+                    <div
                       className="absolute inset-0 bg-cover bg-center transition-all duration-500"
-                      style={{ backgroundImage: `url(${selectedBackground.thumbnail || selectedBackground.url})` }}
+                      style={{
+                        backgroundImage: `url(${selectedBackground.thumbnail || selectedBackground.url})`,
+                      }}
                     />
-                    <div 
+                    <div
                       className="absolute inset-0 transition-all duration-500"
                       style={{ background: selectedBackground.overlay }}
                     />
@@ -250,7 +267,8 @@ export default function SaveQuoteModal({
                       color: previewColors.textColor,
                       fontFamily: selectedFont.fontFamily,
                       fontWeight: selectedFont.fontWeight,
-                      textShadow: selectedBackground.id !== 'none' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                      textShadow:
+                        selectedBackground.id !== 'none' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
                     }}
                   >
                     &ldquo;{quote.text}&rdquo;
@@ -258,9 +276,10 @@ export default function SaveQuoteModal({
                   {quote.author && (
                     <p
                       className="text-[10px] mt-2"
-                      style={{ 
+                      style={{
                         color: previewColors.authorColor,
-                        textShadow: selectedBackground.id !== 'none' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                        textShadow:
+                          selectedBackground.id !== 'none' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
                       }}
                     >
                       — {quote.author}
@@ -269,7 +288,7 @@ export default function SaveQuoteModal({
                 </div>
               </div>
             </div>
-            
+
             {/* Tabs */}
             <div className="flex border-b border-stone-200 dark:border-stone-700 shrink-0">
               <button
@@ -295,7 +314,7 @@ export default function SaveQuoteModal({
                 <span>Fonts</span>
               </button>
             </div>
-            
+
             {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto p-3 sm:p-4 custom-scrollbar">
               {activeTab === 'images' && (
@@ -303,7 +322,9 @@ export default function SaveQuoteModal({
                   {/* User's Custom Images via ImageUploader */}
                   {isAuthenticated && (
                     <div>
-                      <p className="text-xs text-stone-500 uppercase tracking-wider font-medium mb-2">Your Photos ({userBackgroundsCount}/100)</p>
+                      <p className="text-xs text-stone-500 uppercase tracking-wider font-medium mb-2">
+                        Your Photos ({userBackgroundsCount}/100)
+                      </p>
                       <ImageUploader
                         selectedCustomBackground={selectedCustomBgUrl}
                         onSelectCustomBackground={handleSelectCustomBackground}
@@ -316,10 +337,12 @@ export default function SaveQuoteModal({
                       />
                     </div>
                   )}
-                  
+
                   {/* Preset Backgrounds */}
                   <div>
-                    <p className="text-xs text-stone-500 uppercase tracking-wider font-medium mb-2">Presets</p>
+                    <p className="text-xs text-stone-500 uppercase tracking-wider font-medium mb-2">
+                      Presets
+                    </p>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                       {BACKGROUND_IMAGES.map((bg) => (
                         <button
@@ -357,7 +380,7 @@ export default function SaveQuoteModal({
                   </div>
                 </div>
               )}
-              
+
               {activeTab === 'fonts' && (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   {FONT_STYLES.map((font) => (
@@ -389,7 +412,7 @@ export default function SaveQuoteModal({
                 </div>
               )}
             </div>
-            
+
             {/* Footer */}
             <div className="p-3 sm:p-4 border-t border-stone-200 dark:border-stone-700 shrink-0 bg-white dark:bg-stone-900">
               {/* Info note */}

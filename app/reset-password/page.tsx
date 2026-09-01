@@ -90,9 +90,9 @@ function ResetPasswordForm() {
     return (
       <div className="min-h-screen bg-[#FFFBF7] dark:bg-[#0C0A09] flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full p-8 text-center">
-          <Image 
-            src="/logo.svg" 
-            alt="QuoteSwipe" 
+          <Image
+            src="/logo.svg"
+            alt="QuoteSwipe"
             width={80}
             height={80}
             className="w-20 h-20 mx-auto mb-4"
@@ -104,7 +104,8 @@ function ResetPasswordForm() {
             Password Reset Successful!
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Your password has been reset successfully. You will be redirected to the home page shortly.
+            Your password has been reset successfully. You will be redirected to the home page
+            shortly.
           </p>
         </div>
       </div>
@@ -115,9 +116,9 @@ function ResetPasswordForm() {
     <div className="min-h-screen bg-[#FFFBF7] dark:bg-[#0C0A09] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full p-8">
         <div className="text-center mb-8">
-          <Image 
-            src="/logo.svg" 
-            alt="QuoteSwipe" 
+          <Image
+            src="/logo.svg"
+            alt="QuoteSwipe"
             width={80}
             height={80}
             className="w-20 h-20 mx-auto mb-4"
@@ -125,9 +126,7 @@ function ResetPasswordForm() {
           <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">
             Reset Password
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            Enter your new password below
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Enter your new password below</p>
         </div>
 
         {error && (
@@ -204,13 +203,14 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#FFFBF7] dark:bg-[#0C0A09] flex items-center justify-center">
-        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FFFBF7] dark:bg-[#0C0A09] flex items-center justify-center">
+          <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+        </div>
+      }
+    >
       <ResetPasswordForm />
     </Suspense>
   );
 }
-

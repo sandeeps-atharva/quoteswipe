@@ -25,7 +25,7 @@ export function verifyToken(token: string): TokenPayload | null {
 export function getUserIdFromRequest(request: NextRequest): string | null {
   const token = request.cookies.get('auth-token')?.value;
   if (!token) return null;
-  
+
   const payload = verifyToken(token);
   return payload?.userId?.toString() || null;
 }
@@ -39,13 +39,15 @@ export async function getUserFromRequest(request: NextRequest): Promise<{
 } | null> {
   const token = request.cookies.get('auth-token')?.value;
   if (!token) return null;
-  
+
   const payload = verifyToken(token);
   if (!payload?.userId) return null;
 
   try {
     const usersCollection = await getCollection('users');
-    const user: any = await usersCollection.findOne({ _id: toObjectId(payload.userId) as any }) as any;
+    const user: any = (await usersCollection.findOne({
+      _id: toObjectId(payload.userId) as any,
+    })) as any;
 
     if (user) {
       return {
@@ -63,26 +65,28 @@ export async function getUserFromRequest(request: NextRequest): Promise<{
 }
 
 // Admin authorization middleware helper
-export async function requireAdmin(request: NextRequest): Promise<
+export async function requireAdmin(
+  request: NextRequest
+): Promise<
   | { authorized: true; user: { userId: string; email: string; role: 'admin'; name: string } }
   | { authorized: false; response: NextResponse }
 > {
   const user = await getUserFromRequest(request);
-  
+
   if (!user) {
     return {
       authorized: false,
       response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
     };
   }
-  
+
   if (user.role !== 'admin') {
     return {
       authorized: false,
       response: NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 }),
     };
   }
-  
+
   return {
     authorized: true,
     user: { ...user, role: 'admin' },

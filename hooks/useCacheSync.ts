@@ -64,7 +64,7 @@ export function getInitialCachedState<T>(
   duration = 60 * 60 * 1000 // 1 hour
 ): T {
   if (typeof window === 'undefined') return defaultValue;
-  
+
   try {
     const cached = sessionStorage.getItem(`qs_cache_${cacheKey}`);
     if (cached) {
@@ -74,7 +74,6 @@ export function getInitialCachedState<T>(
       }
     }
   } catch {}
-  
+
   return defaultValue;
 }
-

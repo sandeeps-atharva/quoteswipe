@@ -50,10 +50,10 @@ function getClientIP(request: NextRequest): string {
 export async function POST(request: NextRequest) {
   try {
     const body: VisitorData = await request.json();
-    
+
     // Get IP from server-side
     const ipAddress = getClientIP(request);
-    
+
     // Get user ID if authenticated
     const userId = getUserIdFromRequest(request);
 
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       timezone: body.timezone || null,
       referrer: body.referrer || null,
       user_id: userId || null,
-      visited_at: new Date()
+      visited_at: new Date(),
     } as any);
 
     return NextResponse.json({ success: true });
@@ -111,74 +111,81 @@ export async function GET(request: NextRequest) {
     // Get visitor statistics
     const totalVisits = await visitorsCollection.countDocuments();
 
-    const uniqueVisitorsResult = await visitorsCollection.aggregate([
-      { $group: { _id: '$ip_address' } },
-      { $count: 'unique_count' }
-    ]).toArray() as any[];
+    const uniqueVisitorsResult = (await visitorsCollection
+      .aggregate([{ $group: { _id: '$ip_address' } }, { $count: 'unique_count' }])
+      .toArray()) as any[];
     const uniqueVisitors = uniqueVisitorsResult[0]?.unique_count || 0;
 
-    const deviceStats = await visitorsCollection.aggregate([
-      { $group: { _id: '$device_type', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]).toArray() as any[];
+    const deviceStats = (await visitorsCollection
+      .aggregate([
+        { $group: { _id: '$device_type', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ])
+      .toArray()) as any[];
 
-    const browserStats = await visitorsCollection.aggregate([
-      { $match: { browser_name: { $ne: null } } },
-      { $group: { _id: '$browser_name', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]).toArray() as any[];
+    const browserStats = (await visitorsCollection
+      .aggregate([
+        { $match: { browser_name: { $ne: null } } },
+        { $group: { _id: '$browser_name', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+      ])
+      .toArray()) as any[];
 
-    const osStats = await visitorsCollection.aggregate([
-      { $match: { os_name: { $ne: null } } },
-      { $group: { _id: '$os_name', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]).toArray() as any[];
+    const osStats = (await visitorsCollection
+      .aggregate([
+        { $match: { os_name: { $ne: null } } },
+        { $group: { _id: '$os_name', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+      ])
+      .toArray()) as any[];
 
-    const recentVisitors = await visitorsCollection
+    const recentVisitors = (await visitorsCollection
       .find({})
       .sort({ visited_at: -1 })
       .limit(50)
-      .toArray() as any[];
+      .toArray()) as any[];
 
     // Daily stats for last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const dailyStats = await visitorsCollection.aggregate([
-      { $match: { visited_at: { $gte: thirtyDaysAgo } } },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$visited_at' } },
-          visits: { $sum: 1 },
-          unique_visitors: { $addToSet: '$ip_address' }
-        }
-      },
-      {
-        $project: {
-          date: '$_id',
-          visits: 1,
-          unique_visitors: { $size: '$unique_visitors' }
-        }
-      },
-      { $sort: { date: -1 } }
-    ]).toArray() as any[];
+    const dailyStats = (await visitorsCollection
+      .aggregate([
+        { $match: { visited_at: { $gte: thirtyDaysAgo } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$visited_at' } },
+            visits: { $sum: 1 },
+            unique_visitors: { $addToSet: '$ip_address' },
+          },
+        },
+        {
+          $project: {
+            date: '$_id',
+            visits: 1,
+            unique_visitors: { $size: '$unique_visitors' },
+          },
+        },
+        { $sort: { date: -1 } },
+      ])
+      .toArray()) as any[];
 
     return NextResponse.json({
       totalVisits,
       uniqueVisitors,
       deviceStats: deviceStats.map((d: any) => ({ device_type: d._id, count: d.count })),
-      browserStats: browserStats.map(b => ({ browser_name: b._id, count: b.count })),
-      osStats: osStats.map(o => ({ os_name: o._id, count: o.count })),
-      recentVisitors: recentVisitors.map(v => ({
+      browserStats: browserStats.map((b) => ({ browser_name: b._id, count: b.count })),
+      osStats: osStats.map((o) => ({ os_name: o._id, count: o.count })),
+      recentVisitors: recentVisitors.map((v) => ({
         ip_address: v.ip_address,
         browser_name: v.browser_name,
         os_name: v.os_name,
         device_type: v.device_type,
         screen_width: v.screen_width,
         screen_height: v.screen_height,
-        visited_at: v.visited_at
+        visited_at: v.visited_at,
       })),
       dailyStats,
     });

@@ -59,8 +59,10 @@ export default function Modal({
 
   const variantClasses = {
     default: 'bg-white dark:bg-stone-900 border border-stone-200/50 dark:border-stone-700/50',
-    glass: 'bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border border-white/20 dark:border-stone-700/30',
-    gradient: 'bg-gradient-to-br from-white via-amber-50/30 to-rose-50/30 dark:from-stone-900 dark:via-stone-800 dark:to-stone-900 border border-amber-200/30 dark:border-amber-900/30',
+    glass:
+      'bg-white/80 dark:bg-stone-900/80 backdrop-blur-xl border border-white/20 dark:border-stone-700/30',
+    gradient:
+      'bg-gradient-to-br from-white via-amber-50/30 to-rose-50/30 dark:from-stone-900 dark:via-stone-800 dark:to-stone-900 border border-amber-200/30 dark:border-amber-900/30',
   };
 
   return (
@@ -76,7 +78,7 @@ export default function Modal({
       <div className="absolute inset-0 bg-black/40 backdrop-blur-md">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-rose-500/5" />
       </div>
-      
+
       {/* Modal Container */}
       <div
         className={`
@@ -93,7 +95,7 @@ export default function Modal({
         {/* Decorative gradient orbs - contained within bounds */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none translate-y-1/2 -translate-x-1/2" />
-        
+
         {/* Close button */}
         {showCloseButton && (
           <button
@@ -104,7 +106,10 @@ export default function Modal({
               hover:scale-105 active:scale-95"
             aria-label="Close modal"
           >
-            <X size={18} className="text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 transition-colors" />
+            <X
+              size={18}
+              className="text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 transition-colors"
+            />
           </button>
         )}
 
@@ -119,9 +124,7 @@ export default function Modal({
         )}
 
         {/* Content */}
-        <div className="relative z-10">
-          {children}
-        </div>
+        <div className="relative z-10">{children}</div>
       </div>
     </div>
   );

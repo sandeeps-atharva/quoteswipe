@@ -1,6 +1,16 @@
 'use client';
 
-import { User, Heart, ThumbsDown, Palette, FolderOpen, X, LogOut, Shield, LogIn } from 'lucide-react';
+import {
+  User,
+  Heart,
+  ThumbsDown,
+  Palette,
+  FolderOpen,
+  X,
+  LogOut,
+  Shield,
+  LogIn,
+} from 'lucide-react';
 import { memo } from 'react';
 
 interface OptionsMenuProps {
@@ -44,17 +54,17 @@ function OptionsMenu({
   };
 
   // Menu item component for consistency
-  const MenuItem = ({ 
-    onClick, 
-    icon: Icon, 
+  const MenuItem = ({
+    onClick,
+    icon: Icon,
     iconFill = false,
-    gradient, 
-    title, 
-    subtitle, 
+    gradient,
+    title,
+    subtitle,
     badge,
     danger = false,
     isLink = false,
-    href = ''
+    href = '',
   }: {
     onClick?: () => void;
     icon: React.ElementType;
@@ -69,17 +79,27 @@ function OptionsMenu({
   }) => {
     const content = (
       <>
-        <div className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-xl ${gradient} flex items-center justify-center shadow-lg shrink-0`}>
-          <Icon size={18} className="sm:w-5 sm:h-5 md:w-[22px] md:h-[22px] text-white" fill={iconFill ? 'white' : 'none'} />
+        <div
+          className={`w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-xl ${gradient} flex items-center justify-center shadow-lg shrink-0`}
+        >
+          <Icon
+            size={18}
+            className="sm:w-5 sm:h-5 md:w-[22px] md:h-[22px] text-white"
+            fill={iconFill ? 'white' : 'none'}
+          />
         </div>
         <div className="flex-1 text-left min-w-0">
-          <p className={`font-semibold text-sm sm:text-base truncate ${danger ? 'text-red-600 dark:text-red-400' : 'text-stone-900 dark:text-white'}`}>
+          <p
+            className={`font-semibold text-sm sm:text-base truncate ${danger ? 'text-red-600 dark:text-red-400' : 'text-stone-900 dark:text-white'}`}
+          >
             {title}
           </p>
           <p className="text-[10px] sm:text-xs text-stone-500 truncate">{subtitle}</p>
         </div>
         {badge !== undefined && badge > 0 && (
-          <span className={`px-2 py-0.5 sm:px-2.5 sm:py-1 ${danger ? 'bg-red-500' : gradient.includes('rose') ? 'bg-rose-500' : 'bg-stone-500'} text-white text-[10px] sm:text-xs font-bold rounded-full shrink-0`}>
+          <span
+            className={`px-2 py-0.5 sm:px-2.5 sm:py-1 ${danger ? 'bg-red-500' : gradient.includes('rose') ? 'bg-rose-500' : 'bg-stone-500'} text-white text-[10px] sm:text-xs font-bold rounded-full shrink-0`}
+          >
             {badge > 99 ? '99+' : badge}
           </span>
         )}
@@ -87,8 +107,8 @@ function OptionsMenu({
     );
 
     const className = `w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-3.5 md:p-4 rounded-xl sm:rounded-2xl ${
-      danger 
-        ? 'hover:bg-red-50 dark:hover:bg-red-900/20' 
+      danger
+        ? 'hover:bg-red-50 dark:hover:bg-red-900/20'
         : 'hover:bg-stone-50 dark:hover:bg-stone-800/50'
     } transition-colors active:scale-[0.98]`;
 
@@ -110,13 +130,10 @@ function OptionsMenu({
   return (
     <>
       {/* Backdrop with warm gradient */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-[200] backdrop-blur-md"
-        onClick={onClose}
-      >
+      <div className="fixed inset-0 bg-black/50 z-[200] backdrop-blur-md" onClick={onClose}>
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
       </div>
-      
+
       {/* Menu Panel */}
       {/* Mobile: Bottom Sheet | Desktop: Centered Modal */}
       <div className="fixed inset-0 z-[201] flex items-end sm:items-center justify-center pointer-events-none">
@@ -125,25 +142,25 @@ function OptionsMenu({
             {/* Decorative gradient orbs */}
             <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none" />
-            
+
             {/* Handle Bar - Mobile Only */}
             <div className="flex sm:hidden justify-center pt-2.5 pb-1">
               <div className="w-9 h-1 bg-stone-300 dark:bg-stone-700 rounded-full" />
             </div>
-            
+
             {/* Header - Desktop */}
             <div className="hidden sm:flex items-center justify-between px-5 py-4 border-b border-stone-100 dark:border-stone-800 relative">
               <h3 className="text-lg font-bold text-stone-900 dark:text-white">Menu</h3>
-              <button 
+              <button
                 onClick={onClose}
                 className="p-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
               >
                 <X size={18} className="text-stone-500" />
               </button>
             </div>
-            
+
             {/* Close Button - Mobile */}
-            <button 
+            <button
               onClick={onClose}
               className="sm:hidden absolute top-3 right-3 p-2 rounded-xl bg-stone-100/80 dark:bg-stone-800/80 hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors z-10"
             >
@@ -240,8 +257,12 @@ function OptionsMenu({
                         <User size={24} className="sm:w-7 sm:h-7 text-white" />
                       </div>
                     </div>
-                    <h3 className="mt-4 text-base sm:text-lg font-bold text-stone-900 dark:text-white">Welcome!</h3>
-                    <p className="text-xs sm:text-sm text-stone-500 mb-4">Sign in to access all features</p>
+                    <h3 className="mt-4 text-base sm:text-lg font-bold text-stone-900 dark:text-white">
+                      Welcome!
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-500 mb-4">
+                      Sign in to access all features
+                    </p>
                     <button
                       onClick={() => handleOptionClick(onLoginClick)}
                       className="w-full py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base active:scale-[0.98]"
@@ -265,9 +286,12 @@ function OptionsMenu({
                 </>
               )}
             </div>
-            
+
             {/* Safe area padding for bottom - Mobile */}
-            <div className="sm:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 12px)' }} />
+            <div
+              className="sm:hidden"
+              style={{ paddingBottom: 'env(safe-area-inset-bottom, 12px)' }}
+            />
           </div>
         </div>
       </div>

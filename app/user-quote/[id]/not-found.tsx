@@ -5,18 +5,27 @@ export default function NotFound() {
     <div className="min-h-screen flex items-center justify-center bg-[#FFFBF7] dark:bg-[#0C0A09] p-4">
       <div className="text-center max-w-md">
         <div className="text-6xl mb-4">🔒</div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Quote Not Found
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Quote Not Found</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          This quote doesn&apos;t exist or is private. Only public quotes can be viewed through shared links.
+          This quote doesn&apos;t exist or is private. Only public quotes can be viewed through
+          shared links.
         </p>
         <Link
           href="/"
           className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-full font-semibold hover:shadow-lg hover:shadow-orange-500/30 transition-all"
         >
           <span>Discover Quotes</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M5 12h14" />
             <path d="m12 5 7 7-7 7" />
           </svg>
@@ -25,4 +34,3 @@ export default function NotFound() {
     </div>
   );
 }
-

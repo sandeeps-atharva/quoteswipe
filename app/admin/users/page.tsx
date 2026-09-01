@@ -106,10 +106,8 @@ export default function UsersPage() {
             <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">Users</h1>
             <p className="text-slate-400">Manage registered users</p>
           </div>
-          
-          <button
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition-colors"
-          >
+
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition-colors">
             <Download size={18} />
             Export CSV
           </button>
@@ -182,7 +180,9 @@ export default function UsersPage() {
                 <UserCheck size={20} className="text-emerald-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{users.filter(u => u.role === 'admin').length}</p>
+                <p className="text-2xl font-bold text-white">
+                  {users.filter((u) => u.role === 'admin').length}
+                </p>
                 <p className="text-xs text-slate-400">Admins</p>
               </div>
             </div>
@@ -193,7 +193,9 @@ export default function UsersPage() {
                 <Mail size={20} className="text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{users.filter(u => u.auth_provider === 'email').length}</p>
+                <p className="text-2xl font-bold text-white">
+                  {users.filter((u) => u.auth_provider === 'email').length}
+                </p>
                 <p className="text-xs text-slate-400">Email Users</p>
               </div>
             </div>
@@ -202,11 +204,16 @@ export default function UsersPage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#EA4335" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path
+                    fill="#EA4335"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
                 </svg>
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{users.filter(u => u.auth_provider === 'google').length}</p>
+                <p className="text-2xl font-bold text-white">
+                  {users.filter((u) => u.auth_provider === 'google').length}
+                </p>
                 <p className="text-xs text-slate-400">Google Users</p>
               </div>
             </div>
@@ -231,12 +238,24 @@ export default function UsersPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-slate-800">
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">User</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">Role</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">Provider</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">Activity</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">Joined</th>
-                      <th className="text-right py-4 px-6 text-sm font-semibold text-slate-400">Actions</th>
+                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">
+                        User
+                      </th>
+                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">
+                        Role
+                      </th>
+                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">
+                        Provider
+                      </th>
+                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">
+                        Activity
+                      </th>
+                      <th className="text-left py-4 px-6 text-sm font-semibold text-slate-400">
+                        Joined
+                      </th>
+                      <th className="text-right py-4 px-6 text-sm font-semibold text-slate-400">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -271,7 +290,9 @@ export default function UsersPage() {
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
                             {getAuthProviderIcon(user.auth_provider)}
-                            <span className="text-sm text-slate-300 capitalize">{user.auth_provider}</span>
+                            <span className="text-sm text-slate-300 capitalize">
+                              {user.auth_provider}
+                            </span>
                           </div>
                         </td>
                         <td className="py-4 px-6">
@@ -340,7 +361,9 @@ export default function UsersPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {getAuthProviderIcon(user.auth_provider)}
-                        <span className="text-xs text-slate-400">{formatDate(user.created_at)}</span>
+                        <span className="text-xs text-slate-400">
+                          {formatDate(user.created_at)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -382,4 +405,3 @@ export default function UsersPage() {
     </AdminLayout>
   );
 }
-

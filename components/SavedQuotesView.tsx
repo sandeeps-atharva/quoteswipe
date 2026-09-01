@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, Bookmark, Trash2, Share2, Loader2, X, ArrowLeft, MoreVertical } from 'lucide-react';
+import {
+  Search,
+  Bookmark,
+  Trash2,
+  Share2,
+  Loader2,
+  X,
+  ArrowLeft,
+  MoreVertical,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import ThematicLoader from './ThematicLoader';
 
@@ -16,7 +25,11 @@ interface SavedQuote {
 
 interface SavedQuotesViewProps {
   onBack: () => void;
-  onQuoteClick: (quoteId: string | number, category?: string, customBackground?: string | null) => void;
+  onQuoteClick: (
+    quoteId: string | number,
+    category?: string,
+    customBackground?: string | null
+  ) => void;
   onShareQuote: (quote: SavedQuote) => void;
   onDeleteQuote: (quoteId: string | number) => void;
 }
@@ -58,63 +71,73 @@ export default function SavedQuotesView({
   const filteredQuotes = useMemo(() => {
     if (!searchQuery.trim()) return quotes;
     const q = searchQuery.toLowerCase();
-    return quotes.filter(quote =>
-      quote.text.toLowerCase().includes(q) ||
-      quote.author.toLowerCase().includes(q) ||
-      quote.category.toLowerCase().includes(q)
+    return quotes.filter(
+      (quote) =>
+        quote.text.toLowerCase().includes(q) ||
+        quote.author.toLowerCase().includes(q) ||
+        quote.category.toLowerCase().includes(q)
     );
   }, [quotes, searchQuery]);
 
   // Handle delete
-  const handleDelete = useCallback(async (quoteId: string | number) => {
-    setDeletingId(quoteId);
-    try {
-      const response = await fetch('/api/user/saved', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quoteId }),
-      });
+  const handleDelete = useCallback(
+    async (quoteId: string | number) => {
+      setDeletingId(quoteId);
+      try {
+        const response = await fetch('/api/user/saved', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quoteId }),
+        });
 
-      if (response.ok) {
-        setQuotes(prev => prev.filter(q => q.id !== quoteId));
-        onDeleteQuote(quoteId);
-        toast.success('Quote removed');
-      } else {
+        if (response.ok) {
+          setQuotes((prev) => prev.filter((q) => q.id !== quoteId));
+          onDeleteQuote(quoteId);
+          toast.success('Quote removed');
+        } else {
+          toast.error('Failed to remove quote');
+        }
+      } catch (error) {
         toast.error('Failed to remove quote');
+      } finally {
+        setDeletingId(null);
       }
-    } catch (error) {
-      toast.error('Failed to remove quote');
-    } finally {
-      setDeletingId(null);
-    }
-  }, [onDeleteQuote]);
+    },
+    [onDeleteQuote]
+  );
 
   // Handle share
-  const handleShare = useCallback((e: React.MouseEvent, quote: SavedQuote) => {
-    e.stopPropagation();
-    setActiveActionsId(null);
-    onShareQuote(quote);
-  }, [onShareQuote]);
+  const handleShare = useCallback(
+    (e: React.MouseEvent, quote: SavedQuote) => {
+      e.stopPropagation();
+      setActiveActionsId(null);
+      onShareQuote(quote);
+    },
+    [onShareQuote]
+  );
 
   // Toggle actions menu (for mobile)
   const toggleActions = useCallback((e: React.MouseEvent, quoteId: string | number) => {
     e.stopPropagation();
-    setActiveActionsId(prev => prev === quoteId ? null : quoteId);
+    setActiveActionsId((prev) => (prev === quoteId ? null : quoteId));
   }, []);
 
   // Handle card click - on mobile with actions shown, close actions; otherwise navigate
-  const handleCardClick = useCallback((quote: SavedQuote) => {
-    if (activeActionsId === quote.id) {
-      setActiveActionsId(null);
-    } else {
-      onQuoteClick(quote.id, quote.category, quote.custom_background);
-    }
-  }, [activeActionsId, onQuoteClick]);
+  const handleCardClick = useCallback(
+    (quote: SavedQuote) => {
+      if (activeActionsId === quote.id) {
+        setActiveActionsId(null);
+      } else {
+        onQuoteClick(quote.id, quote.category, quote.custom_background);
+      }
+    },
+    [activeActionsId, onQuoteClick]
+  );
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-30 bg-[#FFFBF7] dark:bg-[#0C0A09] flex flex-col"
-      style={{ 
+      style={{
         paddingTop: 'env(safe-area-inset-top, 0px)',
         overscrollBehavior: 'none',
       }}
@@ -129,10 +152,14 @@ export default function SavedQuotesView({
             >
               <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-stone-600 dark:text-stone-400" />
             </button>
-            
+
             <div className="flex-1 min-w-0">
               <h1 className="text-base sm:text-lg md:text-xl font-bold text-stone-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
-                <Bookmark size={18} className="sm:w-5 sm:h-5 text-amber-500 shrink-0" fill="currentColor" />
+                <Bookmark
+                  size={18}
+                  className="sm:w-5 sm:h-5 text-amber-500 shrink-0"
+                  fill="currentColor"
+                />
                 <span className="truncate">Saved Quotes</span>
               </h1>
               <p className="text-[10px] sm:text-xs text-stone-500">{quotes.length} quotes saved</p>
@@ -141,7 +168,10 @@ export default function SavedQuotesView({
 
           {/* Search Bar */}
           <div className="mt-2.5 sm:mt-3 relative">
-            <Search size={14} className="sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+            <Search
+              size={14}
+              className="sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-stone-400"
+            />
             <input
               type="text"
               placeholder="Search saved quotes..."
@@ -162,7 +192,7 @@ export default function SavedQuotesView({
       </header>
 
       {/* Content */}
-      <main 
+      <main
         className="flex-1 overflow-y-auto"
         style={{
           paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
@@ -179,7 +209,9 @@ export default function SavedQuotesView({
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-3 sm:mb-4">
                 <Bookmark size={28} className="sm:w-9 sm:h-9 text-amber-500" />
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-1.5 sm:mb-2">No saved quotes yet</h2>
+              <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-1.5 sm:mb-2">
+                No saved quotes yet
+              </h2>
               <p className="text-xs sm:text-sm text-stone-500 max-w-xs">
                 Swipe right or tap the bookmark icon on quotes you love to save them here
               </p>
@@ -207,11 +239,14 @@ export default function SavedQuotesView({
                   'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
                   'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
                 ];
-                const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+                const bgIndex =
+                  typeof quote.id === 'string'
+                    ? quote.id.charCodeAt(0) % defaultBgs.length
+                    : Number(quote.id) % defaultBgs.length;
                 const backgroundUrl = quote.custom_background || defaultBgs[bgIndex];
-                
+
                 const isActionsVisible = activeActionsId === quote.id;
-                
+
                 return (
                   <div
                     key={quote.id}
@@ -219,19 +254,23 @@ export default function SavedQuotesView({
                     className="group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm"
                   >
                     {/* Background Image */}
-                    <div 
+                    <div
                       className="absolute inset-0 bg-cover bg-center"
                       style={{ backgroundImage: `url(${backgroundUrl})` }}
                     />
-                    
+
                     {/* Dark Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    
+
                     {/* Bookmark Icon */}
                     <div className="absolute top-2 right-2 z-10">
-                      <Bookmark size={18} className="text-amber-500 drop-shadow-lg" fill="currentColor" />
+                      <Bookmark
+                        size={18}
+                        className="text-amber-500 drop-shadow-lg"
+                        fill="currentColor"
+                      />
                     </div>
-                    
+
                     {/* Mobile Menu Button - Hidden when actions shown */}
                     {!isActionsVisible && (
                       <button
@@ -241,13 +280,15 @@ export default function SavedQuotesView({
                         <MoreVertical size={14} className="text-white" />
                       </button>
                     )}
-                    
+
                     {/* Action Buttons - Shows instantly on mobile when active, with transition on desktop hover */}
-                    <div className={`absolute top-2 left-2 flex gap-1 z-10 ${
-                      isActionsVisible 
-                        ? 'flex' 
-                        : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
-                    }`}>
+                    <div
+                      className={`absolute top-2 left-2 flex gap-1 z-10 ${
+                        isActionsVisible
+                          ? 'flex'
+                          : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
+                      }`}
+                    >
                       <button
                         onClick={(e) => handleShare(e, quote)}
                         className="p-2 sm:p-1.5 bg-black/40 backdrop-blur-sm hover:bg-black/60 active:bg-black/60 rounded-lg"
@@ -266,13 +307,16 @@ export default function SavedQuotesView({
                         title="Remove"
                       >
                         {deletingId === quote.id ? (
-                          <Loader2 size={16} className="sm:w-3.5 sm:h-3.5 text-white animate-spin" />
+                          <Loader2
+                            size={16}
+                            className="sm:w-3.5 sm:h-3.5 text-white animate-spin"
+                          />
                         ) : (
                           <Trash2 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
                         )}
                       </button>
                     </div>
-                    
+
                     {/* Quote Content */}
                     <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
                       <p className="text-white text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">

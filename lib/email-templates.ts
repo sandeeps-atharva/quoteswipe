@@ -149,13 +149,17 @@ function getEmailWrapper(content: string, appUrl: string, includeUnsubscribe = t
                   </td>
                 </tr>
                 
-                ${includeUnsubscribe ? `
+                ${
+                  includeUnsubscribe
+                    ? `
                 <tr>
                   <td align="center" style="color: #52525b; font-size: 11px; padding-top: 12px;">
                     Don't want these emails? <a href="${appUrl}/unsubscribe" style="color: #a78bfa; text-decoration: underline;">Unsubscribe</a>
                   </td>
                 </tr>
-                ` : ''}
+                `
+                    : ''
+                }
                 
                 <!-- Contact Info -->
                 <tr>
@@ -187,7 +191,11 @@ function getEmailWrapper(content: string, appUrl: string, includeUnsubscribe = t
 }
 
 // Header component
-function getHeader(title: string, subtitle: string, gradient: string = 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%)'): string {
+function getHeader(
+  title: string,
+  subtitle: string,
+  gradient: string = 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%)'
+): string {
   return `
 <!-- Header -->
 <tr>
@@ -224,7 +232,9 @@ function getQuoteCard(quote: Quote, accentColor: string = '#8b5cf6'): string {
       <p style="margin: 0; font-size: 14px; color: #71717a; font-weight: 500;">
         — ${quote.author}
       </p>
-      ${quote.category ? `
+      ${
+        quote.category
+          ? `
       <!-- Category Badge -->
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top: 16px;">
         <tr>
@@ -233,7 +243,9 @@ function getQuoteCard(quote: Quote, accentColor: string = '#8b5cf6'): string {
           </td>
         </tr>
       </table>
-      ` : ''}
+      `
+          : ''
+      }
     </td>
   </tr>
 </table>
@@ -241,7 +253,11 @@ function getQuoteCard(quote: Quote, accentColor: string = '#8b5cf6'): string {
 }
 
 // CTA Button component
-function getCTAButton(text: string, link: string, gradient: string = 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'): string {
+function getCTAButton(
+  text: string,
+  link: string,
+  gradient: string = 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)'
+): string {
   return `
 <!-- CTA Button -->
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 24px auto;">
@@ -264,7 +280,7 @@ function getAlertBox(content: string, type: 'warning' | 'info' | 'success' = 'in
     success: { bg: '#dcfce7', border: '#22c55e', text: '#166534' },
   };
   const c = colors[type];
-  
+
   return `
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 20px 0;">
   <tr>
@@ -403,7 +419,7 @@ ${getHeader('Welcome to QuoteSwipe! 🎉', 'Your daily dose of inspiration await
   </td>
 </tr>
 `;
-  
+
   return getEmailWrapper(content, appUrl);
 }
 
@@ -416,25 +432,101 @@ export function festivalEmailTemplate(
   customMessage?: string
 ): string {
   const festivalColors: Record<string, { gradient: string; accent: string; emoji: string }> = {
-    'New Year': { gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', accent: '#667eea', emoji: '🎆' },
-    'Valentine\'s Day': { gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', accent: '#f5576c', emoji: '💕' },
-    'Holi': { gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #a18cd1 100%)', accent: '#ff9a9e', emoji: '🌈' },
-    'Easter': { gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', accent: '#667eea', emoji: '🐰' },
-    'Diwali': { gradient: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)', accent: '#f59e0b', emoji: '🪔' },
-    'Christmas': { gradient: 'linear-gradient(135deg, #c41e3a 0%, #165b33 100%)', accent: '#c41e3a', emoji: '🎄' },
-    'Thanksgiving': { gradient: 'linear-gradient(135deg, #d97706 0%, #92400e 100%)', accent: '#d97706', emoji: '🦃' },
-    'Independence Day': { gradient: 'linear-gradient(135deg, #ff6b35 0%, #138808 100%)', accent: '#ff6b35', emoji: '🇮🇳' },
-    'Eid': { gradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)', accent: '#059669', emoji: '🌙' },
-    'Raksha Bandhan': { gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)', accent: '#ec4899', emoji: '🎀' },
-    'Ganesh Chaturthi': { gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)', accent: '#f97316', emoji: '🙏' },
-    'Navratri': { gradient: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)', accent: '#dc2626', emoji: '💃' },
-    'Durga Puja': { gradient: 'linear-gradient(135deg, #dc2626 0%, #facc15 100%)', accent: '#dc2626', emoji: '🔱' },
-    'Onam': { gradient: 'linear-gradient(135deg, #fbbf24 0%, #22c55e 100%)', accent: '#fbbf24', emoji: '🌼' },
-    'Pongal': { gradient: 'linear-gradient(135deg, #f97316 0%, #fbbf24 100%)', accent: '#f97316', emoji: '🍚' },
-    'Makar Sankranti': { gradient: 'linear-gradient(135deg, #f97316 0%, #0ea5e9 100%)', accent: '#f97316', emoji: '🪁' },
-    'Republic Day': { gradient: 'linear-gradient(135deg, #ff6b35 0%, #138808 100%)', accent: '#ff6b35', emoji: '🇮🇳' },
-    'Mother\'s Day': { gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)', accent: '#ec4899', emoji: '👩‍👧' },
-    'Father\'s Day': { gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', accent: '#3b82f6', emoji: '👨‍👧' },
+    'New Year': {
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      accent: '#667eea',
+      emoji: '🎆',
+    },
+    "Valentine's Day": {
+      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      accent: '#f5576c',
+      emoji: '💕',
+    },
+    Holi: {
+      gradient: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #a18cd1 100%)',
+      accent: '#ff9a9e',
+      emoji: '🌈',
+    },
+    Easter: {
+      gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+      accent: '#667eea',
+      emoji: '🐰',
+    },
+    Diwali: {
+      gradient: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
+      accent: '#f59e0b',
+      emoji: '🪔',
+    },
+    Christmas: {
+      gradient: 'linear-gradient(135deg, #c41e3a 0%, #165b33 100%)',
+      accent: '#c41e3a',
+      emoji: '🎄',
+    },
+    Thanksgiving: {
+      gradient: 'linear-gradient(135deg, #d97706 0%, #92400e 100%)',
+      accent: '#d97706',
+      emoji: '🦃',
+    },
+    'Independence Day': {
+      gradient: 'linear-gradient(135deg, #ff6b35 0%, #138808 100%)',
+      accent: '#ff6b35',
+      emoji: '🇮🇳',
+    },
+    Eid: {
+      gradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+      accent: '#059669',
+      emoji: '🌙',
+    },
+    'Raksha Bandhan': {
+      gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+      accent: '#ec4899',
+      emoji: '🎀',
+    },
+    'Ganesh Chaturthi': {
+      gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+      accent: '#f97316',
+      emoji: '🙏',
+    },
+    Navratri: {
+      gradient: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+      accent: '#dc2626',
+      emoji: '💃',
+    },
+    'Durga Puja': {
+      gradient: 'linear-gradient(135deg, #dc2626 0%, #facc15 100%)',
+      accent: '#dc2626',
+      emoji: '🔱',
+    },
+    Onam: {
+      gradient: 'linear-gradient(135deg, #fbbf24 0%, #22c55e 100%)',
+      accent: '#fbbf24',
+      emoji: '🌼',
+    },
+    Pongal: {
+      gradient: 'linear-gradient(135deg, #f97316 0%, #fbbf24 100%)',
+      accent: '#f97316',
+      emoji: '🍚',
+    },
+    'Makar Sankranti': {
+      gradient: 'linear-gradient(135deg, #f97316 0%, #0ea5e9 100%)',
+      accent: '#f97316',
+      emoji: '🪁',
+    },
+    'Republic Day': {
+      gradient: 'linear-gradient(135deg, #ff6b35 0%, #138808 100%)',
+      accent: '#ff6b35',
+      emoji: '🇮🇳',
+    },
+    "Mother's Day": {
+      gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+      accent: '#ec4899',
+      emoji: '👩‍👧',
+    },
+    "Father's Day": {
+      gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+      accent: '#3b82f6',
+      emoji: '👨‍👧',
+    },
   };
 
   const colors = festivalColors[festivalName] || festivalColors['New Year'];
@@ -474,7 +566,11 @@ ${getHeader(`${colors.emoji} Happy ${festivalName}! ${colors.emoji}`, 'Wishing y
 }
 
 // Password Reset email template
-export function passwordResetEmailTemplate(userName: string, resetLink: string, appUrl: string): string {
+export function passwordResetEmailTemplate(
+  userName: string,
+  resetLink: string,
+  appUrl: string
+): string {
   const content = `
 ${getHeader('Reset Your Password 🔐', 'We received a request to reset your password')}
 
@@ -495,7 +591,7 @@ ${getHeader('Reset Your Password 🔐', 'We received a request to reset your pas
     
     ${getCTAButton('Reset Password', resetLink)}
     
-    ${getAlertBox('⚠️ <strong>Important:</strong> This link will expire in <strong>1 hour</strong>. If you didn\'t request a password reset, you can safely ignore this email.', 'warning')}
+    ${getAlertBox("⚠️ <strong>Important:</strong> This link will expire in <strong>1 hour</strong>. If you didn't request a password reset, you can safely ignore this email.", 'warning')}
     
     <p style="margin: 20px 0 8px; font-size: 14px; color: #71717a;">
       If the button doesn't work, copy and paste this link into your browser:
@@ -526,8 +622,13 @@ ${getHeader('Reset Your Password 🔐', 'We received a request to reset your pas
 
 // Daily Quote email template
 export function dailyQuoteEmailTemplate(user: User, quote: Quote, appUrl: string): string {
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   const content = `
 ${getHeader('Your Daily Quote ✨', today)}
 
@@ -565,8 +666,11 @@ ${getHeader('Your Daily Quote ✨', today)}
 // Weekly Digest email template
 export function weeklyDigestEmailTemplate(user: User, quotes: Quote[], appUrl: string): string {
   const colors = ['#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
-  
-  const quoteCards = quotes.slice(0, 5).map((quote, index) => `
+
+  const quoteCards = quotes
+    .slice(0, 5)
+    .map(
+      (quote, index) => `
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 12px 0;">
   <tr>
     <td style="background-color: #fafafa; border-radius: 10px; border-left: 3px solid ${colors[index]}; padding: 16px;">
@@ -577,7 +681,9 @@ export function weeklyDigestEmailTemplate(user: User, quotes: Quote[], appUrl: s
     </td>
   </tr>
 </table>
-  `).join('');
+  `
+    )
+    .join('');
 
   const content = `
 ${getHeader('Weekly Quote Digest 📚', 'Your best quotes from this week')}
@@ -649,7 +755,11 @@ ${getHeader(title, 'QuoteSwipe Notification')}
 // PLAIN TEXT VERSIONS
 // =====================================================
 
-export function passwordResetEmailText(userName: string, resetLink: string, appUrl: string): string {
+export function passwordResetEmailText(
+  userName: string,
+  resetLink: string,
+  appUrl: string
+): string {
   return `
 Hello ${userName}!
 
@@ -726,8 +836,13 @@ ${getFooterText(appUrl)}
 }
 
 export function dailyQuoteEmailText(user: User, quote: Quote, appUrl: string): string {
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return `
 Good morning, ${user.name}! ☀️
 
@@ -749,9 +864,10 @@ ${getFooterText(appUrl)}
 }
 
 export function weeklyDigestEmailText(user: User, quotes: Quote[], appUrl: string): string {
-  const quoteTexts = quotes.slice(0, 5).map((quote, index) => 
-    `${index + 1}. "${quote.text}" — ${quote.author}`
-  ).join('\n\n');
+  const quoteTexts = quotes
+    .slice(0, 5)
+    .map((quote, index) => `${index + 1}. "${quote.text}" — ${quote.author}`)
+    .join('\n\n');
 
   return `
 Weekly Quote Digest 📚

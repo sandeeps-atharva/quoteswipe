@@ -11,16 +11,16 @@ function getContactNotificationHtml(contact: {
   message: string;
 }): string {
   const subjectEmoji: Record<string, string> = {
-    'general': '📩',
-    'support': '🔧',
-    'feedback': '💬',
-    'bug': '🐛',
-    'partnership': '🤝',
-    'other': '📝',
+    general: '📩',
+    support: '🔧',
+    feedback: '💬',
+    bug: '🐛',
+    partnership: '🤝',
+    other: '📝',
   };
-  
+
   const emoji = subjectEmoji[contact.subject] || '📩';
-  
+
   return `
 <!DOCTYPE html>
 <html>
@@ -46,7 +46,7 @@ function getContactNotificationHtml(contact: {
       <p>Someone has reached out through the contact form.</p>
       
       <div class="message-card">
-        <span class="subject-badge">${emoji} ${contact.subject.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+        <span class="subject-badge">${emoji} ${contact.subject.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}</span>
         <p style="margin-top: 10px; white-space: pre-wrap;">${contact.message}</p>
         <div class="info">
           <strong>From:</strong> ${contact.name}<br>
@@ -66,7 +66,7 @@ function getContactNotificationHtml(contact: {
 // Auto-reply template for the user
 function getAutoReplyHtml(name: string): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://quoteswipe.com';
-  
+
   return `
 <!DOCTYPE html>
 <html>
@@ -123,42 +123,45 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const usersCollection = await getCollection('users');
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
-    
+
     if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    
+
     const contactCollection = await getCollection('contact_submissions');
-    
+
     const filter = status && status !== 'all' ? { status } : {};
-    const submissions = await contactCollection
+    const submissions = (await contactCollection
       .find(filter)
       .sort({ created_at: -1 })
-      .toArray() as any[];
-    
+      .toArray()) as any[];
+
     // Get counts by status
     const total = await contactCollection.countDocuments();
     const newCount = await contactCollection.countDocuments({ status: 'new' });
     const readCount = await contactCollection.countDocuments({ status: 'read' });
     const repliedCount = await contactCollection.countDocuments({ status: 'replied' });
     const closedCount = await contactCollection.countDocuments({ status: 'closed' });
-    
-    return NextResponse.json({ 
-      submissions: submissions.map((s: any) => ({ ...s, id: s.id || s._id?.toString() })),
-      counts: {
-        total,
-        new_count: newCount,
-        read_count: readCount,
-        replied_count: repliedCount,
-        closed_count: closedCount
-      }
-    }, { status: 200 });
+
+    return NextResponse.json(
+      {
+        submissions: submissions.map((s: any) => ({ ...s, id: s.id || s._id?.toString() })),
+        counts: {
+          total,
+          new_count: newCount,
+          read_count: readCount,
+          replied_count: repliedCount,
+          closed_count: closedCount,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Get contact submissions error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -170,26 +173,20 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { name, email, subject, message } = body;
-    
+
     // Validation
     if (!name || !email || !subject || !message) {
-      return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
     }
-    
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email address' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
     }
-    
+
     const contactCollection = await getCollection('contact_submissions');
-    
+
     // Insert contact submission
     await contactCollection.insertOne({
       name: name.trim(),
@@ -197,29 +194,29 @@ export async function POST(request: NextRequest) {
       subject,
       message: message.trim(),
       status: 'new',
-      created_at: new Date()
+      created_at: new Date(),
     } as any);
-    
+
     const adminEmail = process.env.ADMIN_EMAIL || 'hello.quoteswipe@gmail.com';
-    
+
     // Send notification to admin
     sendEmail({
       to: adminEmail,
       subject: `📩 New Contact: ${subject} from ${name}`,
       html: getContactNotificationHtml({ name, email, subject, message }),
       text: `New Contact Form Submission\n\nFrom: ${name} (${email})\nSubject: ${subject}\n\nMessage:\n${message}`,
-    }).catch(err => console.error('Failed to send contact notification:', err));
-    
+    }).catch((err) => console.error('Failed to send contact notification:', err));
+
     // Send auto-reply to user
     sendEmail({
       to: email,
       subject: '✨ Thanks for contacting QuoteSwipe!',
       html: getAutoReplyHtml(name),
       text: `Hi ${name},\n\nThank you for contacting QuoteSwipe! We've received your message and will get back to you within 24-48 hours.\n\nBest regards,\nThe QuoteSwipe Team`,
-    }).catch(err => console.error('Failed to send auto-reply:', err));
-    
+    }).catch((err) => console.error('Failed to send auto-reply:', err));
+
     return NextResponse.json(
-      { message: 'Thank you for your message! We\'ll get back to you soon.' },
+      { message: "Thank you for your message! We'll get back to you soon." },
       { status: 201 }
     );
   } catch (error) {
@@ -235,49 +232,49 @@ export async function PATCH(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const usersCollection = await getCollection('users');
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
-    
+
     if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     const body = await request.json();
     const { submissionId, status, admin_notes } = body;
-    
+
     if (!submissionId) {
       return NextResponse.json({ error: 'Submission ID required' }, { status: 400 });
     }
-    
+
     const validStatuses = ['new', 'read', 'replied', 'closed'];
     if (status && !validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
-    
+
     const updates: any = {};
-    
+
     if (status) {
       updates.status = status;
       if (status === 'replied') {
         updates.replied_at = new Date();
       }
     }
-    
+
     if (admin_notes !== undefined) {
       updates.admin_notes = admin_notes;
     }
-    
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
     }
-    
+
     const contactCollection = await getCollection('contact_submissions');
     await contactCollection.updateOne(
       { $or: [{ id: submissionId }, { _id: toObjectId(submissionId) as any }] },
       { $set: updates }
     );
-    
+
     return NextResponse.json({ message: 'Contact submission updated' }, { status: 200 });
   } catch (error) {
     console.error('Update contact submission error:', error);
@@ -292,26 +289,26 @@ export async function DELETE(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const usersCollection = await getCollection('users');
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
-    
+
     if (user?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
+
     const { searchParams } = new URL(request.url);
     const submissionId = searchParams.get('id');
-    
+
     if (!submissionId) {
       return NextResponse.json({ error: 'Submission ID required' }, { status: 400 });
     }
-    
+
     const contactCollection = await getCollection('contact_submissions');
-    await contactCollection.deleteOne({ 
-      $or: [{ id: submissionId }, { _id: toObjectId(submissionId) as any }] 
+    await contactCollection.deleteOne({
+      $or: [{ id: submissionId }, { _id: toObjectId(submissionId) as any }],
     });
-    
+
     return NextResponse.json({ message: 'Contact submission deleted' }, { status: 200 });
   } catch (error) {
     console.error('Delete contact submission error:', error);

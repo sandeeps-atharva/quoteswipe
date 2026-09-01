@@ -18,10 +18,10 @@ interface CategoryOnboardingProps {
 
 const MIN_CATEGORIES = 3;
 
-export default function CategoryOnboarding({ 
-  categories, 
-  onComplete, 
-  onSkip 
+export default function CategoryOnboarding({
+  categories,
+  onComplete,
+  onSkip,
 }: CategoryOnboardingProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -34,9 +34,9 @@ export default function CategoryOnboarding({
   }, []);
 
   const toggleCategory = (categoryName: string) => {
-    setSelectedCategories(prev => {
+    setSelectedCategories((prev) => {
       if (prev.includes(categoryName)) {
-        return prev.filter(c => c !== categoryName);
+        return prev.filter((c) => c !== categoryName);
       }
       return [...prev, categoryName];
     });
@@ -44,9 +44,9 @@ export default function CategoryOnboarding({
 
   const handleComplete = () => {
     if (selectedCategories.length < MIN_CATEGORIES) return;
-    
+
     setIsAnimating(true);
-    
+
     // Animate out then complete (parent handles database save)
     setTimeout(() => {
       onComplete(selectedCategories);
@@ -55,7 +55,7 @@ export default function CategoryOnboarding({
 
   const handleSkip = () => {
     setIsAnimating(true);
-    
+
     // Animate out then skip (parent handles database save)
     setTimeout(() => {
       onSkip();
@@ -65,14 +65,44 @@ export default function CategoryOnboarding({
   const canContinue = selectedCategories.length >= MIN_CATEGORIES;
 
   // Group categories by popularity/type for better UX
-  const popularCategories = categories.filter(c => 
-    ['Love', 'Motivation', 'Wisdom', 'Humor', 'Life', 'Success', 'Happiness', 'Friendship'].includes(c.name)
+  const popularCategories = categories.filter((c) =>
+    [
+      'Love',
+      'Motivation',
+      'Wisdom',
+      'Humor',
+      'Life',
+      'Success',
+      'Happiness',
+      'Friendship',
+    ].includes(c.name)
   );
-  const trendingCategories = categories.filter(c => 
-    ['Love Story', 'Romantic Meeting', 'Deep Emotional', 'Long Distance Love', 'Soulmate Stories', 'Love Confessions', 'Viral Love Reels', 'Healing Journey', 'Vulnerable & Raw', '2am Quotes', 'Savage Comebacks', 'Shower Thoughts', 'Toxic Truths', 'Villain Era', 'Main Character Energy', 'Rizz & Flirting', 'Overthinking', 'Bollywood Dialogues', 'Hollywood Romance', 'Modern Bollywood'].includes(c.name)
+  const trendingCategories = categories.filter((c) =>
+    [
+      'Love Story',
+      'Romantic Meeting',
+      'Deep Emotional',
+      'Long Distance Love',
+      'Soulmate Stories',
+      'Love Confessions',
+      'Viral Love Reels',
+      'Healing Journey',
+      'Vulnerable & Raw',
+      '2am Quotes',
+      'Savage Comebacks',
+      'Shower Thoughts',
+      'Toxic Truths',
+      'Villain Era',
+      'Main Character Energy',
+      'Rizz & Flirting',
+      'Overthinking',
+      'Bollywood Dialogues',
+      'Hollywood Romance',
+      'Modern Bollywood',
+    ].includes(c.name)
   );
-  const otherCategories = categories.filter(c => 
-    !popularCategories.includes(c) && !trendingCategories.includes(c)
+  const otherCategories = categories.filter(
+    (c) => !popularCategories.includes(c) && !trendingCategories.includes(c)
   );
 
   // Category button component for reusability
@@ -89,29 +119,34 @@ export default function CategoryOnboarding({
         }`}
       >
         <span className="text-base sm:text-lg flex-shrink-0">{category.icon}</span>
-        <span className="text-[11px] sm:text-sm font-medium truncate flex-1 text-left">{category.name}</span>
+        <span className="text-[11px] sm:text-sm font-medium truncate flex-1 text-left">
+          {category.name}
+        </span>
         {isSelected && (
-          <Check size={14} className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex-shrink-0" />
+          <Check
+            size={14}
+            className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex-shrink-0"
+          />
         )}
       </button>
     );
   };
 
   return (
-    <div 
+    <div
       className={`fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-300 ${
-        isAnimating ? 'opacity-0 scale-95' : showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        isAnimating
+          ? 'opacity-0 scale-95'
+          : showContent
+            ? 'opacity-100 scale-100'
+            : 'opacity-0 scale-95'
       }`}
     >
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm" 
-        onClick={handleSkip}
-      />
-      
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleSkip} />
+
       {/* Modal - Full width on mobile, max-width on larger screens */}
       <div className="relative w-full sm:max-w-lg max-h-[92vh] sm:max-h-[85vh] bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-        
         {/* Header - Compact on mobile */}
         <div className="relative bg-gradient-to-r from-amber-600 via-purple-600 to-rose-600 px-4 py-3 sm:p-6 text-white flex-shrink-0">
           <div className="absolute inset-0 bg-black/10" />
@@ -129,7 +164,7 @@ export default function CategoryOnboarding({
               Select at least {MIN_CATEGORIES} categories to personalize your feed
             </p>
           </div>
-          
+
           {/* Skip button */}
           <button
             onClick={handleSkip}
@@ -142,7 +177,6 @@ export default function CategoryOnboarding({
 
         {/* Categories - Scrollable area */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:p-6 space-y-4 sm:space-y-6">
-          
           {/* Popular */}
           {popularCategories.length > 0 && (
             <div>
@@ -152,10 +186,10 @@ export default function CategoryOnboarding({
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                 {popularCategories.map((category) => (
-                  <CategoryButton 
-                    key={category.id} 
-                    category={category} 
-                    gradient="bg-gradient-to-r from-amber-500 to-rose-500" 
+                  <CategoryButton
+                    key={category.id}
+                    category={category}
+                    gradient="bg-gradient-to-r from-amber-500 to-rose-500"
                   />
                 ))}
               </div>
@@ -171,10 +205,10 @@ export default function CategoryOnboarding({
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                 {trendingCategories.map((category) => (
-                  <CategoryButton 
-                    key={category.id} 
-                    category={category} 
-                    gradient="bg-gradient-to-r from-pink-500 to-orange-500" 
+                  <CategoryButton
+                    key={category.id}
+                    category={category}
+                    gradient="bg-gradient-to-r from-pink-500 to-orange-500"
                   />
                 ))}
               </div>
@@ -190,10 +224,10 @@ export default function CategoryOnboarding({
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                 {otherCategories.slice(0, 18).map((category) => (
-                  <CategoryButton 
-                    key={category.id} 
-                    category={category} 
-                    gradient="bg-gradient-to-r from-emerald-500 to-teal-500" 
+                  <CategoryButton
+                    key={category.id}
+                    category={category}
+                    gradient="bg-gradient-to-r from-emerald-500 to-teal-500"
                   />
                 ))}
               </div>
@@ -222,7 +256,7 @@ export default function CategoryOnboarding({
                 </span>
               )}
             </div>
-            
+
             {/* Continue button */}
             <button
               onClick={handleComplete}
@@ -237,7 +271,7 @@ export default function CategoryOnboarding({
               <ChevronRight size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
           </div>
-          
+
           {/* Skip link */}
           <button
             onClick={handleSkip}

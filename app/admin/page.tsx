@@ -136,11 +136,15 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white opacity-80`}>
+        <div
+          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white opacity-80`}
+        >
           {icon}
         </div>
       </div>
-      <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${color} opacity-50`} />
+      <div
+        className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${color} opacity-50`}
+      />
     </div>
   );
 
@@ -231,9 +235,13 @@ export default function AdminDashboard() {
                       href={action.href}
                       className="group relative overflow-hidden rounded-xl border border-slate-700 hover:border-slate-600 transition-all p-4"
                     >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${action.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-br ${action.color} opacity-0 group-hover:opacity-10 transition-opacity`}
+                      />
                       <div className="relative flex items-start gap-4">
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center text-white shrink-0`}>
+                        <div
+                          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center text-white shrink-0`}
+                        >
                           {action.icon}
                         </div>
                         <div>
@@ -262,9 +270,11 @@ export default function AdminDashboard() {
                       </div>
                       <span className="text-slate-300">Campaigns</span>
                     </div>
-                    <span className="text-xl font-bold text-white">{stats.email.totalCampaigns}</span>
+                    <span className="text-xl font-bold text-white">
+                      {stats.email.totalCampaigns}
+                    </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
@@ -272,9 +282,11 @@ export default function AdminDashboard() {
                       </div>
                       <span className="text-slate-300">Delivered</span>
                     </div>
-                    <span className="text-xl font-bold text-emerald-400">{stats.email.totalSent}</span>
+                    <span className="text-xl font-bold text-emerald-400">
+                      {stats.email.totalSent}
+                    </span>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
@@ -282,13 +294,17 @@ export default function AdminDashboard() {
                       </div>
                       <span className="text-slate-300">Failed</span>
                     </div>
-                    <span className="text-xl font-bold text-red-400">{stats.email.totalFailed}</span>
+                    <span className="text-xl font-bold text-red-400">
+                      {stats.email.totalFailed}
+                    </span>
                   </div>
-                  
+
                   <div className="mt-4 pt-4 border-t border-slate-700">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-slate-400">Success Rate</span>
-                      <span className="text-sm font-medium text-emerald-400">{stats.email.successRate}%</span>
+                      <span className="text-sm font-medium text-emerald-400">
+                        {stats.email.successRate}%
+                      </span>
                     </div>
                     <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                       <div

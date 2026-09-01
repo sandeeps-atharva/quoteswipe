@@ -11,53 +11,56 @@ A modern, Tinder-style quote discovery app built with Next.js 16, React 19, Mong
 ## ✨ Features
 
 ### Core Features
-| Feature | Description |
-|---------|-------------|
-| 🎴 **Swipe Interface** | Tinder-style card swiping with smooth animations |
-| ✍️ **Create Quotes** | Create your own quotes (public or private) |
+
+| Feature                   | Description                                          |
+| ------------------------- | ---------------------------------------------------- |
+| 🎴 **Swipe Interface**    | Tinder-style card swiping with smooth animations     |
+| ✍️ **Create Quotes**      | Create your own quotes (public or private)           |
 | 🎨 **Card Customization** | Themes, fonts, backgrounds, and custom image uploads |
-| 📥 **2K Downloads** | High-quality 1920×2400 pixel image exports |
-| 🔍 **Search Collections** | Search through liked, saved, and skipped quotes |
-| 📍 **Position Control** | Adjust quote position before downloading |
+| 📥 **2K Downloads**       | High-quality 1920×2400 pixel image exports           |
+| 🔍 **Search Collections** | Search through liked, saved, and skipped quotes      |
+| 📍 **Position Control**   | Adjust quote position before downloading             |
 
 ### User Features
-| Feature | Description |
-|---------|-------------|
-| 🔐 **Authentication** | Email/Password + Google OAuth |
-| 💾 **Save Favorites** | Build your personal quote collection |
-| 👍 **Like/Dislike** | Express your preferences with optimistic UI |
-| 🌍 **Multi-Language** | Translate quotes to 100+ languages |
-| 📱 **Responsive** | Works perfectly on all devices |
-| 🌙 **Dark Mode** | Beautiful dark theme support |
+
+| Feature               | Description                                 |
+| --------------------- | ------------------------------------------- |
+| 🔐 **Authentication** | Email/Password + Google OAuth               |
+| 💾 **Save Favorites** | Build your personal quote collection        |
+| 👍 **Like/Dislike**   | Express your preferences with optimistic UI |
+| 🌍 **Multi-Language** | Translate quotes to 100+ languages          |
+| 📱 **Responsive**     | Works perfectly on all devices              |
+| 🌙 **Dark Mode**      | Beautiful dark theme support                |
 
 ### Admin & System
-| Feature | Description |
-|---------|-------------|
-| 📊 **Admin Panel** | Manage users, quotes, and emails |
-| 📧 **Email System** | Welcome emails, password reset, festivals |
-| 🎯 **130+ Categories** | Find quotes that resonate with you |
-| 📈 **Visitor Tracking** | Analytics for visitor insights |
-| 🔗 **Share Quotes** | Share on social media platforms |
-| 🍪 **Cookie Consent** | GDPR compliant cookie management |
+
+| Feature                 | Description                               |
+| ----------------------- | ----------------------------------------- |
+| 📊 **Admin Panel**      | Manage users, quotes, and emails          |
+| 📧 **Email System**     | Welcome emails, password reset, festivals |
+| 🎯 **130+ Categories**  | Find quotes that resonate with you        |
+| 📈 **Visitor Tracking** | Analytics for visitor insights            |
+| 🔗 **Share Quotes**     | Share on social media platforms           |
+| 🍪 **Cookie Consent**   | GDPR compliant cookie management          |
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Technology | Purpose |
-|------------|---------|
-| **Next.js 16** | React framework with App Router |
-| **React 19** | Latest React with concurrent features |
-| **TypeScript** | Type-safe development |
-| **MongoDB** | NoSQL database |
-| **Tailwind CSS 4** | Utility-first styling |
-| **JWT** | Authentication tokens |
-| **bcryptjs** | Password hashing |
-| **Google OAuth** | Social login |
-| **html-to-image** | 2K quality image generation |
-| **react-swipeable** | Touch gesture support |
-| **Nodemailer** | Email service |
-| **Google Translate API** | Multi-language support |
+| Technology               | Purpose                               |
+| ------------------------ | ------------------------------------- |
+| **Next.js 16**           | React framework with App Router       |
+| **React 19**             | Latest React with concurrent features |
+| **TypeScript**           | Type-safe development                 |
+| **MongoDB**              | NoSQL database                        |
+| **Tailwind CSS 4**       | Utility-first styling                 |
+| **JWT**                  | Authentication tokens                 |
+| **bcryptjs**             | Password hashing                      |
+| **Google OAuth**         | Social login                          |
+| **html-to-image**        | 2K quality image generation           |
+| **react-swipeable**      | Touch gesture support                 |
+| **Nodemailer**           | Email service                         |
+| **Google Translate API** | Multi-language support                |
 
 ---
 
@@ -113,29 +116,6 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 # GOOGLE TRANSLATE API (Optional)
 # ================================
 GOOGLE_TRANSLATE_API_KEY=your-google-translate-api-key
-
-# ================================
-# AI API KEYS (Optional - for MoodSense category suggestions)
-# ================================
-# At least one AI provider is recommended for intelligent category suggestions
-# If not configured, the system will use rule-based fallback (still works great!)
-# Priority order: Google Gemini → OpenAI → Anthropic → Fallback
-
-# Google Gemini (Recommended - Free tier available)
-# Get from: https://aistudio.google.com/app/apikey
-GOOGLE_GEMINI_API_KEY=your-google-gemini-api-key
-GOOGLE_GEMINI_MODEL=gemini-1.5-flash  # Recommended: ~1,000+ requests/day on free tier
-# Alternative: gemini-2.5-flash (only 20 requests/day on free tier)
-
-# OpenAI (ChatGPT) - Alternative
-# Get from: https://platform.openai.com/api-keys
-OPENAI_API_KEY=sk-your-openai-api-key
-OPENAI_MODEL=gpt-3.5-turbo  # Optional: gpt-4, gpt-4-turbo, etc.
-
-# Anthropic (Claude) - Alternative
-# Get from: https://console.anthropic.com/
-ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key
-ANTHROPIC_MODEL=claude-3-haiku-20240307  # Optional: claude-3-opus, claude-3-sonnet, etc.
 
 # ================================
 # EMAIL CONFIGURATION (Optional)
@@ -274,37 +254,37 @@ quote-swipe/
 
 ## 🗄️ Database Collections (MongoDB)
 
-| Collection | Description |
-|------------|-------------|
-| `users` | User accounts (email, Google OAuth, preferences) |
-| `categories` | Quote categories (130+) |
-| `quotes` | Curated quotes with authors |
-| `user_quotes` | User-created quotes (public/private) |
-| `user_likes` | User like history |
-| `user_dislikes` | User dislike history |
-| `user_saved` | Saved/bookmarked quotes |
-| `visitors` | Visitor analytics |
-| `festivals` | Festival/holiday data |
-| `festival_quotes` | Festival-quote associations |
-| `email_campaigns` | Email campaign tracking |
-| `email_logs` | Email delivery logs |
-| `scheduled_emails` | Scheduled email jobs |
-| `reviews` | User testimonials |
-| `feedback` | User feedback |
+| Collection         | Description                                      |
+| ------------------ | ------------------------------------------------ |
+| `users`            | User accounts (email, Google OAuth, preferences) |
+| `categories`       | Quote categories (130+)                          |
+| `quotes`           | Curated quotes with authors                      |
+| `user_quotes`      | User-created quotes (public/private)             |
+| `user_likes`       | User like history                                |
+| `user_dislikes`    | User dislike history                             |
+| `user_saved`       | Saved/bookmarked quotes                          |
+| `visitors`         | Visitor analytics                                |
+| `festivals`        | Festival/holiday data                            |
+| `festival_quotes`  | Festival-quote associations                      |
+| `email_campaigns`  | Email campaign tracking                          |
+| `email_logs`       | Email delivery logs                              |
+| `scheduled_emails` | Scheduled email jobs                             |
+| `reviews`          | User testimonials                                |
+| `feedback`         | User feedback                                    |
 
 ### Recommended Indexes
 
 ```javascript
 // Run in MongoDB shell for optimal performance
-db.quotes.createIndex({ category_id: 1 })
-db.user_quotes.createIndex({ is_public: 1, category_id: 1 })
-db.user_quotes.createIndex({ user_id: 1 })
-db.user_likes.createIndex({ user_id: 1, quote_id: 1 })
-db.user_likes.createIndex({ quote_id: 1 })
-db.user_saved.createIndex({ user_id: 1, quote_id: 1 })
-db.user_dislikes.createIndex({ quote_id: 1 })
-db.categories.createIndex({ name: 1 })
-db.users.createIndex({ email: 1 }, { unique: true })
+db.quotes.createIndex({ category_id: 1 });
+db.user_quotes.createIndex({ is_public: 1, category_id: 1 });
+db.user_quotes.createIndex({ user_id: 1 });
+db.user_likes.createIndex({ user_id: 1, quote_id: 1 });
+db.user_likes.createIndex({ quote_id: 1 });
+db.user_saved.createIndex({ user_id: 1, quote_id: 1 });
+db.user_dislikes.createIndex({ quote_id: 1 });
+db.categories.createIndex({ name: 1 });
+db.users.createIndex({ email: 1 }, { unique: true });
 ```
 
 ---
@@ -312,6 +292,7 @@ db.users.createIndex({ email: 1 }, { unique: true })
 ## 🔑 API Endpoints
 
 ### Authentication
+
 ```
 POST /api/auth/register        - Register new user
 POST /api/auth/login           - Login user
@@ -324,6 +305,7 @@ POST /api/auth/update-password - Update password (logged in)
 ```
 
 ### Quotes
+
 ```
 GET  /api/quotes               - Get quotes (with filtering)
 GET  /api/quotes/[id]          - Get single quote by ID
@@ -331,6 +313,7 @@ GET  /api/categories           - Get all categories
 ```
 
 ### User Actions
+
 ```
 POST /api/user/likes           - Like a quote
 GET  /api/user/likes           - Get liked quotes
@@ -343,6 +326,7 @@ DELETE /api/user/saved         - Unsave a quote
 ```
 
 ### User Quotes
+
 ```
 GET  /api/user/quotes          - Get user's quotes
 POST /api/user/quotes          - Create new quote
@@ -351,6 +335,7 @@ DELETE /api/user/quotes/[id]   - Delete quote
 ```
 
 ### Preferences
+
 ```
 GET  /api/user/all-preferences - Get all preferences (combined)
 POST /api/user/all-preferences - Save all preferences
@@ -359,6 +344,7 @@ DELETE /api/user/upload-background - Delete custom background
 ```
 
 ### Other
+
 ```
 POST /api/translate            - Translate text
 POST /api/feedback             - Submit feedback
@@ -374,6 +360,7 @@ GET  /api/stats                - Get statistics
 Users can customize their quote cards with:
 
 ### Themes
+
 - Minimal Light/Dark
 - Sunset Glow
 - Ocean Deep
@@ -384,6 +371,7 @@ Users can customize their quote cards with:
 - And more...
 
 ### Fonts
+
 - Default (Space Grotesk)
 - Classic (Merriweather)
 - Modern (Poppins)
@@ -394,12 +382,14 @@ Users can customize their quote cards with:
 - Retro (Lobster)
 
 ### Backgrounds
+
 - Solid colors
 - Gradients
 - Preset images
 - Custom uploads (up to 20 images)
 
 ### Download Quality
+
 - **2K Resolution**: 1920×2400 pixels
 - **Format**: PNG
 - **Position Control**: Adjust quote position with slider
@@ -483,44 +473,51 @@ npm start
 
 ## 📱 Pages
 
-| Route | Description |
-|-------|-------------|
-| `/` | Home - Swipe quotes |
-| `/quote/[id]` | Single quote view (SEO optimized) |
-| `/user-quote/[id]` | User quote view (SEO optimized) |
-| `/about` | About us |
-| `/contact` | Contact form |
-| `/feedback` | Feedback form |
-| `/review` | Submit review |
-| `/privacy-policy` | Privacy policy |
-| `/terms-of-service` | Terms of service |
-| `/cookie-policy` | Cookie policy |
-| `/reset-password` | Password reset |
-| `/admin` | Admin dashboard |
+| Route               | Description                       |
+| ------------------- | --------------------------------- |
+| `/`                 | Home - Swipe quotes               |
+| `/quote/[id]`       | Single quote view (SEO optimized) |
+| `/user-quote/[id]`  | User quote view (SEO optimized)   |
+| `/about`            | About us                          |
+| `/contact`          | Contact form                      |
+| `/feedback`         | Feedback form                     |
+| `/review`           | Submit review                     |
+| `/privacy-policy`   | Privacy policy                    |
+| `/terms-of-service` | Terms of service                  |
+| `/cookie-policy`    | Cookie policy                     |
+| `/reset-password`   | Password reset                    |
+| `/admin`            | Admin dashboard                   |
 
 ---
 
 ## 🐛 Troubleshooting
 
 ### MongoDB Connection Error
+
 ```
 Error: MongoServerError: bad auth
 ```
+
 **Solution:** Check `MONGODB_URI` credentials and whitelist your IP in Atlas
 
 ### Google OAuth Not Working
+
 ```
 Error: origin_mismatch
 ```
+
 **Solution:** Add your domain to Authorized JavaScript origins in Google Console (no trailing slash, no whitespace)
 
 ### Emails Not Sending
+
 ```
 Error: Authentication failed
 ```
+
 **Solution:** Use Gmail App Password, not your regular password
 
 ### Build Errors
+
 ```bash
 # Clear cache and rebuild
 rm -rf .next node_modules package-lock.json

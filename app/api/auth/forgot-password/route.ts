@@ -9,23 +9,21 @@ export async function POST(request: NextRequest) {
     const { email } = await request.json();
 
     if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
     const usersCollection = await getCollection('users');
 
     // Find user
-    const user: any = await usersCollection.findOne({ email }) as any;
+    const user: any = (await usersCollection.findOne({ email })) as any;
 
     // Always return success message for security (don't reveal if email exists)
     if (!user) {
       return NextResponse.json(
-        { 
+        {
           message: 'Password reset email sent! 📧',
-          instructions: 'Check your inbox and click the reset link to update your password. The link will expire in 1 hour.'
+          instructions:
+            'Check your inbox and click the reset link to update your password. The link will expire in 1 hour.',
         },
         { status: 200 }
       );
@@ -34,7 +32,10 @@ export async function POST(request: NextRequest) {
     // Check if user signed up with Google only (has google_id but no password)
     if (user.google_id && !user.password) {
       return NextResponse.json(
-        { error: 'This account is linked with Google Sign-In. You cannot set a password. Please continue using Google to sign in.' },
+        {
+          error:
+            'This account is linked with Google Sign-In. You cannot set a password. Please continue using Google to sign in.',
+        },
         { status: 400 }
       );
     }
@@ -51,7 +52,10 @@ export async function POST(request: NextRequest) {
     );
 
     // Build reset link
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      'http://localhost:3000';
     const resetLink = `${appUrl}/reset-password?token=${resetToken}`;
 
     // Send password reset email
@@ -76,17 +80,15 @@ export async function POST(request: NextRequest) {
     console.log(`Password reset email sent to ${user.email}`);
 
     return NextResponse.json(
-      { 
+      {
         message: 'Password reset email sent! 📧',
-        instructions: 'Check your inbox and click the reset link to update your password. The link will expire in 1 hour.'
+        instructions:
+          'Check your inbox and click the reset link to update your password. The link will expire in 1 hour.',
       },
       { status: 200 }
     );
   } catch (error) {
     console.error('Forgot password error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -6,11 +6,11 @@ import Image from 'next/image';
 import { Home, Search, ArrowLeft, Quote } from 'lucide-react';
 
 const inspirationalQuotes = [
-  { text: "Not all those who wander are lost.", author: "J.R.R. Tolkien" },
-  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-  { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
-  { text: "Every moment is a fresh beginning.", author: "T.S. Eliot" },
-  { text: "The journey of a thousand miles begins with one step.", author: "Lao Tzu" },
+  { text: 'Not all those who wander are lost.', author: 'J.R.R. Tolkien' },
+  { text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' },
+  { text: 'In the middle of difficulty lies opportunity.', author: 'Albert Einstein' },
+  { text: 'Every moment is a fresh beginning.', author: 'T.S. Eliot' },
+  { text: 'The journey of a thousand miles begins with one step.', author: 'Lao Tzu' },
 ];
 
 export default function NotFound() {
@@ -29,18 +29,23 @@ export default function NotFound() {
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-20 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-pink-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div
+          className="absolute bottom-1/4 -right-20 w-80 h-80 bg-pink-400/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: '1s' }}
+        />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl" />
       </div>
 
-      <div className={`relative z-10 max-w-lg w-full text-center transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div
+        className={`relative z-10 max-w-lg w-full text-center transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+      >
         {/* Logo */}
         <div className="mb-6">
-          <Image 
-            src="/logo.svg" 
-            alt="QuoteSwipe" 
-            width={80} 
-            height={80} 
+          <Image
+            src="/logo.svg"
+            alt="QuoteSwipe"
+            width={80}
+            height={80}
             className="mx-auto w-16 h-16 sm:w-20 sm:h-20"
           />
         </div>
@@ -69,9 +74,7 @@ export default function NotFound() {
           <p className="text-gray-700 dark:text-gray-300 italic text-base sm:text-lg mb-3 relative z-10 font-serif">
             "{quote.text}"
           </p>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            — {quote.author}
-          </p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">— {quote.author}</p>
         </div>
 
         {/* Action Buttons */}
@@ -83,7 +86,7 @@ export default function NotFound() {
             <Home className="w-5 h-5" />
             Go Home
           </Link>
-          
+
           <button
             onClick={() => window.history.back()}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-white dark:hover:bg-gray-800 transition-all border border-gray-200 dark:border-gray-700 hover:scale-105 active:scale-95"
@@ -102,4 +105,3 @@ export default function NotFound() {
     </div>
   );
 }
-

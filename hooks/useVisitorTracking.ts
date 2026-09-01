@@ -75,12 +75,14 @@ function getDeviceType(userAgent: string): DeviceType {
   if (/iPad|Android(?!.*Mobile)|Tablet/i.test(userAgent)) {
     return 'Tablet';
   }
-  
+
   // Check for mobile devices
-  if (/Mobile|Android.*Mobile|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Opera Mobi/i.test(userAgent)) {
+  if (
+    /Mobile|Android.*Mobile|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Opera Mobi/i.test(userAgent)
+  ) {
     return 'Mobile';
   }
-  
+
   // Default to desktop
   return 'Desktop';
 }
@@ -135,7 +137,7 @@ export function useVisitorTracking() {
   useEffect(() => {
     // Only track once per page load
     if (hasTracked.current) return;
-    
+
     // Check if already tracked in this session
     const sessionKey = 'visitor_tracked';
     if (sessionStorage.getItem(sessionKey)) {
@@ -177,4 +179,3 @@ export function useVisitorTracking() {
 
 // Export helper functions for testing
 export { collectVisitorData, getBrowserInfo, getOSInfo, getDeviceType };
-

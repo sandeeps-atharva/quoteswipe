@@ -134,7 +134,13 @@ interface CategoryButtonProps {
   isLoading?: boolean;
 }
 
-function CategoryButton({ categories, selectedCategories, onClick, compact = false, isLoading = false }: CategoryButtonProps) {
+function CategoryButton({
+  categories,
+  selectedCategories,
+  onClick,
+  compact = false,
+  isLoading = false,
+}: CategoryButtonProps) {
   if (selectedCategories.length > 0) {
     return (
       <button
@@ -147,9 +153,7 @@ function CategoryButton({ categories, selectedCategories, onClick, compact = fal
         title="Manage categories"
       >
         {/* Show loader when syncing */}
-        {isLoading && (
-          <Loader2 size={compact ? 12 : 14} className="animate-spin text-amber-500" />
-        )}
+        {isLoading && <Loader2 size={compact ? 12 : 14} className="animate-spin text-amber-500" />}
         <span className="flex items-center gap-0.5">
           {selectedCategories.slice(0, compact ? 3 : 4).map((catName) => {
             const cat = categories.find((c) => c.name === catName);
@@ -160,7 +164,9 @@ function CategoryButton({ categories, selectedCategories, onClick, compact = fal
             ) : null;
           })}
         </span>
-        <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-semibold text-stone-700 dark:text-stone-300`}>
+        <span
+          className={`${compact ? 'text-[10px]' : 'text-xs'} font-semibold text-stone-700 dark:text-stone-300`}
+        >
           {selectedCategories.length === 1
             ? compact
               ? categories.find((c) => c.name === selectedCategories[0])?.name?.slice(0, 8)
@@ -184,14 +190,13 @@ function CategoryButton({ categories, selectedCategories, onClick, compact = fal
       title="Select categories"
     >
       {/* Show loader when syncing */}
-      {isLoading && (
-        <Loader2 size={compact ? 12 : 14} className="animate-spin text-amber-500" />
-      )}
+      {isLoading && <Loader2 size={compact ? 12 : 14} className="animate-spin text-amber-500" />}
       <span className={compact ? 'text-xs' : 'text-sm'}>📚</span>
-      <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-medium text-stone-500 dark:text-stone-400`}>
+      <span
+        className={`${compact ? 'text-[10px]' : 'text-xs'} font-medium text-stone-500 dark:text-stone-400`}
+      >
         {compact ? 'All' : 'All quotes'}
       </span>
     </button>
   );
 }
-

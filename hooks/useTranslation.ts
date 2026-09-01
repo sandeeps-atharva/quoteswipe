@@ -18,7 +18,10 @@ interface UseTranslationResult {
   error: string | null;
 }
 
-export function useTranslation({ text, enabled = true }: UseTranslationOptions): UseTranslationResult {
+export function useTranslation({
+  text,
+  enabled = true,
+}: UseTranslationOptions): UseTranslationResult {
   const { language, isOriginal } = useLanguage();
   const [translatedText, setTranslatedText] = useState(text);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +71,7 @@ export function useTranslation({ text, enabled = true }: UseTranslationOptions):
       }
 
       const data = await response.json();
-      
+
       if (data.translatedText) {
         // Cache the translation
         translationCache.set(cacheKey, data.translatedText);
@@ -125,7 +128,7 @@ export function useBatchTranslation(texts: string[]) {
   useEffect(() => {
     if (isOriginal || texts.length === 0) {
       const map = new Map<string, string>();
-      texts.forEach(text => map.set(text, text));
+      texts.forEach((text) => map.set(text, text));
       setTranslations(map);
       return;
     }
@@ -136,7 +139,7 @@ export function useBatchTranslation(texts: string[]) {
 
       // Check cache first
       const textsToTranslate: string[] = [];
-      texts.forEach(text => {
+      texts.forEach((text) => {
         const cacheKey = `${language.code}:${text}`;
         const cached = translationCache.get(cacheKey);
         if (cached) {

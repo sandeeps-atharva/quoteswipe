@@ -13,7 +13,7 @@ export type { UserBackground };
  * - Resizes large images to max 1200px width
  * - Converts to JPEG with 80% quality
  * - Tries WebP first for smaller file sizes
- * 
+ *
  * Example: 3MB photo → ~150-250KB (92-95% reduction)
  */
 const compressImage = (file: File, maxWidth = 1200, quality = 0.8): Promise<Blob> => {
@@ -24,35 +24,35 @@ const compressImage = (file: File, maxWidth = 1200, quality = 0.8): Promise<Blob
       img.onload = () => {
         let width = img.width;
         let height = img.height;
-        
+
         // Scale down if larger than maxWidth
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
         }
-        
+
         // Also limit height for very tall images
         const maxHeight = 1600;
         if (height > maxHeight) {
           width = Math.round((width * maxHeight) / height);
           height = maxHeight;
         }
-        
+
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        
+
         if (!ctx) {
           reject(new Error('Failed to get canvas context'));
           return;
         }
-        
+
         // Use high-quality image smoothing
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         // Try WebP first (smaller file size), fallback to JPEG
         canvas.toBlob(
           (webpBlob) => {
@@ -130,13 +130,13 @@ export default function ImageUploader({
 }: ImageUploaderProps) {
   // Use context for preloaded backgrounds
   const backgroundsContext = useBackgroundsSafe();
-  
+
   // Fallback local state if context is not available
   const [localBackgrounds, setLocalBackgrounds] = useState<UserBackground[]>([]);
   const [localLoading, setLocalLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
-  
+
   // Bulk upload state
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const bulkInputRef = useRef<HTMLInputElement>(null);
@@ -156,14 +156,14 @@ export default function ImageUploader({
   // Fallback fetch for when context is not available
   const fetchUserBackgrounds = useCallback(async () => {
     if (backgroundsContext) return; // Skip if context is available
-    
+
     setLocalLoading(true);
     try {
       const response = await fetch('/api/user/upload-background', {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
+          Pragma: 'no-cache',
         },
       });
       if (response.ok) {
@@ -208,23 +208,23 @@ export default function ImageUploader({
     try {
       // Compress image before upload (reduces size by ~90%)
       const compressedBlob = await compressImage(file, 1200, 0.8);
-      
+
       // Create a new File from the compressed Blob
       const compressedFile = new File(
-        [compressedBlob], 
+        [compressedBlob],
         file.name.replace(/\.[^/.]+$/, compressedBlob.type === 'image/webp' ? '.webp' : '.jpg'),
         { type: compressedBlob.type }
       );
-      
+
       // Log compression results for debugging
       const originalKB = (file.size / 1024).toFixed(1);
       const compressedKB = (compressedFile.size / 1024).toFixed(1);
       const reduction = (((file.size - compressedFile.size) / file.size) * 100).toFixed(0);
       console.log(`Image compressed: ${originalKB}KB → ${compressedKB}KB (${reduction}% smaller)`);
-      
+
       const formData = new FormData();
       formData.append('image', compressedFile);
-      
+
       const response = await fetch('/api/user/upload-background', {
         method: 'POST',
         body: formData,
@@ -242,170 +242,187 @@ export default function ImageUploader({
   }, []);
 
   // Handle single image upload
-  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
-      return;
-    }
-
-    setIsUploadingImage(true);
-    try {
-      const newBackground = await uploadSingleFile(file);
-      
-      if (newBackground) {
-        // Update context or local state
-        if (backgroundsContext) {
-          backgroundsContext.addBackground(newBackground);
-        } else {
-          setLocalBackgrounds(prev => [newBackground, ...prev]);
-        }
-        
-        onSelectCustomBackground(newBackground.url);
-        toast.success('Image uploaded!');
-      } else {
-        toast.error('Failed to upload image');
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
       }
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to process image');
-    } finally {
-      setIsUploadingImage(false);
-      e.target.value = '';
-    }
-  }, [backgroundsContext, onSelectCustomBackground, uploadSingleFile]);
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image must be less than 5MB');
+        return;
+      }
+
+      setIsUploadingImage(true);
+      try {
+        const newBackground = await uploadSingleFile(file);
+
+        if (newBackground) {
+          // Update context or local state
+          if (backgroundsContext) {
+            backgroundsContext.addBackground(newBackground);
+          } else {
+            setLocalBackgrounds((prev) => [newBackground, ...prev]);
+          }
+
+          onSelectCustomBackground(newBackground.url);
+          toast.success('Image uploaded!');
+        } else {
+          toast.error('Failed to upload image');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error('Failed to process image');
+      } finally {
+        setIsUploadingImage(false);
+        e.target.value = '';
+      }
+    },
+    [backgroundsContext, onSelectCustomBackground, uploadSingleFile]
+  );
 
   // Handle bulk image upload
-  const handleBulkUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleBulkUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
 
-    // Convert FileList to array and filter valid images
-    const validFiles = Array.from(files).filter(file => {
-      if (!file.type.startsWith('image/')) {
-        return false;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        return false;
-      }
-      return true;
-    });
-
-    if (validFiles.length === 0) {
-      toast.error('No valid images selected (max 5MB each)');
-      e.target.value = '';
-      return;
-    }
-
-    // Limit to 10 images at once
-    const filesToUpload = validFiles.slice(0, 10);
-    if (validFiles.length > 10) {
-      toast.error(`Only uploading first 10 images (${validFiles.length} selected)`);
-    }
-
-    // Initialize progress
-    setUploadProgress({ total: filesToUpload.length, completed: 0, failed: 0 });
-    setIsUploadingImage(true);
-
-    // Track upload results
-    const uploadResults: { lastBg: UserBackground | null; completed: number; failed: number } = {
-      lastBg: null,
-      completed: 0,
-      failed: 0,
-    };
-
-    // Upload files with concurrency limit (3 at a time)
-    const concurrencyLimit = 3;
-    const uploadQueue = [...filesToUpload];
-
-    const processFile = async (file: File) => {
-      const result = await uploadSingleFile(file);
-      
-      if (result) {
-        // Update context or local state
-        if (backgroundsContext) {
-          backgroundsContext.addBackground(result);
-        } else {
-          setLocalBackgrounds(prev => [result, ...prev]);
+      // Convert FileList to array and filter valid images
+      const validFiles = Array.from(files).filter((file) => {
+        if (!file.type.startsWith('image/')) {
+          return false;
         }
-        uploadResults.lastBg = result;
-        uploadResults.completed++;
-      } else {
-        uploadResults.failed++;
-      }
-      
-      // Update progress
-      setUploadProgress(prev => prev ? {
-        ...prev,
-        completed: uploadResults.completed,
-        failed: uploadResults.failed,
-      } : null);
-    };
-
-    // Process files with concurrency limit
-    while (uploadQueue.length > 0) {
-      const batch = uploadQueue.splice(0, concurrencyLimit);
-      await Promise.all(batch.map(processFile));
-    }
-
-    // Show result toast
-    if (uploadResults.completed > 0) {
-      toast.success(`${uploadResults.completed} image${uploadResults.completed > 1 ? 's' : ''} uploaded!`);
-      if (uploadResults.lastBg) {
-        onSelectCustomBackground(uploadResults.lastBg.url);
-      }
-    }
-    if (uploadResults.failed > 0) {
-      toast.error(`${uploadResults.failed} image${uploadResults.failed > 1 ? 's' : ''} failed to upload`);
-    }
-
-    // Reset state
-    setIsUploadingImage(false);
-    setUploadProgress(null);
-    e.target.value = '';
-  }, [backgroundsContext, onSelectCustomBackground, uploadSingleFile]);
-
-  // Delete user background
-  const handleDeleteBackground = useCallback(async (backgroundId: string, bgUrl: string) => {
-    setDeletingImageId(backgroundId);
-    try {
-      const response = await fetch('/api/user/upload-background', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ backgroundId }),
+        if (file.size > 5 * 1024 * 1024) {
+          return false;
+        }
+        return true;
       });
 
-      if (response.ok) {
-        // Update context or local state
-        if (backgroundsContext) {
-          backgroundsContext.removeBackground(backgroundId);
-        } else {
-          setLocalBackgrounds(prev => prev.filter(bg => bg.id !== backgroundId));
-        }
-        
-        if (selectedCustomBackground === bgUrl) {
-          onSelectCustomBackground(null);
-        }
-        toast.success('Image deleted');
-      } else {
-        toast.error('Failed to delete image');
+      if (validFiles.length === 0) {
+        toast.error('No valid images selected (max 5MB each)');
+        e.target.value = '';
+        return;
       }
-    } catch (error) {
-      console.error('Delete error:', error);
-      toast.error('Failed to delete image');
-    } finally {
-      setDeletingImageId(null);
-    }
-  }, [backgroundsContext, selectedCustomBackground, onSelectCustomBackground]);
+
+      // Limit to 10 images at once
+      const filesToUpload = validFiles.slice(0, 10);
+      if (validFiles.length > 10) {
+        toast.error(`Only uploading first 10 images (${validFiles.length} selected)`);
+      }
+
+      // Initialize progress
+      setUploadProgress({ total: filesToUpload.length, completed: 0, failed: 0 });
+      setIsUploadingImage(true);
+
+      // Track upload results
+      const uploadResults: { lastBg: UserBackground | null; completed: number; failed: number } = {
+        lastBg: null,
+        completed: 0,
+        failed: 0,
+      };
+
+      // Upload files with concurrency limit (3 at a time)
+      const concurrencyLimit = 3;
+      const uploadQueue = [...filesToUpload];
+
+      const processFile = async (file: File) => {
+        const result = await uploadSingleFile(file);
+
+        if (result) {
+          // Update context or local state
+          if (backgroundsContext) {
+            backgroundsContext.addBackground(result);
+          } else {
+            setLocalBackgrounds((prev) => [result, ...prev]);
+          }
+          uploadResults.lastBg = result;
+          uploadResults.completed++;
+        } else {
+          uploadResults.failed++;
+        }
+
+        // Update progress
+        setUploadProgress((prev) =>
+          prev
+            ? {
+                ...prev,
+                completed: uploadResults.completed,
+                failed: uploadResults.failed,
+              }
+            : null
+        );
+      };
+
+      // Process files with concurrency limit
+      while (uploadQueue.length > 0) {
+        const batch = uploadQueue.splice(0, concurrencyLimit);
+        await Promise.all(batch.map(processFile));
+      }
+
+      // Show result toast
+      if (uploadResults.completed > 0) {
+        toast.success(
+          `${uploadResults.completed} image${uploadResults.completed > 1 ? 's' : ''} uploaded!`
+        );
+        if (uploadResults.lastBg) {
+          onSelectCustomBackground(uploadResults.lastBg.url);
+        }
+      }
+      if (uploadResults.failed > 0) {
+        toast.error(
+          `${uploadResults.failed} image${uploadResults.failed > 1 ? 's' : ''} failed to upload`
+        );
+      }
+
+      // Reset state
+      setIsUploadingImage(false);
+      setUploadProgress(null);
+      e.target.value = '';
+    },
+    [backgroundsContext, onSelectCustomBackground, uploadSingleFile]
+  );
+
+  // Delete user background
+  const handleDeleteBackground = useCallback(
+    async (backgroundId: string, bgUrl: string) => {
+      setDeletingImageId(backgroundId);
+      try {
+        const response = await fetch('/api/user/upload-background', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ backgroundId }),
+        });
+
+        if (response.ok) {
+          // Update context or local state
+          if (backgroundsContext) {
+            backgroundsContext.removeBackground(backgroundId);
+          } else {
+            setLocalBackgrounds((prev) => prev.filter((bg) => bg.id !== backgroundId));
+          }
+
+          if (selectedCustomBackground === bgUrl) {
+            onSelectCustomBackground(null);
+          }
+          toast.success('Image deleted');
+        } else {
+          toast.error('Failed to delete image');
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+        toast.error('Failed to delete image');
+      } finally {
+        setDeletingImageId(null);
+      }
+    },
+    [backgroundsContext, selectedCustomBackground, onSelectCustomBackground]
+  );
 
   // Refresh backgrounds
   const refresh = useCallback(() => {
@@ -424,7 +441,7 @@ export default function ImageUploader({
     6: 'grid-cols-6',
   }[gridCols];
 
-  const validBackgrounds = userBackgrounds.filter(bg => bg && bg.url && bg.url.length > 0);
+  const validBackgrounds = userBackgrounds.filter((bg) => bg && bg.url && bg.url.length > 0);
 
   return (
     <div className={className}>
@@ -438,7 +455,7 @@ export default function ImageUploader({
             <Loader2 size={16} className="animate-spin text-amber-500" />
           </div>
           <div className="w-full bg-amber-200 dark:bg-amber-800 rounded-full h-2">
-            <div 
+            <div
               className="bg-amber-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(uploadProgress.completed / uploadProgress.total) * 100}%` }}
             />
@@ -468,7 +485,7 @@ export default function ImageUploader({
             )}
             <span className="text-sm font-medium hidden sm:inline">Upload</span>
           </label>
-          
+
           {/* Bulk Upload */}
           <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl cursor-pointer hover:shadow-lg transition-all active:scale-[0.98]">
             <input
@@ -483,7 +500,7 @@ export default function ImageUploader({
             <Images size={16} />
             <span className="text-sm font-medium hidden sm:inline">Bulk</span>
           </label>
-          
+
           {/* Camera */}
           <label className="flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-all active:scale-[0.98]">
             <input
@@ -525,7 +542,9 @@ export default function ImageUploader({
       {!isLoading && validBackgrounds.length > 0 && (
         <div className="mb-3">
           <p className="text-xs text-gray-500 mb-2">Your Images ({validBackgrounds.length})</p>
-          <div className={`grid ${gridColsClass} gap-2.5 sm:gap-3 max-h-64 sm:max-h-72 overflow-y-auto`}>
+          <div
+            className={`grid ${gridColsClass} gap-2.5 sm:gap-3 max-h-64 sm:max-h-72 overflow-y-auto`}
+          >
             {validBackgrounds.slice(0, maxDisplay).map((bg) => {
               const isDeleting = deletingImageId === bg.id;
               return (
@@ -603,85 +622,93 @@ export function useImageUploader() {
   const backgroundsContext = useBackgroundsSafe();
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const uploadImage = useCallback(async (file: File): Promise<UserBackground | null> => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return null;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
-      return null;
-    }
-
-    setIsUploadingImage(true);
-    try {
-      // Compress image before upload (reduces size by ~90%)
-      const compressedBlob = await compressImage(file, 1200, 0.8);
-      
-      // Create a new File from the compressed Blob
-      const compressedFile = new File(
-        [compressedBlob], 
-        file.name.replace(/\.[^/.]+$/, compressedBlob.type === 'image/webp' ? '.webp' : '.jpg'),
-        { type: compressedBlob.type }
-      );
-      
-      // Log compression results
-      const originalKB = (file.size / 1024).toFixed(1);
-      const compressedKB = (compressedFile.size / 1024).toFixed(1);
-      const reduction = (((file.size - compressedFile.size) / file.size) * 100).toFixed(0);
-      console.log(`Image compressed: ${originalKB}KB → ${compressedKB}KB (${reduction}% smaller)`);
-      
-      const formData = new FormData();
-      formData.append('image', compressedFile);
-      
-      const response = await fetch('/api/user/upload-background', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const newBackground = data.background as UserBackground;
-        backgroundsContext?.addBackground(newBackground);
-        toast.success('Image uploaded!');
-        return newBackground;
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to upload image');
+  const uploadImage = useCallback(
+    async (file: File): Promise<UserBackground | null> => {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
         return null;
       }
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Failed to process image');
-      return null;
-    } finally {
-      setIsUploadingImage(false);
-    }
-  }, [backgroundsContext]);
 
-  const deleteImage = useCallback(async (backgroundId: string): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/user/upload-background', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ backgroundId }),
-      });
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image must be less than 5MB');
+        return null;
+      }
 
-      if (response.ok) {
-        backgroundsContext?.removeBackground(backgroundId);
-        toast.success('Image deleted');
-        return true;
-      } else {
+      setIsUploadingImage(true);
+      try {
+        // Compress image before upload (reduces size by ~90%)
+        const compressedBlob = await compressImage(file, 1200, 0.8);
+
+        // Create a new File from the compressed Blob
+        const compressedFile = new File(
+          [compressedBlob],
+          file.name.replace(/\.[^/.]+$/, compressedBlob.type === 'image/webp' ? '.webp' : '.jpg'),
+          { type: compressedBlob.type }
+        );
+
+        // Log compression results
+        const originalKB = (file.size / 1024).toFixed(1);
+        const compressedKB = (compressedFile.size / 1024).toFixed(1);
+        const reduction = (((file.size - compressedFile.size) / file.size) * 100).toFixed(0);
+        console.log(
+          `Image compressed: ${originalKB}KB → ${compressedKB}KB (${reduction}% smaller)`
+        );
+
+        const formData = new FormData();
+        formData.append('image', compressedFile);
+
+        const response = await fetch('/api/user/upload-background', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const newBackground = data.background as UserBackground;
+          backgroundsContext?.addBackground(newBackground);
+          toast.success('Image uploaded!');
+          return newBackground;
+        } else {
+          const error = await response.json();
+          toast.error(error.error || 'Failed to upload image');
+          return null;
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error('Failed to process image');
+        return null;
+      } finally {
+        setIsUploadingImage(false);
+      }
+    },
+    [backgroundsContext]
+  );
+
+  const deleteImage = useCallback(
+    async (backgroundId: string): Promise<boolean> => {
+      try {
+        const response = await fetch('/api/user/upload-background', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ backgroundId }),
+        });
+
+        if (response.ok) {
+          backgroundsContext?.removeBackground(backgroundId);
+          toast.success('Image deleted');
+          return true;
+        } else {
+          toast.error('Failed to delete image');
+          return false;
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
         toast.error('Failed to delete image');
         return false;
       }
-    } catch (error) {
-      console.error('Delete error:', error);
-      toast.error('Failed to delete image');
-      return false;
-    }
-  }, [backgroundsContext]);
+    },
+    [backgroundsContext]
+  );
 
   return {
     userBackgrounds: backgroundsContext?.userBackgrounds ?? [],
@@ -692,4 +719,3 @@ export function useImageUploader() {
     deleteImage,
   };
 }
-

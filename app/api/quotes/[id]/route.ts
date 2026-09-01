@@ -44,10 +44,7 @@ function getCategoryFromMap(
  * GET /api/quotes/[id] - Fetch a single quote by ID
  * Supports both regular quotes and user quotes (with user_ prefix)
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const userId = getUserIdFromRequest(request);
@@ -58,12 +55,9 @@ export async function GET(
 
     // Get categories for mapping (needed for both quote types)
     const categoriesCollection = await getCollection('categories');
-    const allCategories = await categoriesCollection.find({}).toArray() as any[];
+    const allCategories = (await categoriesCollection.find({}).toArray()) as any[];
     const categoryMap = new Map(
-      allCategories.map((c: any) => [
-        String(c.id || c._id),
-        { name: c.name, icon: c.icon }
-      ])
+      allCategories.map((c: any) => [String(c.id || c._id), { name: c.name, icon: c.icon }])
     );
 
     let quote: QuoteResponse | null = null;
@@ -98,22 +92,22 @@ async function fetchUserQuote(
     getCollection('users'),
   ]);
 
-  const rawQuote = await userQuotesCollection.findOne(buildIdQuery(id)) as any;
+  const rawQuote = (await userQuotesCollection.findOne(buildIdQuery(id))) as any;
   if (!rawQuote) return null;
 
   // Get creator name
   let creatorName = 'Anonymous';
   if (rawQuote.user_id) {
-    const user = await usersCollection.findOne({
-      $or: [
-        { _id: toObjectId(rawQuote.user_id) as any },
-        { id: rawQuote.user_id }
-      ]
-    }) as any;
+    const user = (await usersCollection.findOne({
+      $or: [{ _id: toObjectId(rawQuote.user_id) as any }, { id: rawQuote.user_id }],
+    })) as any;
     if (user) creatorName = user.name;
   }
 
-  const { name: categoryName, icon: categoryIcon } = getCategoryFromMap(categoryMap, rawQuote.category_id);
+  const { name: categoryName, icon: categoryIcon } = getCategoryFromMap(
+    categoryMap,
+    rawQuote.category_id
+  );
 
   return {
     id: `user_${rawQuote.id || rawQuote._id}`,
@@ -143,18 +137,22 @@ async function fetchRegularQuote(
   categoryMap: Map<string, { name: string; icon: string }>,
   userId: string | null
 ): Promise<QuoteResponse | null> {
-  const [quotesCollection, likesCollection, dislikesCollection, savedCollection] = await Promise.all([
-    getCollection('quotes'),
-    getCollection('user_likes'),
-    getCollection('user_dislikes'),
-    getCollection('user_saved'),
-  ]);
+  const [quotesCollection, likesCollection, dislikesCollection, savedCollection] =
+    await Promise.all([
+      getCollection('quotes'),
+      getCollection('user_likes'),
+      getCollection('user_dislikes'),
+      getCollection('user_saved'),
+    ]);
 
-  const rawQuote = await quotesCollection.findOne(buildIdQuery(id)) as any;
+  const rawQuote = (await quotesCollection.findOne(buildIdQuery(id))) as any;
   if (!rawQuote) return null;
 
   const quoteId = rawQuote.id || rawQuote._id?.toString();
-  const { name: categoryName, icon: categoryIcon } = getCategoryFromMap(categoryMap, rawQuote.category_id);
+  const { name: categoryName, icon: categoryIcon } = getCategoryFromMap(
+    categoryMap,
+    rawQuote.category_id
+  );
 
   // Fetch engagement data in parallel
   const [likeCount, dislikeCount, userLike, userSave] = await Promise.all([

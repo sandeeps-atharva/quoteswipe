@@ -1,8 +1,26 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { Heart, Send, Bookmark, MoreHorizontal, Copy, Check, ChevronUp, ThumbsDown, Loader2, Sparkles, Quote as QuoteIcon, Palette } from 'lucide-react';
-import { BackgroundImage, FontStyle, CardTheme, getRandomBackgroundForQuote } from '@/lib/constants';
+import {
+  Heart,
+  Send,
+  Bookmark,
+  MoreHorizontal,
+  Copy,
+  Check,
+  ChevronUp,
+  ThumbsDown,
+  Loader2,
+  Sparkles,
+  Quote as QuoteIcon,
+  Palette,
+} from 'lucide-react';
+import {
+  BackgroundImage,
+  FontStyle,
+  CardTheme,
+  getRandomBackgroundForQuote,
+} from '@/lib/constants';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -45,43 +63,54 @@ const calculateLineHeight = (textLength: number): number => {
   return 1.6;
 };
 
-const TranslatableQuote = memo(function TranslatableQuote({ text, fontStyle, textColor, textLength }: TranslatableQuoteProps) {
+const TranslatableQuote = memo(function TranslatableQuote({
+  text,
+  fontStyle,
+  textColor,
+  textLength,
+}: TranslatableQuoteProps) {
   const { translatedText, isLoading: isTranslating } = useTranslation({ text, enabled: true });
   const { isOriginal } = useLanguage();
-  
+
   const displayText = translatedText || text;
-  
+
   // Responsive font sizes for mobile, tablet, and desktop (same as QuoteCard)
-  const fontSizes = useMemo(() => ({
-    base: calculateFontSize(textLength, 12, 17), // Mobile min/max
-    sm: calculateFontSize(textLength, 13, 19),   // Small screens
-    md: calculateFontSize(textLength, 15, 24),   // Medium screens
-    lg: calculateFontSize(textLength, 17, 28),   // Large screens
-    xl: calculateFontSize(textLength, 19, 32),   // Extra large screens
-  }), [textLength]);
-  
+  const fontSizes = useMemo(
+    () => ({
+      base: calculateFontSize(textLength, 12, 17), // Mobile min/max
+      sm: calculateFontSize(textLength, 13, 19), // Small screens
+      md: calculateFontSize(textLength, 15, 24), // Medium screens
+      lg: calculateFontSize(textLength, 17, 28), // Large screens
+      xl: calculateFontSize(textLength, 19, 32), // Extra large screens
+    }),
+    [textLength]
+  );
+
   const lineHeight = useMemo(() => calculateLineHeight(textLength), [textLength]);
-  
+
   return (
     <div className="text-center px-4 sm:px-6 md:px-8">
       {/* Translation indicator - Mobile Optimized */}
       {!isOriginal && isTranslating && (
         <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
           <Loader2 size={14} className="sm:w-4 sm:h-4 animate-spin" style={{ color: textColor }} />
-          <span className="text-xs sm:text-sm font-medium" style={{ color: textColor, opacity: 0.8 }}>
+          <span
+            className="text-xs sm:text-sm font-medium"
+            style={{ color: textColor, opacity: 0.8 }}
+          >
             Translating...
           </span>
         </div>
       )}
-      
+
       {/* Opening quote mark - Mobile Optimized */}
-      <QuoteIcon 
+      <QuoteIcon
         size={24}
-        className="sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto mb-3 sm:mb-4 opacity-40 rotate-180" 
+        className="sm:w-7 sm:h-7 md:w-8 md:h-8 mx-auto mb-3 sm:mb-4 opacity-40 rotate-180"
         style={{ color: textColor }}
         fill="currentColor"
       />
-      
+
       <p
         className={`font-medium transition-opacity duration-200 ${isTranslating ? 'opacity-40' : 'opacity-100'}`}
         style={{
@@ -173,7 +202,7 @@ export default function FeedView({
   // Deduplicate quotes
   const uniqueQuotes = useMemo(() => {
     const seen = new Set<string>();
-    return quotes.filter(q => {
+    return quotes.filter((q) => {
       const key = String(q.id);
       if (seen.has(key)) return false;
       seen.add(key);
@@ -188,25 +217,25 @@ export default function FeedView({
 
   // Infinite scroll with fetch-more support (same as SwipeQuotes)
   const PREFETCH_THRESHOLD = 10; // Fetch when 10 quotes remain (same as swipe view)
-  
+
   useEffect(() => {
     // Check if we need to fetch more quotes from API
     if (onFetchMore && hasMoreQuotes) {
       const remainingQuotes = uniqueQuotes.length - visibleCount;
-      
+
       // Trigger fetch when within threshold (same logic as SwipeQuotes)
       if (remainingQuotes <= PREFETCH_THRESHOLD) {
         onFetchMore();
       }
     }
   }, [visibleCount, uniqueQuotes.length, hasMoreQuotes, onFetchMore]);
-  
+
   // Intersection observer for showing more from already-loaded quotes
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && visibleCount < uniqueQuotes.length) {
-          setVisibleCount(prev => Math.min(prev + 10, uniqueQuotes.length));
+          setVisibleCount((prev) => Math.min(prev + 10, uniqueQuotes.length));
         }
       },
       { threshold: 0.1 }
@@ -303,17 +332,17 @@ export default function FeedView({
     if (isTargetQuote && targetQuoteBackground) {
       return targetQuoteBackground;
     }
-    
+
     if (backgroundImage && backgroundImage.id !== 'none' && backgroundImage.url) {
       return backgroundImage;
     }
-    
+
     return getRandomBackgroundForQuote(quoteId);
   };
 
   const getBackgroundStyle = (quoteId: string | number) => {
     const bg = getQuoteBackground(quoteId);
-    
+
     if (bg.url) {
       if (bg.url.startsWith('linear-gradient') || bg.url.startsWith('radial-gradient')) {
         return { background: bg.url };
@@ -334,10 +363,10 @@ export default function FeedView({
   };
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="fixed inset-0 top-16 bottom-16 overflow-y-auto overscroll-contain bg-gradient-to-b from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900"
-      style={{ 
+      style={{
         WebkitOverflowScrolling: 'touch',
         touchAction: 'pan-y', // Allow vertical scrolling
       }}
@@ -346,7 +375,8 @@ export default function FeedView({
       <div className="max-w-[500px] mx-auto px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6 space-y-3 sm:space-y-4 md:space-y-6">
         {visibleQuotes.map((quote, index) => {
           const isLiked = likedQuoteIds.has(quote.id) || likedQuoteIds.has(String(quote.id));
-          const isDisliked = dislikedQuoteIds.has(quote.id) || dislikedQuoteIds.has(String(quote.id));
+          const isDisliked =
+            dislikedQuoteIds.has(quote.id) || dislikedQuoteIds.has(String(quote.id));
           const isSaved = savedQuoteIds.has(quote.id) || savedQuoteIds.has(String(quote.id));
           const isCopied = copiedId === quote.id;
           const showHeartAnimation = doubleTapId === quote.id;
@@ -359,33 +389,35 @@ export default function FeedView({
             <article
               key={`${quote.id}-${index}`}
               className={`group relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl sm:shadow-2xl transition-all duration-300 active:scale-[0.98] sm:hover:shadow-3xl sm:transform sm:hover:-translate-y-1 ${
-                isTargetQuote ? 'ring-2 sm:ring-4 ring-amber-500/60 ring-offset-2 sm:ring-offset-4 ring-offset-stone-50 dark:ring-offset-stone-950 shadow-amber-500/20' : ''
+                isTargetQuote
+                  ? 'ring-2 sm:ring-4 ring-amber-500/60 ring-offset-2 sm:ring-offset-4 ring-offset-stone-50 dark:ring-offset-stone-950 shadow-amber-500/20'
+                  : ''
               }`}
               style={{
-                boxShadow: isTargetQuote 
-                  ? '0 15px 30px -8px rgba(245, 158, 11, 0.3), 0 0 0 2px rgba(245, 158, 11, 0.1)' 
+                boxShadow: isTargetQuote
+                  ? '0 15px 30px -8px rgba(245, 158, 11, 0.3), 0 0 0 2px rgba(245, 158, 11, 0.1)'
                   : '0 10px 25px -8px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05)',
               }}
             >
               {/* Main Card Content */}
-              <div 
+              <div
                 className="relative aspect-[4/5] cursor-pointer select-none overflow-hidden"
                 style={{ touchAction: 'pan-y' }} // Allow vertical scrolling, prevent horizontal dragging
                 onClick={() => handleDoubleTap(quote)}
               >
                 {/* Background */}
-                <div 
+                <div
                   className="absolute inset-0 transition-transform duration-500 sm:group-hover:scale-110"
                   style={getBackgroundStyle(quote.id)}
                 />
-                
+
                 {/* Enhanced Gradient Overlay - Mobile Optimized */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 via-black/10 to-black/45 sm:from-black/70 sm:via-black/20 sm:via-black/5 sm:to-black/40" />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/35 sm:to-black/30" />
-                
+
                 {/* Decorative Corner Accent - Hidden on Mobile */}
                 <div className="hidden sm:block absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-bl-full" />
-                
+
                 {/* Top Bar - Category & Actions - Mobile Optimized */}
                 <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 md:p-5 flex items-center justify-between z-10">
                   {/* Enhanced Category Badge - Mobile Optimized */}
@@ -397,23 +429,27 @@ export default function FeedView({
                       {quote.category}
                     </span>
                   </div>
-                  
+
                   {/* Enhanced More Options Button - Mobile Optimized */}
                   <button className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-white/30 dark:bg-black/50 backdrop-blur-xl flex items-center justify-center border border-white/40 dark:border-white/20 text-white active:bg-white/40 active:scale-95 sm:hover:bg-white/35 sm:hover:scale-110 transition-all duration-200 shadow-lg touch-manipulation">
-                    <MoreHorizontal size={16} className="sm:w-[19px] sm:h-[19px]" strokeWidth={2.5} />
+                    <MoreHorizontal
+                      size={16}
+                      className="sm:w-[19px] sm:h-[19px]"
+                      strokeWidth={2.5}
+                    />
                   </button>
                 </div>
-                
+
                 {/* Quote Content - Centered with Mobile Optimized Spacing */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 md:px-8 pb-20 sm:pb-24">
-                  <TranslatableQuote 
+                  <TranslatableQuote
                     text={quote.text}
                     fontStyle={fontStyle}
                     textColor={quoteBg.textColor || '#ffffff'}
                     textLength={quote.text.length}
                   />
                 </div>
-                
+
                 {/* Enhanced Author Badge - Bottom - Mobile Optimized */}
                 <div className="absolute bottom-16 sm:bottom-20 left-0 right-0 flex justify-center px-3 sm:px-4">
                   <div className="bg-white/30 dark:bg-black/50 backdrop-blur-xl rounded-full px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 border border-white/40 dark:border-white/20 shadow-lg">
@@ -434,13 +470,13 @@ export default function FeedView({
                           animation: 'heartBurst 0.8s ease-out forwards',
                         }}
                       />
-                      <Sparkles 
-                        size={40} 
+                      <Sparkles
+                        size={40}
                         className="absolute -top-4 -right-4 text-yellow-400"
                         style={{ animation: 'sparkle 0.6s ease-out forwards' }}
                       />
-                      <Sparkles 
-                        size={30} 
+                      <Sparkles
+                        size={30}
                         className="absolute -bottom-2 -left-6 text-pink-400"
                         style={{ animation: 'sparkle 0.7s ease-out 0.1s forwards' }}
                       />
@@ -458,8 +494,8 @@ export default function FeedView({
                     <button
                       onClick={(e) => handleLikeWithAnimation(quote, e)}
                       className={`group/btn flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 md:px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all duration-200 active:scale-95 touch-manipulation ${
-                        isLiked 
-                          ? 'bg-gradient-to-br from-rose-100 to-rose-50 dark:from-rose-950/60 dark:to-rose-900/40 shadow-md shadow-rose-500/20' 
+                        isLiked
+                          ? 'bg-gradient-to-br from-rose-100 to-rose-50 dark:from-rose-950/60 dark:to-rose-900/40 shadow-md shadow-rose-500/20'
                           : 'active:bg-stone-100 dark:active:bg-stone-800/80 sm:hover:bg-stone-100 sm:dark:hover:bg-stone-800/80 sm:hover:shadow-md'
                       }`}
                       aria-label="Like quote"
@@ -467,16 +503,20 @@ export default function FeedView({
                       <Heart
                         size={20}
                         className={`sm:w-[22px] sm:h-[22px] md:w-[23px] md:h-[23px] transition-all duration-200 ${
-                          isLiked 
-                            ? 'text-rose-500 fill-rose-500' 
+                          isLiked
+                            ? 'text-rose-500 fill-rose-500'
                             : 'text-stone-600 dark:text-stone-300 sm:group-hover/btn:text-rose-500'
                         } ${showLikeAnimation ? 'scale-125 animate-pulse' : 'scale-100'}`}
                         strokeWidth={2.5}
                       />
                       {likesCount > 0 && (
-                        <span className={`text-xs sm:text-sm font-bold hidden sm:inline ${
-                          isLiked ? 'text-rose-600 dark:text-rose-400' : 'text-stone-700 dark:text-stone-200'
-                        }`}>
+                        <span
+                          className={`text-xs sm:text-sm font-bold hidden sm:inline ${
+                            isLiked
+                              ? 'text-rose-600 dark:text-rose-400'
+                              : 'text-stone-700 dark:text-stone-200'
+                          }`}
+                        >
                           {formatCount(likesCount)}
                         </span>
                       )}
@@ -486,8 +526,8 @@ export default function FeedView({
                     <button
                       onClick={(e) => handleAction(() => onDislike(quote.id), e)}
                       className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all duration-200 active:scale-95 touch-manipulation ${
-                        isDisliked 
-                          ? 'bg-stone-200 dark:bg-stone-700 shadow-md' 
+                        isDisliked
+                          ? 'bg-stone-200 dark:bg-stone-700 shadow-md'
                           : 'active:bg-stone-100 dark:active:bg-stone-800/80 sm:hover:bg-stone-100 sm:dark:hover:bg-stone-800/80 sm:hover:shadow-md'
                       }`}
                       aria-label="Dislike quote"
@@ -495,8 +535,8 @@ export default function FeedView({
                       <ThumbsDown
                         size={18}
                         className={`sm:w-[20px] sm:h-[20px] md:w-[21px] md:h-[21px] transition-all duration-200 ${
-                          isDisliked 
-                            ? 'text-stone-500 fill-stone-400' 
+                          isDisliked
+                            ? 'text-stone-500 fill-stone-400'
                             : 'text-stone-600 dark:text-stone-300 sm:hover:text-stone-700 sm:dark:hover:text-stone-200'
                         }`}
                         strokeWidth={2.5}
@@ -510,9 +550,17 @@ export default function FeedView({
                       aria-label="Copy quote"
                     >
                       {isCopied ? (
-                        <Check size={18} className="sm:w-[20px] sm:h-[20px] md:w-[21px] md:h-[21px] text-emerald-500 animate-in zoom-in duration-200" strokeWidth={2.5} />
+                        <Check
+                          size={18}
+                          className="sm:w-[20px] sm:h-[20px] md:w-[21px] md:h-[21px] text-emerald-500 animate-in zoom-in duration-200"
+                          strokeWidth={2.5}
+                        />
                       ) : (
-                        <Copy size={18} className="sm:w-[20px] sm:h-[20px] md:w-[21px] md:h-[21px] text-stone-600 dark:text-stone-300 sm:hover:text-emerald-500 transition-colors" strokeWidth={2.5} />
+                        <Copy
+                          size={18}
+                          className="sm:w-[20px] sm:h-[20px] md:w-[21px] md:h-[21px] text-stone-600 dark:text-stone-300 sm:hover:text-emerald-500 transition-colors"
+                          strokeWidth={2.5}
+                        />
                       )}
                     </button>
 
@@ -525,7 +573,11 @@ export default function FeedView({
                       className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl active:bg-stone-100 dark:active:bg-stone-800/80 sm:hover:bg-stone-100 sm:dark:hover:bg-stone-800/80 transition-all duration-200 active:scale-95 sm:hover:shadow-md touch-manipulation"
                       aria-label="Share quote"
                     >
-                      <Send size={18} className="sm:w-[20px] sm:h-[20px] md:w-[21px] md:h-[21px] text-stone-600 dark:text-stone-300 sm:hover:text-sky-500 transition-colors" strokeWidth={2.5} />
+                      <Send
+                        size={18}
+                        className="sm:w-[20px] sm:h-[20px] md:w-[21px] md:h-[21px] text-stone-600 dark:text-stone-300 sm:hover:text-sky-500 transition-colors"
+                        strokeWidth={2.5}
+                      />
                     </button>
 
                     {/* Enhanced Edit Background Button - Mobile Optimized */}
@@ -538,7 +590,11 @@ export default function FeedView({
                         className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl active:bg-stone-100 dark:active:bg-stone-800/80 sm:hover:bg-stone-100 sm:dark:hover:bg-stone-800/80 transition-all duration-200 active:scale-95 sm:hover:shadow-md touch-manipulation"
                         aria-label="Edit background"
                       >
-                        <Palette size={18} className="sm:w-[20px] sm:h-[20px] md:w-[21px] md:h-[21px] text-stone-600 dark:text-stone-300 sm:hover:text-violet-500 transition-colors" strokeWidth={2.5} />
+                        <Palette
+                          size={18}
+                          className="sm:w-[20px] sm:h-[20px] md:w-[21px] md:h-[21px] text-stone-600 dark:text-stone-300 sm:hover:text-violet-500 transition-colors"
+                          strokeWidth={2.5}
+                        />
                       </button>
                     )}
                   </div>
@@ -547,8 +603,8 @@ export default function FeedView({
                   <button
                     onClick={(e) => handleAction(() => onSave(quote.id), e)}
                     className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl transition-all duration-200 active:scale-95 touch-manipulation ${
-                      isSaved 
-                        ? 'bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/60 dark:to-amber-900/40 shadow-md shadow-amber-500/20' 
+                      isSaved
+                        ? 'bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/60 dark:to-amber-900/40 shadow-md shadow-amber-500/20'
                         : 'active:bg-stone-100 dark:active:bg-stone-800/80 sm:hover:bg-stone-100 sm:dark:hover:bg-stone-800/80 sm:hover:shadow-md'
                     }`}
                     aria-label="Save quote"
@@ -556,8 +612,8 @@ export default function FeedView({
                     <Bookmark
                       size={20}
                       className={`sm:w-[22px] sm:h-[22px] md:w-[23px] md:h-[23px] transition-all duration-200 ${
-                        isSaved 
-                          ? 'text-amber-500 fill-amber-500' 
+                        isSaved
+                          ? 'text-amber-500 fill-amber-500'
                           : 'text-stone-600 dark:text-stone-300 sm:hover:text-amber-500'
                       }`}
                       strokeWidth={2.5}
@@ -569,15 +625,17 @@ export default function FeedView({
           );
         })}
 
-      {/* Load More - Mobile Optimized */}
-      {visibleCount < uniqueQuotes.length && (
-        <div ref={loadMoreRef} className="flex justify-center py-6 sm:py-8">
-          <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 bg-white/70 dark:bg-stone-800/70 backdrop-blur-md rounded-full border border-stone-200/50 dark:border-stone-700/50">
-            <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-stone-400 border-t-amber-500 rounded-full animate-spin" />
-            <span className="text-xs sm:text-sm font-medium text-stone-600 dark:text-stone-300">Loading more...</span>
+        {/* Load More - Mobile Optimized */}
+        {visibleCount < uniqueQuotes.length && (
+          <div ref={loadMoreRef} className="flex justify-center py-6 sm:py-8">
+            <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2.5 sm:py-3 bg-white/70 dark:bg-stone-800/70 backdrop-blur-md rounded-full border border-stone-200/50 dark:border-stone-700/50">
+              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-stone-400 border-t-amber-500 rounded-full animate-spin" />
+              <span className="text-xs sm:text-sm font-medium text-stone-600 dark:text-stone-300">
+                Loading more...
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
         {/* End of Feed - Mobile Optimized */}
         {visibleCount >= uniqueQuotes.length && uniqueQuotes.length > 0 && (
@@ -586,8 +644,12 @@ export default function FeedView({
               <div className="w-16 h-16 sm:w-20 sm:h-20 mb-3 sm:mb-4 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
                 <Check size={32} className="sm:w-10 sm:h-10 text-white" strokeWidth={3} />
               </div>
-              <p className="text-lg sm:text-xl font-bold text-stone-800 dark:text-white">All Caught Up! ✨</p>
-              <p className="text-stone-500 dark:text-stone-400 text-xs sm:text-sm mt-1 sm:mt-2">You've seen all the quotes</p>
+              <p className="text-lg sm:text-xl font-bold text-stone-800 dark:text-white">
+                All Caught Up! ✨
+              </p>
+              <p className="text-stone-500 dark:text-stone-400 text-xs sm:text-sm mt-1 sm:mt-2">
+                You've seen all the quotes
+              </p>
               <button
                 onClick={scrollToTop}
                 className="mt-4 sm:mt-6 px-5 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full font-semibold text-xs sm:text-sm shadow-lg shadow-amber-500/25 active:scale-95 sm:hover:shadow-xl sm:hover:shadow-amber-500/30 sm:hover:scale-105 transition-all duration-300 touch-manipulation"
@@ -609,7 +671,11 @@ export default function FeedView({
           className="fixed bottom-20 sm:bottom-20 right-3 sm:right-4 md:right-6 w-12 h-12 sm:w-13 sm:h-13 md:w-14 md:h-14 bg-gradient-to-br from-white to-stone-50 dark:from-stone-800 dark:to-stone-900 text-stone-700 dark:text-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl active:scale-95 sm:hover:shadow-3xl sm:hover:scale-110 transition-all duration-300 z-50 border-2 border-stone-200/50 dark:border-stone-700/50 flex items-center justify-center backdrop-blur-sm touch-manipulation"
           aria-label="Scroll to top"
         >
-          <ChevronUp size={22} className="sm:w-[24px] sm:h-[24px] md:w-[26px] md:h-[26px]" strokeWidth={2.5} />
+          <ChevronUp
+            size={22}
+            className="sm:w-[24px] sm:h-[24px] md:w-[26px] md:h-[26px]"
+            strokeWidth={2.5}
+          />
         </button>
       )}
 

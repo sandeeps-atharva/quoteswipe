@@ -8,21 +8,15 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
     // Find user
     const usersCollection = await getCollection('users');
-    const user: any = await usersCollection.findOne({ email }) as any;
+    const user: any = (await usersCollection.findOne({ email })) as any;
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
     // Check if user has a password (might be Google-only account)
@@ -37,10 +31,7 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
     // Generate token (use _id as string)
@@ -48,16 +39,16 @@ export async function POST(request: NextRequest) {
 
     // Set cookie
     const response = NextResponse.json(
-      { 
-        message: 'Login successful', 
-        user: { 
-          id: user._id.toString(), 
-          name: user.name, 
-          email: user.email, 
+      {
+        message: 'Login successful',
+        user: {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
           auth_provider: 'email',
-          profile_picture: user.profile_picture || null
+          profile_picture: user.profile_picture || null,
         },
-        onboarding_complete: user.onboarding_complete ?? true  // Default true for existing users
+        onboarding_complete: user.onboarding_complete ?? true, // Default true for existing users
       },
       { status: 200 }
     );
@@ -72,9 +63,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

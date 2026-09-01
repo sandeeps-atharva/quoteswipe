@@ -8,10 +8,7 @@ export async function POST(request: NextRequest) {
     const userId = getUserIdFromRequest(request);
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { currentPassword, newPassword } = await request.json();
@@ -29,16 +26,16 @@ export async function POST(request: NextRequest) {
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Check if user signed up with Google only (has google_id but no password)
     if (user.google_id && !user.password) {
       return NextResponse.json(
-        { error: 'This account is linked with Google Sign-In. You cannot set a password. Please continue using Google to sign in.' },
+        {
+          error:
+            'This account is linked with Google Sign-In. You cannot set a password. Please continue using Google to sign in.',
+        },
         { status: 400 }
       );
     }
@@ -47,10 +44,7 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await bcrypt.compare(currentPassword, user.password);
 
     if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Current password is incorrect' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
     }
 
     // Hash new password
@@ -62,15 +56,9 @@ export async function POST(request: NextRequest) {
       { $set: { password: hashedPassword } }
     );
 
-    return NextResponse.json(
-      { message: 'Password updated successfully' },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: 'Password updated successfully' }, { status: 200 });
   } catch (error) {
     console.error('Update password error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

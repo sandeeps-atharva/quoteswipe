@@ -47,19 +47,22 @@ export function useSwipeGesture(): UseSwipeGestureReturn {
     return offset;
   }, []);
 
-  const handleDragEnd = useCallback((threshold: number = 100): 'left' | 'right' | null => {
-    setIsDragging(false);
-    
-    if (Math.abs(dragOffset.x) > threshold) {
-      const direction = dragOffset.x > 0 ? 'right' : 'left';
-      setSwipeDirection(direction);
-      return direction;
-    }
-    
-    // Reset if not past threshold
-    setDragOffset({ x: 0, y: 0 });
-    return null;
-  }, [dragOffset.x]);
+  const handleDragEnd = useCallback(
+    (threshold: number = 100): 'left' | 'right' | null => {
+      setIsDragging(false);
+
+      if (Math.abs(dragOffset.x) > threshold) {
+        const direction = dragOffset.x > 0 ? 'right' : 'left';
+        setSwipeDirection(direction);
+        return direction;
+      }
+
+      // Reset if not past threshold
+      setDragOffset({ x: 0, y: 0 });
+      return null;
+    },
+    [dragOffset.x]
+  );
 
   const resetDrag = useCallback(() => {
     setIsDragging(false);
@@ -86,4 +89,3 @@ export function useSwipeGesture(): UseSwipeGestureReturn {
     resetDrag,
   };
 }
-

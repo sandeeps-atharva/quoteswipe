@@ -20,11 +20,11 @@ export default function InstagramFollowModal({
     // Open Instagram profile in new tab
     const instagramUrl = `https://www.instagram.com/${instagramHandle.replace('@', '')}/`;
     window.open(instagramUrl, '_blank', 'noopener,noreferrer');
-    
+
     if (onFollow) {
       onFollow();
     }
-    
+
     // Close modal after a short delay
     setTimeout(() => {
       onClose();
@@ -36,16 +36,15 @@ export default function InstagramFollowModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="md"
-      className="text-center"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} size="md" className="text-center">
       <div className="flex flex-col items-center">
         {/* Instagram Icon */}
         <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-4 sm:mb-5 md:mb-6 rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-          <Instagram size={28} className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" fill="currentColor" />
+          <Instagram
+            size={28}
+            className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white"
+            fill="currentColor"
+          />
         </div>
 
         {/* Title */}
@@ -58,7 +57,11 @@ export default function InstagramFollowModal({
           Get daily inspiration and discover more amazing quotes
         </p>
         <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-500 mb-5 sm:mb-6 md:mb-8">
-          Follow <span className="font-semibold text-amber-600 dark:text-amber-400">{instagramHandle}</span> for more content
+          Follow{' '}
+          <span className="font-semibold text-amber-600 dark:text-amber-400">
+            {instagramHandle}
+          </span>{' '}
+          for more content
         </p>
 
         {/* Action Buttons */}

@@ -1,11 +1,59 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Instagram, MessageCircle, Download, Share2, Link2, Check, Copy, X, Sparkles, Image as ImageIcon, MoveVertical, ChevronUp, ChevronDown, Lock, Smartphone, Square, RectangleVertical, Type, Minus, Plus, ZoomIn, ZoomOut, Move, RotateCcw, WrapText, Undo2, AlignLeft, AlignCenter, AlignRight, AlignJustify, AlignStartVertical, AlignEndVertical, Palette, ChevronLeft, ChevronRight, LineChart, Bold, Italic, Underline } from 'lucide-react';
+import {
+  Instagram,
+  MessageCircle,
+  Download,
+  Share2,
+  Link2,
+  Check,
+  Copy,
+  X,
+  Sparkles,
+  Image as ImageIcon,
+  MoveVertical,
+  ChevronUp,
+  ChevronDown,
+  Lock,
+  Smartphone,
+  Square,
+  RectangleVertical,
+  Type,
+  Minus,
+  Plus,
+  ZoomIn,
+  ZoomOut,
+  Move,
+  RotateCcw,
+  WrapText,
+  Undo2,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  AlignStartVertical,
+  AlignEndVertical,
+  Palette,
+  ChevronLeft,
+  ChevronRight,
+  LineChart,
+  Bold,
+  Italic,
+  Underline,
+} from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { isQuotePublic } from '@/lib/helpers';
 import Image from 'next/image';
-import { CardTheme, FontStyle, BackgroundImage, DEFAULT_THEME, DEFAULT_FONT, BACKGROUND_IMAGES, FONT_STYLES } from '@/lib/constants';
+import {
+  CardTheme,
+  FontStyle,
+  BackgroundImage,
+  DEFAULT_THEME,
+  DEFAULT_FONT,
+  BACKGROUND_IMAGES,
+  FONT_STYLES,
+} from '@/lib/constants';
 import QuoteReelModal from './QuoteReelModal';
 
 // ============================================================================
@@ -28,12 +76,12 @@ interface ShareFormatConfig {
 
 interface QuoteData {
   id: number | string;
-    text: string;
-    author: string;
-    category: string;
-    category_icon?: string;
-    likes_count?: number;
-    dislikes_count?: number;
+  text: string;
+  author: string;
+  category: string;
+  category_icon?: string;
+  likes_count?: number;
+  dislikes_count?: number;
   isUserQuote?: boolean;
   is_public?: number | boolean;
   custom_background?: string;
@@ -114,13 +162,14 @@ function generateHashtags(category: string, author: string): string[] {
 /** Generate shareable caption with quote, author, and hashtags */
 function generateCaption(quote: QuoteData): string {
   const hashtags = generateHashtags(quote.category || '', quote.author || '');
-  
+
   // Truncate quote for caption if too long
   const maxQuoteLength = 150;
-  const truncatedQuote = quote.text.length > maxQuoteLength 
-    ? quote.text.substring(0, maxQuoteLength) + '...'
-    : quote.text;
-  
+  const truncatedQuote =
+    quote.text.length > maxQuoteLength
+      ? quote.text.substring(0, maxQuoteLength) + '...'
+      : quote.text;
+
   const caption = `✨ "${truncatedQuote}" ✨
 
 ${quote.author ? `— ${quote.author}` : ''}
@@ -220,14 +269,24 @@ const calculateLineHeight = (textLength: number): number => {
 // Share Button Component
 // ============================================================================
 
-function ShareButton({ onClick, disabled, gradient, iconBg, shadowColor, icon, label }: ShareButtonProps) {
+function ShareButton({
+  onClick,
+  disabled,
+  gradient,
+  iconBg,
+  shadowColor,
+  icon,
+  label,
+}: ShareButtonProps) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={`group flex flex-col items-center gap-1.5 sm:gap-2 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl ${gradient} hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50`}
     >
-      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${iconBg} flex items-center justify-center shadow-lg ${shadowColor} transition-shadow`}>
+      <div
+        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${iconBg} flex items-center justify-center shadow-lg ${shadowColor} transition-shadow`}
+      >
         {icon}
       </div>
       <span className="text-[10px] sm:text-xs font-semibold text-stone-700 dark:text-stone-300">
@@ -241,10 +300,10 @@ function ShareButton({ onClick, disabled, gradient, iconBg, shadowColor, icon, l
 // Preview Card Component
 // ============================================================================
 
-function PreviewCard({ 
-  quote, 
-  cardTheme = DEFAULT_THEME, 
-  fontStyle = DEFAULT_FONT, 
+function PreviewCard({
+  quote,
+  cardTheme = DEFAULT_THEME,
+  fontStyle = DEFAULT_FONT,
   backgroundImage,
   customBackground,
   verticalOffset = 0,
@@ -265,8 +324,9 @@ function PreviewCard({
   const textLength = quote.text.length;
   const hasBackgroundImage = !!(backgroundImage?.url || customBackground);
   const actualBackgroundUrl = customBackground || backgroundImage?.url;
-  const backgroundOverlay = backgroundImage?.overlay || 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.5))';
-  
+  const backgroundOverlay =
+    backgroundImage?.overlay || 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.5))';
+
   // Memoized color scheme based on theme and background
   const colors = useMemo(() => {
     const isDark = cardTheme.isDark || hasBackgroundImage;
@@ -284,9 +344,12 @@ function PreviewCard({
   // These values match QuoteCard.tsx exactly for consistent text wrapping
   const getBaseFontSize = (formatId: ShareFormat): { min: number; max: number } => {
     switch (formatId) {
-      case 'story': return { min: 15, max: 22 }; // Slightly larger for tall story format
-      case 'square': return { min: 13, max: 19 }; // Same as QuoteCard sm breakpoint
-      default: return { min: 13, max: 19 }; // Same as QuoteCard sm breakpoint (320px)
+      case 'story':
+        return { min: 15, max: 22 }; // Slightly larger for tall story format
+      case 'square':
+        return { min: 13, max: 19 }; // Same as QuoteCard sm breakpoint
+      default:
+        return { min: 13, max: 19 }; // Same as QuoteCard sm breakpoint (320px)
     }
   };
 
@@ -297,7 +360,8 @@ function PreviewCard({
     // Use user-specified px value or fall back to auto
     const finalFontSize = fontSizePx > 0 ? fontSizePx : autoFontSize;
     // Use custom line height if set, otherwise calculate automatically
-    const finalLineHeight = customLineHeight > 0 ? customLineHeight : calculateLineHeight(textLength);
+    const finalLineHeight =
+      customLineHeight > 0 ? customLineHeight : calculateLineHeight(textLength);
     return {
       fontSize: finalFontSize,
       autoFontSize, // expose for control display
@@ -306,35 +370,40 @@ function PreviewCard({
   }, [textLength, format.id, fontSizePx, customLineHeight]);
 
   // Memoized styles
-  const cardStyle = useMemo(() => ({
-    background: hasBackgroundImage ? 'transparent' : (customBackground || cardTheme.background),
-    borderRadius: '16px',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-  }), [hasBackgroundImage, customBackground, cardTheme.background]);
+  const cardStyle = useMemo(
+    () => ({
+      background: hasBackgroundImage ? 'transparent' : customBackground || cardTheme.background,
+      borderRadius: '16px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    }),
+    [hasBackgroundImage, customBackground, cardTheme.background]
+  );
 
-  const quoteTextStyle = useMemo(() => ({
-    color: colors.text,
-    letterSpacing: '-0.01em',
-    fontFamily: fontStyle.fontFamily,
-    fontWeight: isBold ? '700' : fontStyle.fontWeight,
-    fontStyle: isItalic ? 'italic' : 'normal',
-    textDecoration: isUnderline ? 'underline' : 'none',
-    fontSize: `${typography.fontSize}px`,
-    lineHeight: typography.lineHeight,
-    textShadow: hasBackgroundImage ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
-    // Consistent word-breaking with QuoteCard
-    wordWrap: 'break-word' as const,
-    overflowWrap: 'break-word' as const,
-    wordBreak: 'normal' as const,
-    hyphens: 'none' as const,
-    WebkitHyphens: 'none' as const,
-    msHyphens: 'none' as const,
-    whiteSpace: 'pre-line' as const,
-  }), [colors.text, fontStyle, typography, hasBackgroundImage, isBold, isItalic, isUnderline]);
-
+  const quoteTextStyle = useMemo(
+    () => ({
+      color: colors.text,
+      letterSpacing: '-0.01em',
+      fontFamily: fontStyle.fontFamily,
+      fontWeight: isBold ? '700' : fontStyle.fontWeight,
+      fontStyle: isItalic ? 'italic' : 'normal',
+      textDecoration: isUnderline ? 'underline' : 'none',
+      fontSize: `${typography.fontSize}px`,
+      lineHeight: typography.lineHeight,
+      textShadow: hasBackgroundImage ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
+      // Consistent word-breaking with QuoteCard
+      wordWrap: 'break-word' as const,
+      overflowWrap: 'break-word' as const,
+      wordBreak: 'normal' as const,
+      hyphens: 'none' as const,
+      WebkitHyphens: 'none' as const,
+      msHyphens: 'none' as const,
+      whiteSpace: 'pre-line' as const,
+    }),
+    [colors.text, fontStyle, typography, hasBackgroundImage, isBold, isItalic, isUnderline]
+  );
 
   return (
-    <div 
+    <div
       data-preview-card="true"
       className="relative flex flex-col overflow-hidden"
       style={{
@@ -346,7 +415,7 @@ function PreviewCard({
       {/* Background Image Layer with Zoom/Pan */}
       {hasBackgroundImage && actualBackgroundUrl && (
         <>
-          <div 
+          <div
             className="absolute inset-0 overflow-hidden"
             style={{
               // Expand container to allow for panning when zoomed
@@ -372,10 +441,10 @@ function PreviewCard({
           <div className="absolute inset-0" style={{ background: backgroundOverlay }} />
         </>
       )}
-      
+
       {/* Base gradient for non-image backgrounds */}
       {!hasBackgroundImage && (
-        <div 
+        <div
           className="absolute inset-0 rounded-[16px]"
           style={{ background: customBackground || cardTheme.background }}
         />
@@ -384,7 +453,7 @@ function PreviewCard({
       {/* Content Container */}
       <div className="relative z-10 flex flex-col h-full p-6 overflow-hidden">
         {/* Quote Content Area - positioned absolutely to allow free movement */}
-        <div 
+        <div
           className="absolute"
           style={{
             top: `calc(50% + ${verticalOffset * 2}px)`,
@@ -395,7 +464,7 @@ function PreviewCard({
           }}
         >
           {/* Text container */}
-          <div 
+          <div
             style={{
               textAlign: textAlign,
               width: '100%',
@@ -405,10 +474,10 @@ function PreviewCard({
             <p style={quoteTextStyle}>{quote.text}</p>
           </div>
         </div>
-        
+
         {/* Author Section - positioned at bottom */}
         <div className="mt-auto">
-          <AuthorSection 
+          <AuthorSection
             author={quote.author}
             colors={colors}
             hasBackgroundImage={hasBackgroundImage}
@@ -426,15 +495,15 @@ function PreviewCard({
 function QuoteMark({ color, isDark }: { color: string; isDark: boolean }) {
   return (
     <div className="mb-3">
-      <svg 
-        width="28" 
-        height="28" 
-        viewBox="0 0 24 24" 
+      <svg
+        width="28"
+        height="28"
+        viewBox="0 0 24 24"
         fill="none"
         style={{ opacity: isDark ? 0.25 : 0.15 }}
       >
-        <path 
-          d="M11 7.5V17.5H6.5C6.5 14.5 6.5 12 9 9.5L6 7.5H11ZM19.5 7.5V17.5H15C15 14.5 15 12 17.5 9.5L14.5 7.5H19.5Z" 
+        <path
+          d="M11 7.5V17.5H6.5C6.5 14.5 6.5 12 9 9.5L6 7.5H11ZM19.5 7.5V17.5H15C15 14.5 15 12 17.5 9.5L14.5 7.5H19.5Z"
           fill={color}
         />
       </svg>
@@ -458,56 +527,88 @@ function AuthorSection({ author, colors, hasBackgroundImage }: AuthorSectionProp
   return (
     <div className="flex-shrink-0">
       {/* <div className="w-14 h-px mb-4" style={{ background: colors.divider }} /> */}
-      
+
       <div className="flex items-center justify-end">
         {author && (
-          <p data-author-text="true" className="text-sm font-medium tracking-wide mr-auto" style={textStyle}>
+          <p
+            data-author-text="true"
+            className="text-sm font-medium tracking-wide mr-auto"
+            style={textStyle}
+          >
             — {author}
           </p>
         )}
-        
+
         <div className="flex items-center gap-1.5" style={{ opacity: colors.isDark ? 0.7 : 0.6 }}>
           {/* Inline SVG Logo - Blue/Purple/Pink Theme for downloads */}
-          <svg 
-            width="20" 
-            height="20" 
-            viewBox="0 0 200 200" 
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 200 200"
             fill="none"
             style={{ filter: colors.isDark ? 'brightness(1.3)' : 'none' }}
           >
             {/* Outer ring */}
-            <circle cx="100" cy="100" r="96" fill="none" stroke="#A78BFA" strokeWidth="2" opacity="0.3"/>
+            <circle
+              cx="100"
+              cy="100"
+              r="96"
+              fill="none"
+              stroke="#A78BFA"
+              strokeWidth="2"
+              opacity="0.3"
+            />
             {/* Main circle - Purple (blue-purple-pink theme) */}
-            <circle cx="100" cy="100" r="92" fill="#8B5CF6"/>
+            <circle cx="100" cy="100" r="92" fill="#8B5CF6" />
             {/* Inner ring */}
-            <circle cx="100" cy="100" r="85" fill="none" stroke="white" strokeWidth="1" opacity="0.15"/>
+            <circle
+              cx="100"
+              cy="100"
+              r="85"
+              fill="none"
+              stroke="white"
+              strokeWidth="1"
+              opacity="0.15"
+            />
             {/* Card 3 - Back */}
             <g transform="rotate(-15 100 105)">
-              <rect x="52" y="50" width="80" height="100" rx="12" fill="white" opacity="0.15"/>
+              <rect x="52" y="50" width="80" height="100" rx="12" fill="white" opacity="0.15" />
             </g>
             {/* Card 2 - Middle */}
             <g transform="rotate(-8 100 105)">
-              <rect x="55" y="48" width="80" height="100" rx="12" fill="white" opacity="0.35"/>
+              <rect x="55" y="48" width="80" height="100" rx="12" fill="white" opacity="0.35" />
             </g>
             {/* Card 1 - Front */}
             <g>
-              <rect x="58" y="46" width="80" height="100" rx="12" fill="white"/>
+              <rect x="58" y="46" width="80" height="100" rx="12" fill="white" />
               {/* Quote mark */}
-              <text x="68" y="82" fontFamily="Georgia, serif" fontSize="36" fontWeight="bold" fill="#8B5CF6">"</text>
+              <text
+                x="68"
+                y="82"
+                fontFamily="Georgia, serif"
+                fontSize="36"
+                fontWeight="bold"
+                fill="#8B5CF6"
+              >
+                "
+              </text>
               {/* Text lines */}
-              <rect x="96" y="62" width="32" height="4" rx="2" fill="#8B5CF6"/>
-              <rect x="96" y="72" width="26" height="4" rx="2" fill="#A78BFA" opacity="0.7"/>
+              <rect x="96" y="62" width="32" height="4" rx="2" fill="#8B5CF6" />
+              <rect x="96" y="72" width="26" height="4" rx="2" fill="#A78BFA" opacity="0.7" />
               {/* Author lines */}
-              <rect x="72" y="110" width="52" height="3" rx="1.5" fill="#9CA3AF"/>
-              <rect x="72" y="118" width="36" height="3" rx="1.5" fill="#D1D5DB"/>
+              <rect x="72" y="110" width="52" height="3" rx="1.5" fill="#9CA3AF" />
+              <rect x="72" y="118" width="36" height="3" rx="1.5" fill="#D1D5DB" />
               {/* Heart icon - Pink */}
               <g transform="translate(114, 126)">
-                <path d="M8 3 C8 1.5 9.5 0 11.5 0 C13.5 0 15 1.5 15 3.5 C15 7 8 12 8 12 C8 12 1 7 1 3.5 C1 1.5 2.5 0 4.5 0 C6.5 0 8 1.5 8 3Z" fill="#EC4899"/>
+                <path
+                  d="M8 3 C8 1.5 9.5 0 11.5 0 C13.5 0 15 1.5 15 3.5 C15 7 8 12 8 12 C8 12 1 7 1 3.5 C1 1.5 2.5 0 4.5 0 C6.5 0 8 1.5 8 3Z"
+                  fill="#EC4899"
+                />
               </g>
             </g>
             {/* Sparkles */}
-            <circle cx="45" cy="55" r="3" fill="white" opacity="0.6"/>
-            <circle cx="160" cy="140" r="2" fill="white" opacity="0.5"/>
+            <circle cx="45" cy="55" r="3" fill="white" opacity="0.6" />
+            <circle cx="160" cy="140" r="2" fill="white" opacity="0.5" />
           </svg>
           <span className="text-[9px] font-medium tracking-wide" style={textStyle}>
             QuoteSwipe
@@ -561,14 +662,14 @@ interface TextPositionControlProps {
   onReset: () => void;
 }
 
-function TextPositionControl({ 
-  verticalOffset, 
-  horizontalOffset, 
-  onVerticalChange, 
+function TextPositionControl({
+  verticalOffset,
+  horizontalOffset,
+  onVerticalChange,
   onHorizontalChange,
   onReset,
 }: TextPositionControlProps) {
-  const formatValue = (v: number) => v > 0 ? `+${v}` : String(v);
+  const formatValue = (v: number) => (v > 0 ? `+${v}` : String(v));
 
   return (
     <div className="mt-3 p-3 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl border border-amber-200/50 dark:border-amber-800/50">
@@ -586,7 +687,7 @@ function TextPositionControl({
           Center
         </button>
       </div>
-      
+
       {/* D-Pad Style Controls */}
       <div className="flex items-center justify-center mb-3">
         <div className="grid grid-cols-3 gap-1">
@@ -602,10 +703,12 @@ function TextPositionControl({
           </button>
           {/* Empty */}
           <div />
-          
+
           {/* Left - Limited range */}
           <button
-            onClick={() => onHorizontalChange(Math.max(HORIZONTAL_MIN, horizontalOffset - POSITION_STEP))}
+            onClick={() =>
+              onHorizontalChange(Math.max(HORIZONTAL_MIN, horizontalOffset - POSITION_STEP))
+            }
             disabled={horizontalOffset <= HORIZONTAL_MIN}
             className="w-10 h-10 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
           >
@@ -619,13 +722,15 @@ function TextPositionControl({
           </div>
           {/* Right - Limited range */}
           <button
-            onClick={() => onHorizontalChange(Math.min(HORIZONTAL_MAX, horizontalOffset + POSITION_STEP))}
+            onClick={() =>
+              onHorizontalChange(Math.min(HORIZONTAL_MAX, horizontalOffset + POSITION_STEP))
+            }
             disabled={horizontalOffset >= HORIZONTAL_MAX}
             className="w-10 h-10 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 flex items-center justify-center transition-colors disabled:opacity-40"
           >
             <ChevronUp size={18} className="text-amber-600 dark:text-amber-400 rotate-90" />
           </button>
-          
+
           {/* Empty */}
           <div />
           {/* Down */}
@@ -640,14 +745,16 @@ function TextPositionControl({
           <div />
         </div>
       </div>
-      
+
       {/* Fine Adjustment Sliders */}
       <div className="grid grid-cols-2 gap-3">
         {/* Horizontal Slider - Limited range */}
         <div>
           <div className="flex items-center justify-between mb-1">
             <span className="text-[9px] text-stone-500 dark:text-stone-400">← → Left/Right</span>
-            <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400">{formatValue(horizontalOffset)}</span>
+            <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400">
+              {formatValue(horizontalOffset)}
+            </span>
           </div>
           <input
             type="range"
@@ -659,12 +766,14 @@ function TextPositionControl({
             className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
           />
         </div>
-        
+
         {/* Vertical Slider */}
         <div>
           <div className="flex items-center justify-between mb-1">
             <span className="text-[9px] text-stone-500 dark:text-stone-400">↑ ↓ Up/Down</span>
-            <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400">{formatValue(verticalOffset)}</span>
+            <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400">
+              {formatValue(verticalOffset)}
+            </span>
           </div>
           <input
             type="range"
@@ -677,7 +786,7 @@ function TextPositionControl({
           />
         </div>
       </div>
-      
+
       {/* Quick Presets - Horizontal limited to keep text inside card */}
       <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
         {[
@@ -739,7 +848,7 @@ function TextAlignmentControl({ value, onChange }: TextAlignmentControlProps) {
           Text Alignment
         </span>
       </div>
-      
+
       {/* Alignment Buttons - Grid layout */}
       <div className="grid grid-cols-3 gap-2">
         {alignments.map((alignment) => (
@@ -774,12 +883,12 @@ interface FontSizeControlProps {
 function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
   const isAuto = value === 0;
   const displayValue = isAuto ? Math.round(autoSize) : value;
-  
+
   const handleDecrease = () => {
     const currentVal = isAuto ? Math.round(autoSize) : value;
     onChange(Math.max(FONT_SIZE_PX_MIN, currentVal - 1));
   };
-  
+
   const handleIncrease = () => {
     const currentVal = isAuto ? Math.round(autoSize) : value;
     onChange(Math.min(FONT_SIZE_PX_MAX, currentVal + 1));
@@ -789,7 +898,7 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
     const val = parseInt(e.target.value) || 0;
     if (val === 0) {
       onChange(0); // Reset to auto
-          } else {
+    } else {
       onChange(Math.max(FONT_SIZE_PX_MIN, Math.min(FONT_SIZE_PX_MAX, val)));
     }
   };
@@ -817,7 +926,7 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
         >
           <Minus size={16} className="text-stone-600 dark:text-stone-300" />
         </button>
-        
+
         {/* Size Display & Input */}
         <div className="flex-1">
           <div className="flex items-center justify-between mb-2">
@@ -830,7 +939,7 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
                 Auto
               </span>
             )}
-      </div>
+          </div>
 
           {/* Pixel Input */}
           <div className="flex items-center gap-2">
@@ -844,7 +953,7 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
               className="w-20 px-2.5 py-1.5 text-sm font-mono text-center bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
             />
             <span className="text-xs text-stone-500 dark:text-stone-400">px</span>
-            
+
             {/* Slider */}
             <input
               type="range"
@@ -855,16 +964,14 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
               className="flex-1 h-2 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
             />
           </div>
-          
+
           <div className="flex justify-between mt-1.5 px-1">
             <span className="text-[9px] text-stone-400">{FONT_SIZE_PX_MIN}px</span>
-            <span className="text-[9px] text-stone-400 font-medium">
-              Current: {displayValue}px
-            </span>
+            <span className="text-[9px] text-stone-400 font-medium">Current: {displayValue}px</span>
             <span className="text-[9px] text-stone-400">{FONT_SIZE_PX_MAX}px</span>
           </div>
         </div>
-        
+
         {/* Increase Button */}
         <button
           onClick={handleIncrease}
@@ -875,7 +982,7 @@ function FontSizeControl({ value, onChange, autoSize }: FontSizeControlProps) {
           <Plus size={16} className="text-stone-600 dark:text-stone-300" />
         </button>
       </div>
-      
+
       {/* Quick Pixel Presets */}
       <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap">
         {presets.map((preset) => (
@@ -917,18 +1024,18 @@ interface BackgroundZoomControlProps {
   onReset: () => void;
 }
 
-function BackgroundZoomControl({ 
-  zoom, 
-  panX, 
-  panY, 
-  onZoomChange, 
-  onPanXChange, 
+function BackgroundZoomControl({
+  zoom,
+  panX,
+  panY,
+  onZoomChange,
+  onPanXChange,
   onPanYChange,
   onReset,
 }: BackgroundZoomControlProps) {
   const handleZoomIn = () => onZoomChange(Math.min(BG_ZOOM_MAX, zoom + BG_ZOOM_STEP));
   const handleZoomOut = () => onZoomChange(Math.max(BG_ZOOM_MIN, zoom - BG_ZOOM_STEP));
-  
+
   const zoomPresets = [
     { label: '1x', value: 1 },
     { label: '1.5x', value: 1.5 },
@@ -953,7 +1060,7 @@ function BackgroundZoomControl({
           Reset
         </button>
       </div>
-      
+
       {/* Zoom Control */}
       <div className="flex items-center gap-2 mb-3">
         <button
@@ -964,11 +1071,13 @@ function BackgroundZoomControl({
         >
           <ZoomOut size={14} className="text-emerald-600 dark:text-emerald-400" />
         </button>
-        
+
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[9px] text-stone-500 dark:text-stone-400">Zoom</span>
-            <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400">{zoom.toFixed(1)}x</span>
+            <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400">
+              {zoom.toFixed(1)}x
+            </span>
           </div>
           <input
             type="range"
@@ -980,7 +1089,7 @@ function BackgroundZoomControl({
             className="w-full h-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
           />
         </div>
-        
+
         <button
           onClick={handleZoomIn}
           disabled={zoom >= BG_ZOOM_MAX}
@@ -990,7 +1099,7 @@ function BackgroundZoomControl({
           <ZoomIn size={14} className="text-emerald-600 dark:text-emerald-400" />
         </button>
       </div>
-      
+
       {/* Zoom Presets */}
       <div className="flex items-center justify-center gap-1.5 mb-3">
         {zoomPresets.map((preset) => (
@@ -1007,7 +1116,7 @@ function BackgroundZoomControl({
           </button>
         ))}
       </div>
-      
+
       {/* Pan Controls - Only show when zoomed */}
       {zoom > 1 && (
         <div className="pt-3 border-t border-emerald-200/50 dark:border-emerald-700/50">
@@ -1017,13 +1126,16 @@ function BackgroundZoomControl({
               <span className="text-[9px] text-stone-500 dark:text-stone-400">Move Background</span>
             </div>
             <button
-              onClick={() => { onPanXChange(0); onPanYChange(0); }}
+              onClick={() => {
+                onPanXChange(0);
+                onPanYChange(0);
+              }}
               className="text-[8px] px-1.5 py-0.5 bg-stone-200 dark:bg-stone-700 text-stone-500 rounded hover:bg-stone-300 dark:hover:bg-stone-600"
             >
               Center
             </button>
           </div>
-          
+
           {/* Arrow Controls - D-Pad Style */}
           <div className="flex items-center justify-center mb-3">
             <div className="grid grid-cols-3 gap-1">
@@ -1039,7 +1151,7 @@ function BackgroundZoomControl({
               </button>
               {/* Empty */}
               <div />
-              
+
               {/* Left */}
               <button
                 onClick={() => onPanXChange(Math.max(BG_PAN_MIN, panX - BG_PAN_STEP))}
@@ -1062,7 +1174,7 @@ function BackgroundZoomControl({
               >
                 <ChevronUp size={16} className="text-stone-600 dark:text-stone-300 rotate-90" />
               </button>
-              
+
               {/* Empty */}
               <div />
               {/* Down */}
@@ -1077,14 +1189,17 @@ function BackgroundZoomControl({
               <div />
             </div>
           </div>
-          
+
           {/* Fine Adjustment Sliders */}
           <div className="grid grid-cols-2 gap-3">
             {/* Horizontal Pan */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[9px] text-stone-400">← → Horizontal</span>
-                <span className="text-[9px] font-mono text-emerald-600">{panX > 0 ? '+' : ''}{panX}</span>
+                <span className="text-[9px] font-mono text-emerald-600">
+                  {panX > 0 ? '+' : ''}
+                  {panX}
+                </span>
               </div>
               <input
                 type="range"
@@ -1096,12 +1211,15 @@ function BackgroundZoomControl({
                 className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
               />
             </div>
-            
+
             {/* Vertical Pan */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[9px] text-stone-400">↑ ↓ Vertical</span>
-                <span className="text-[9px] font-mono text-emerald-600">{panY > 0 ? '+' : ''}{panY}</span>
+                <span className="text-[9px] font-mono text-emerald-600">
+                  {panY > 0 ? '+' : ''}
+                  {panY}
+                </span>
               </div>
               <input
                 type="range"
@@ -1132,9 +1250,15 @@ interface TextEditorControlProps {
   isEdited: boolean;
 }
 
-function TextEditorControl({ originalText, editedText, onChange, onReset, isEdited }: TextEditorControlProps) {
+function TextEditorControl({
+  originalText,
+  editedText,
+  onChange,
+  onReset,
+  isEdited,
+}: TextEditorControlProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -1142,7 +1266,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [editedText]);
-  
+
   const handleInsertLineBreak = () => {
     if (textareaRef.current) {
       const start = textareaRef.current.selectionStart;
@@ -1166,7 +1290,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
         <span className="text-[10px] font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1.5">
           <WrapText size={12} />
           Edit Quote Text (Add Line Breaks)
-                </span>
+        </span>
         {isEdited && (
           <button
             onClick={onReset}
@@ -1176,13 +1300,13 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
             Reset
           </button>
         )}
-              </div>
-      
+      </div>
+
       {/* Instructions */}
       <p className="text-[9px] text-stone-500 dark:text-stone-400 mb-2">
         Click where you want to add a line break, then press Enter or use the button below.
       </p>
-      
+
       {/* Textarea */}
       <textarea
         ref={textareaRef}
@@ -1192,17 +1316,17 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
         placeholder="Edit your quote text..."
         style={{ fontFamily: 'inherit' }}
       />
-      
+
       {/* Action Buttons */}
       <div className="flex items-center gap-2 mt-2">
-              <button
+        <button
           onClick={handleInsertLineBreak}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-[10px] font-medium transition-colors"
         >
           <WrapText size={12} />
           Insert Line Break
         </button>
-        
+
         {isEdited && (
           <span className="text-[9px] text-orange-600 dark:text-orange-400 flex items-center gap-1">
             <Check size={10} />
@@ -1210,7 +1334,7 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
           </span>
         )}
       </div>
-      
+
       {/* Preview hint */}
       <p className="text-[8px] text-stone-400 mt-2">
         Tip: Press Enter key to add line breaks. The preview above will update in real-time.
@@ -1224,18 +1348,52 @@ function TextEditorControl({ originalText, editedText, onChange, onReset, isEdit
 // ============================================================================
 
 // Curated list of fonts that work reliably (Google Fonts + system fonts)
-const SHARE_FONT_OPTIONS = FONT_STYLES.filter(f => 
+const SHARE_FONT_OPTIONS = FONT_STYLES.filter((f) =>
   // Google Fonts loaded in layout.tsx
-  ['playfair', 'playfair_bold', 'merriweather', 'crimson', 'cormorant', 
-   'roboto', 'roboto_light', 'roboto_medium', 'opensans', 'opensans_light',
-   'lato', 'lato_light', 'poppins', 'poppins_medium', 'poppins_semibold',
-   'montserrat', 'montserrat_medium', 'inter', 'inter_medium', 'nunito',
-   'raleway', 'source_sans', 'dancing', 'pacifico', 'sacramento', 'great_vibes',
-   'jetbrains', 'elegant',
-   // System fonts (available everywhere)
-   'georgia', 'georgia_bold', 'times', 'times_bold', 'system', 'system_medium', 
-   'system_bold', 'helvetica', 'helvetica_light', 'helvetica_bold', 'arial',
-   'mono', 'courier', 'consolas'
+  [
+    'playfair',
+    'playfair_bold',
+    'merriweather',
+    'crimson',
+    'cormorant',
+    'roboto',
+    'roboto_light',
+    'roboto_medium',
+    'opensans',
+    'opensans_light',
+    'lato',
+    'lato_light',
+    'poppins',
+    'poppins_medium',
+    'poppins_semibold',
+    'montserrat',
+    'montserrat_medium',
+    'inter',
+    'inter_medium',
+    'nunito',
+    'raleway',
+    'source_sans',
+    'dancing',
+    'pacifico',
+    'sacramento',
+    'great_vibes',
+    'jetbrains',
+    'elegant',
+    // System fonts (available everywhere)
+    'georgia',
+    'georgia_bold',
+    'times',
+    'times_bold',
+    'system',
+    'system_medium',
+    'system_bold',
+    'helvetica',
+    'helvetica_light',
+    'helvetica_bold',
+    'arial',
+    'mono',
+    'courier',
+    'consolas',
   ].includes(f.id)
 ).slice(0, 24); // Limit to 24 most popular options
 
@@ -1260,7 +1418,7 @@ function FontStyleSelector({ selectedFont, onFontChange }: FontStyleSelectorProp
           {SHARE_FONT_OPTIONS.length} fonts
         </span>
       </div>
-      
+
       {/* Font Grid */}
       <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
         {displayFonts.map((font) => (
@@ -1273,19 +1431,21 @@ function FontStyleSelector({ selectedFont, onFontChange }: FontStyleSelectorProp
                 : 'bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-300 hover:bg-rose-100 dark:hover:bg-stone-600'
             }`}
           >
-            <span 
+            <span
               className="text-base block mb-0.5"
               style={{ fontFamily: font.fontFamily, fontWeight: font.fontWeight }}
             >
               Aa
             </span>
-            <span className={`text-[8px] ${selectedFont.id === font.id ? 'text-rose-100' : 'text-stone-500 dark:text-stone-400'}`}>
+            <span
+              className={`text-[8px] ${selectedFont.id === font.id ? 'text-rose-100' : 'text-stone-500 dark:text-stone-400'}`}
+            >
               {font.name.length > 12 ? font.name.substring(0, 12) + '...' : font.name}
             </span>
           </button>
         ))}
       </div>
-      
+
       {/* Show More/Less */}
       {SHARE_FONT_OPTIONS.length > 12 && (
         <button
@@ -1293,9 +1453,13 @@ function FontStyleSelector({ selectedFont, onFontChange }: FontStyleSelectorProp
           className="w-full mt-2 py-1.5 text-[10px] font-medium text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 flex items-center justify-center gap-1"
         >
           {showAll ? (
-            <>Show Less <ChevronUp size={12} /></>
+            <>
+              Show Less <ChevronUp size={12} />
+            </>
           ) : (
-            <>Show {SHARE_FONT_OPTIONS.length - 12} More <ChevronDown size={12} /></>
+            <>
+              Show {SHARE_FONT_OPTIONS.length - 12} More <ChevronDown size={12} />
+            </>
           )}
         </button>
       )}
@@ -1330,8 +1494,8 @@ interface TextColorPickerProps {
 }
 
 function TextColorPicker({ value, defaultColor, onChange }: TextColorPickerProps) {
-  const isCustom = value !== null && !TEXT_COLOR_PRESETS.some(p => p.color === value);
-  
+  const isCustom = value !== null && !TEXT_COLOR_PRESETS.some((p) => p.color === value);
+
   return (
     <div className="mt-3 p-3 bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-900/20 dark:to-sky-900/20 rounded-xl border border-cyan-200/50 dark:border-cyan-800/50">
       {/* Header */}
@@ -1350,7 +1514,7 @@ function TextColorPicker({ value, defaultColor, onChange }: TextColorPickerProps
           </button>
         )}
       </div>
-      
+
       {/* Color Presets */}
       <div className="grid grid-cols-6 gap-2 mb-3">
         {TEXT_COLOR_PRESETS.map((preset) => (
@@ -1366,12 +1530,15 @@ function TextColorPicker({ value, defaultColor, onChange }: TextColorPickerProps
             title={preset.name}
           >
             {value === preset.color && (
-              <Check size={12} className={preset.dark ? 'text-white mx-auto' : 'text-stone-800 mx-auto'} />
+              <Check
+                size={12}
+                className={preset.dark ? 'text-white mx-auto' : 'text-stone-800 mx-auto'}
+              />
             )}
           </button>
         ))}
       </div>
-      
+
       {/* Custom Color Picker */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
@@ -1398,13 +1565,13 @@ function TextColorPicker({ value, defaultColor, onChange }: TextColorPickerProps
           />
         </div>
       </div>
-      
+
       {/* Current color indicator */}
       <div className="flex items-center justify-between mt-2 pt-2 border-t border-cyan-200/50 dark:border-cyan-700/50">
         <span className="text-[9px] text-stone-500 dark:text-stone-400">
           {value ? 'Custom color' : 'Auto (based on background)'}
         </span>
-        <div 
+        <div
           className="w-6 h-6 rounded-md border border-stone-300 dark:border-stone-600"
           style={{ backgroundColor: value || defaultColor }}
         />
@@ -1430,7 +1597,7 @@ interface LineHeightControlProps {
 function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProps) {
   const isAuto = value === 0;
   const displayValue = isAuto ? autoValue : value;
-  
+
   const presets = [
     { label: 'Auto', value: 0 },
     { label: 'Tight', value: 1.2 },
@@ -1457,7 +1624,7 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
           </button>
         )}
       </div>
-      
+
       {/* Slider */}
       <div className="flex items-center gap-3 mb-3">
         <button
@@ -1469,7 +1636,7 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
         >
           <Minus size={14} className="text-amber-600 dark:text-amber-400" />
         </button>
-        
+
         <div className="flex-1">
           <input
             type="range"
@@ -1488,7 +1655,7 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
             <span className="text-[8px] text-stone-400">Loose</span>
           </div>
         </div>
-        
+
         <button
           onClick={() => {
             const current = isAuto ? autoValue : value;
@@ -1499,7 +1666,7 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
           <Plus size={14} className="text-amber-600 dark:text-amber-400" />
         </button>
       </div>
-      
+
       {/* Presets */}
       <div className="flex items-center justify-center gap-1.5 flex-wrap">
         {presets.map((preset) => (
@@ -1507,7 +1674,8 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
             key={preset.label}
             onClick={() => onChange(preset.value)}
             className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${
-              (preset.value === 0 && isAuto) || (preset.value !== 0 && Math.abs(value - preset.value) < 0.05)
+              (preset.value === 0 && isAuto) ||
+              (preset.value !== 0 && Math.abs(value - preset.value) < 0.05)
                 ? 'bg-amber-500 text-white'
                 : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-amber-100 dark:hover:bg-stone-600'
             }`}
@@ -1516,11 +1684,15 @@ function LineHeightControl({ value, autoValue, onChange }: LineHeightControlProp
           </button>
         ))}
       </div>
-      
+
       {/* Visual Preview */}
       <div className="mt-3 p-2 bg-white dark:bg-stone-800 rounded-lg border border-amber-200 dark:border-amber-700">
-        <p className="text-[10px] text-stone-600 dark:text-stone-400" style={{ lineHeight: displayValue }}>
-          The quick brown fox jumps over the lazy dog. This preview shows the current line height setting.
+        <p
+          className="text-[10px] text-stone-600 dark:text-stone-400"
+          style={{ lineHeight: displayValue }}
+        >
+          The quick brown fox jumps over the lazy dog. This preview shows the current line height
+          setting.
         </p>
       </div>
     </div>
@@ -1541,11 +1713,7 @@ interface ContainerSizeControlProps {
   onReset: () => void;
 }
 
-function ContainerSizeControl({ 
-  width, 
-  onWidthChange, 
-  onReset,
-}: ContainerSizeControlProps) {
+function ContainerSizeControl({ width, onWidthChange, onReset }: ContainerSizeControlProps) {
   const widthPresets = [
     { label: '60%', value: 60 },
     { label: '70%', value: 70 },
@@ -1570,7 +1738,7 @@ function ContainerSizeControl({
           Reset
         </button>
       </div>
-      
+
       {/* Width Control */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -1581,16 +1749,18 @@ function ContainerSizeControl({
             {width}%
           </span>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <button
-            onClick={() => onWidthChange(Math.max(CONTAINER_WIDTH_MIN, width - CONTAINER_SIZE_STEP))}
+            onClick={() =>
+              onWidthChange(Math.max(CONTAINER_WIDTH_MIN, width - CONTAINER_SIZE_STEP))
+            }
             disabled={width <= CONTAINER_WIDTH_MIN}
             className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Minus size={12} className="text-violet-600 dark:text-violet-400" />
           </button>
-          
+
           <input
             type="range"
             min={CONTAINER_WIDTH_MIN}
@@ -1600,16 +1770,18 @@ function ContainerSizeControl({
             onChange={(e) => onWidthChange(Number(e.target.value))}
             className="flex-1 h-2 bg-violet-200 dark:bg-violet-800 rounded-lg appearance-none cursor-pointer accent-violet-500"
           />
-          
+
           <button
-            onClick={() => onWidthChange(Math.min(CONTAINER_WIDTH_MAX, width + CONTAINER_SIZE_STEP))}
+            onClick={() =>
+              onWidthChange(Math.min(CONTAINER_WIDTH_MAX, width + CONTAINER_SIZE_STEP))
+            }
             disabled={width >= CONTAINER_WIDTH_MAX}
             className="p-1.5 rounded-lg bg-white dark:bg-stone-700 shadow-sm hover:bg-stone-50 dark:hover:bg-stone-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus size={12} className="text-violet-600 dark:text-violet-400" />
           </button>
         </div>
-        
+
         {/* Width Presets */}
         <div className="flex items-center justify-center gap-1.5 mt-2">
           {widthPresets.map((preset) => (
@@ -1627,7 +1799,7 @@ function ContainerSizeControl({
           ))}
         </div>
       </div>
-      
+
       {/* Info Text */}
       <p className="text-[8px] text-stone-400 dark:text-stone-500 mt-3 text-center">
         Tip: Adjust width to control line wrapping.
@@ -1649,16 +1821,16 @@ interface TextFormatControlProps {
   onUnderlineChange: (value: boolean) => void;
 }
 
-function TextFormatControl({ 
-  isBold, 
-  isItalic, 
-  isUnderline, 
-  onBoldChange, 
-  onItalicChange, 
-  onUnderlineChange 
+function TextFormatControl({
+  isBold,
+  isItalic,
+  isUnderline,
+  onBoldChange,
+  onItalicChange,
+  onUnderlineChange,
 }: TextFormatControlProps) {
   const hasAnyFormat = isBold || isItalic || isUnderline;
-  
+
   return (
     <div className="mt-3 p-3 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl border border-orange-200/50 dark:border-orange-800/50">
       {/* Header */}
@@ -1681,7 +1853,7 @@ function TextFormatControl({
           </button>
         )}
       </div>
-      
+
       {/* Format Buttons */}
       <div className="flex items-center justify-center gap-3">
         {/* Bold */}
@@ -1696,7 +1868,7 @@ function TextFormatControl({
           <Bold size={20} strokeWidth={isBold ? 3 : 2} />
           <span className="text-[10px] font-medium">Bold</span>
         </button>
-        
+
         {/* Italic */}
         <button
           onClick={() => onItalicChange(!isItalic)}
@@ -1709,7 +1881,7 @@ function TextFormatControl({
           <Italic size={20} />
           <span className="text-[10px] font-medium">Italic</span>
         </button>
-        
+
         {/* Underline */}
         <button
           onClick={() => onUnderlineChange(!isUnderline)}
@@ -1723,10 +1895,10 @@ function TextFormatControl({
           <span className="text-[10px] font-medium">Underline</span>
         </button>
       </div>
-      
+
       {/* Preview */}
       <div className="mt-3 p-3 bg-white dark:bg-stone-800 rounded-lg border border-orange-200 dark:border-orange-700">
-        <p 
+        <p
           className="text-sm text-center text-stone-700 dark:text-stone-300"
           style={{
             fontWeight: isBold ? '700' : '400',
@@ -1737,7 +1909,7 @@ function TextFormatControl({
           Preview: The quick brown fox
         </p>
       </div>
-      
+
       {/* Active formats indicator */}
       {hasAnyFormat && (
         <div className="mt-2 flex items-center justify-center gap-2">
@@ -1784,25 +1956,25 @@ function CopyLinkSection({ url, copied, onCopy }: CopyLinkSectionProps) {
         <button
           onClick={onCopy}
           className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all active:scale-95 ${
-            copied 
-                    ? 'bg-green-500 text-white' 
+            copied
+              ? 'bg-green-500 text-white'
               : 'bg-stone-900 dark:bg-white text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-100'
-                }`}
-              >
+          }`}
+        >
           {copied ? (
-                  <>
+            <>
               <Check size={12} className="sm:w-3.5 sm:h-3.5" />
               <span>Done</span>
-                  </>
-                ) : (
-                  <>
+            </>
+          ) : (
+            <>
               <Copy size={12} className="sm:w-3.5 sm:h-3.5" />
               <span>Copy</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -1835,31 +2007,35 @@ interface CaptionSectionProps {
 
 function CaptionSection({ quote, copied, onCopy }: CaptionSectionProps) {
   const caption = useMemo(() => generateCaption(quote), [quote]);
-  
+
   return (
     <div className="mb-4 sm:mb-5">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-lg">📝</span>
-          <span className="text-xs font-medium text-stone-600 dark:text-stone-400">Caption & Hashtags</span>
+          <span className="text-xs font-medium text-stone-600 dark:text-stone-400">
+            Caption & Hashtags
+          </span>
         </div>
         <span className="text-[10px] text-stone-400">Tap to copy</span>
       </div>
-      
-      <div 
+
+      <div
         onClick={onCopy}
         className="relative p-3 sm:p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-xl border border-amber-100 dark:border-amber-800/50 cursor-pointer hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-950/50 dark:hover:to-orange-950/50 transition-all group"
       >
         <pre className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 whitespace-pre-wrap font-sans leading-relaxed">
           {caption}
         </pre>
-        
+
         {/* Copy indicator */}
-        <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
-          copied 
-            ? 'bg-green-500 text-white' 
-            : 'bg-white/80 dark:bg-stone-800/80 text-stone-500 dark:text-stone-400 group-hover:bg-amber-500 group-hover:text-white'
-        }`}>
+        <div
+          className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+            copied
+              ? 'bg-green-500 text-white'
+              : 'bg-white/80 dark:bg-stone-800/80 text-stone-500 dark:text-stone-400 group-hover:bg-amber-500 group-hover:text-white'
+          }`}
+        >
           {copied ? (
             <>
               <Check size={10} />
@@ -1873,7 +2049,7 @@ function CaptionSection({ quote, copied, onCopy }: CaptionSectionProps) {
           )}
         </div>
       </div>
-      
+
       <p className="mt-2 text-[10px] text-stone-400 dark:text-stone-500 text-center">
         Paste this caption when you post on Instagram/Reels 🚀
       </p>
@@ -1909,20 +2085,38 @@ interface ShareOptionsGridProps {
 // Film icon for Reel
 function FilmIcon({ className }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect width="18" height="18" x="3" y="3" rx="2"/>
-      <path d="M7 3v18"/>
-      <path d="M3 7.5h4"/>
-      <path d="M3 12h18"/>
-      <path d="M3 16.5h4"/>
-      <path d="M17 3v18"/>
-      <path d="M17 7.5h4"/>
-      <path d="M17 16.5h4"/>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <path d="M7 3v18" />
+      <path d="M3 7.5h4" />
+      <path d="M3 12h18" />
+      <path d="M3 16.5h4" />
+      <path d="M17 3v18" />
+      <path d="M17 7.5h4" />
+      <path d="M17 16.5h4" />
     </svg>
   );
 }
 
-function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, onPinterest, onCreateReel }: ShareOptionsGridProps) {
+function ShareOptionsGrid({
+  isGenerating,
+  onDownload,
+  onInstagram,
+  onWhatsApp,
+  onPinterest,
+  onCreateReel,
+}: ShareOptionsGridProps) {
   return (
     <div className="grid grid-cols-5 gap-2 sm:gap-3">
       <ShareButton
@@ -1931,13 +2125,16 @@ function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, o
         gradient="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50"
         iconBg="bg-gradient-to-br from-amber-500 to-orange-500"
         shadowColor="shadow-amber-500/20 group-hover:shadow-amber-500/40"
-        icon={isGenerating 
-          ? <Sparkles size={18} className="sm:w-6 sm:h-6 text-white animate-pulse" />
-          : <Download size={18} className="sm:w-6 sm:h-6 text-white" />
+        icon={
+          isGenerating ? (
+            <Sparkles size={18} className="sm:w-6 sm:h-6 text-white animate-pulse" />
+          ) : (
+            <Download size={18} className="sm:w-6 sm:h-6 text-white" />
+          )
         }
         label={isGenerating ? 'Wait...' : 'Save'}
       />
-      
+
       <ShareButton
         onClick={onInstagram}
         disabled={isGenerating}
@@ -1947,7 +2144,7 @@ function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, o
         icon={<Instagram size={18} className="sm:w-6 sm:h-6 text-white" />}
         label="Insta"
       />
-      
+
       <ShareButton
         onClick={onWhatsApp}
         disabled={isGenerating}
@@ -1957,7 +2154,7 @@ function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, o
         icon={<MessageCircle size={18} className="sm:w-6 sm:h-6 text-white" />}
         label="WhatsApp"
       />
-      
+
       <ShareButton
         onClick={onPinterest}
         disabled={isGenerating}
@@ -1985,10 +2182,10 @@ function ShareOptionsGrid({ isGenerating, onDownload, onInstagram, onWhatsApp, o
 // Main ShareModal Component
 // ============================================================================
 
-export default function ShareModal({ 
-  isOpen, 
-  onClose, 
-  quote, 
+export default function ShareModal({
+  isOpen,
+  onClose,
+  quote,
   cardTheme = DEFAULT_THEME,
   fontStyle = DEFAULT_FONT,
   backgroundImage = BACKGROUND_IMAGES[0],
@@ -2009,46 +2206,46 @@ export default function ShareModal({
   const [showTextColorControl, setShowTextColorControl] = useState(false);
   const [showLineHeightControl, setShowLineHeightControl] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<ShareFormatConfig>(DEFAULT_FORMAT);
-  
+
   // Background zoom and pan state
   const [bgZoom, setBgZoom] = useState(1);
   const [bgPanX, setBgPanX] = useState(0);
   const [bgPanY, setBgPanY] = useState(0);
-  
+
   // Font style state (for share customization)
   const [selectedFontStyle, setSelectedFontStyle] = useState<FontStyle>(fontStyle);
-  
+
   // Text color state (null = auto/default)
   const [customTextColor, setCustomTextColor] = useState<string | null>(null);
-  
+
   // Line height state (0 = auto)
   const [customLineHeight, setCustomLineHeight] = useState(0);
-  
+
   // Text format state (bold, italic, underline)
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
-  
+
   // Container size state
   const [containerWidth, setContainerWidth] = useState(100);
   const [showContainerSizeControl, setShowContainerSizeControl] = useState(false);
-  
+
   // Reel modal state
   const [showReelModal, setShowReelModal] = useState(false);
   const [showTextFormatControl, setShowTextFormatControl] = useState(false);
-  
+
   // Edited quote text (with line breaks)
   const [editedQuoteText, setEditedQuoteText] = useState(quote.text);
   const [isTextEdited, setIsTextEdited] = useState(false);
-  
+
   const previewRef = useRef<HTMLDivElement>(null);
-  
+
   // Check if background image exists
   const hasBackgroundImage = !!(backgroundImage?.url || quote.custom_background);
-  
+
   // Default text color based on background
   const defaultTextColor = hasBackgroundImage ? '#ffffff' : cardTheme.textColor;
-  
+
   // Reset all states when modal opens/closes
   useEffect(() => {
     if (isOpen) {
@@ -2061,56 +2258,65 @@ export default function ShareModal({
       setBgPanY(0);
     }
   }, [isOpen, quote.text]);
-  
+
   const handleResetZoom = useCallback(() => {
     setBgZoom(1);
     setBgPanX(0);
     setBgPanY(0);
   }, []);
-  
+
   const handleResetTextPosition = useCallback(() => {
     setVerticalOffset(0);
     setHorizontalOffset(0);
   }, []);
-  
+
   const handleResetContainerSize = useCallback(() => {
     setContainerWidth(100);
   }, []);
-  
+
   const handleResetText = useCallback(() => {
     setEditedQuoteText(quote.text);
     setIsTextEdited(false);
   }, [quote.text]);
-  
-  const handleTextChange = useCallback((newText: string) => {
-    setEditedQuoteText(newText);
-    setIsTextEdited(newText !== quote.text);
-  }, [quote.text]);
-  
+
+  const handleTextChange = useCallback(
+    (newText: string) => {
+      setEditedQuoteText(newText);
+      setIsTextEdited(newText !== quote.text);
+    },
+    [quote.text]
+  );
+
   // Create modified quote object with edited text
-  const displayQuote = useMemo(() => ({
-    ...quote,
-    text: editedQuoteText,
-  }), [quote, editedQuoteText]);
+  const displayQuote = useMemo(
+    () => ({
+      ...quote,
+      text: editedQuoteText,
+    }),
+    [quote, editedQuoteText]
+  );
 
   // Derived state
   const isUserQuote = quote.isUserQuote || String(quote.id).startsWith('user_');
   const isPublicQuote = !isUserQuote || isQuotePublic(quote.is_public);
-  
+
   // Calculate auto font size based on text length and format (for display in control)
   const autoFontSize = useMemo(() => {
     const textLength = quote.text.length;
     const getBaseFontSize = (formatId: ShareFormat): { min: number; max: number } => {
       switch (formatId) {
-        case 'story': return { min: 15, max: 22 };
-        case 'square': return { min: 13, max: 19 };
-        default: return { min: 13, max: 19 };
+        case 'story':
+          return { min: 15, max: 22 };
+        case 'square':
+          return { min: 13, max: 19 };
+        default:
+          return { min: 13, max: 19 };
       }
     };
     const { min, max } = getBaseFontSize(selectedFormat.id);
     return calculateFontSize(textLength, min, max);
   }, [quote.text.length, selectedFormat.id]);
-  
+
   // Generate quote URL
   const getQuoteUrl = useCallback(() => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -2121,13 +2327,16 @@ export default function ShareModal({
   }, [isUserQuote, quote.id]);
 
   // Generate quote text for sharing
-  const getShareText = useCallback((includeUrl = false) => {
-    const text = quote.author ? `"${quote.text}" — ${quote.author}` : `"${quote.text}"`;
-    if (includeUrl && isPublicQuote) {
-      return `${text}\n\n${getQuoteUrl()}`;
-    }
-    return text;
-  }, [quote.text, quote.author, isPublicQuote, getQuoteUrl]);
+  const getShareText = useCallback(
+    (includeUrl = false) => {
+      const text = quote.author ? `"${quote.text}" — ${quote.author}` : `"${quote.text}"`;
+      if (includeUrl && isPublicQuote) {
+        return `${text}\n\n${getQuoteUrl()}`;
+      }
+      return text;
+    },
+    [quote.text, quote.author, isPublicQuote, getQuoteUrl]
+  );
 
   // Reset state on modal open
   useEffect(() => {
@@ -2192,7 +2401,9 @@ export default function ShareModal({
 
   // Generate image from preview card
   const generateImage = useCallback(async (): Promise<string | null> => {
-    const previewCard = previewRef.current?.querySelector('[data-preview-card="true"]') as HTMLElement;
+    const previewCard = previewRef.current?.querySelector(
+      '[data-preview-card="true"]'
+    ) as HTMLElement;
     if (!previewCard) return null;
 
     // Hide author text before generating image (author shows in preview but not in download)
@@ -2236,7 +2447,10 @@ export default function ShareModal({
     } catch {
       // Fallback with lower quality if device can't handle high resolution
       try {
-        const result = await toPng(previewCard, { ...imageOptions, pixelRatio: Math.max(2, effectivePixelRatio - 2) });
+        const result = await toPng(previewCard, {
+          ...imageOptions,
+          pixelRatio: Math.max(2, effectivePixelRatio - 2),
+        });
         restoreAuthor();
         return result;
       } catch {
@@ -2245,11 +2459,11 @@ export default function ShareModal({
           const result = await toPng(previewCard, { ...imageOptions, pixelRatio: 2 });
           restoreAuthor();
           return result;
-      } catch {
-        restoreAuthor();
-        return null;
+        } catch {
+          restoreAuthor();
+          return null;
+        }
       }
-    }
     }
   }, [selectedFormat.pixelRatio, bgZoom]);
 
@@ -2285,9 +2499,10 @@ export default function ShareModal({
     await handleDownload();
     setTimeout(() => {
       // Open different Instagram pages based on format
-      const instagramUrl = selectedFormat.id === 'story' 
-        ? 'https://www.instagram.com/create/story/' 
-        : 'https://www.instagram.com/';
+      const instagramUrl =
+        selectedFormat.id === 'story'
+          ? 'https://www.instagram.com/create/story/'
+          : 'https://www.instagram.com/';
       window.open(instagramUrl, '_blank', 'noopener,noreferrer');
     }, 300);
   }, [handleDownload, selectedFormat.id]);
@@ -2303,9 +2518,13 @@ export default function ShareModal({
   const handlePinterestShare = useCallback(async () => {
     const imageUrl = await generateImage();
     if (!imageUrl) return;
-    
+
     const description = getShareText(false);
-    const shareUrl = isPublicQuote ? getQuoteUrl() : (typeof window !== 'undefined' ? window.location.origin : '');
+    const shareUrl = isPublicQuote
+      ? getQuoteUrl()
+      : typeof window !== 'undefined'
+        ? window.location.origin
+        : '';
     const url = `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&media=${encodeURIComponent(imageUrl)}&description=${encodeURIComponent(description)}`;
     window.open(url, '_blank', 'width=750,height=600');
   }, [generateImage, getShareText, isPublicQuote, getQuoteUrl]);
@@ -2315,21 +2534,21 @@ export default function ShareModal({
     setIsGenerating(true);
     const imageUrl = await generateImage();
     setIsGenerating(false);
-    
+
     const shareText = getShareText(false);
     const shareUrl = isPublicQuote ? getQuoteUrl() : '';
-    
+
     if (navigator.share && imageUrl) {
       try {
         const res = await fetch(imageUrl);
         const blob = await res.blob();
         const file = new File([blob], getFilename(), { type: 'image/png' });
-        
+
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: 'Quote', text: shareText });
           return;
         }
-        
+
         await navigator.share({
           title: 'Quote',
           text: shareText,
@@ -2352,25 +2571,26 @@ export default function ShareModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
       {/* Modal */}
       <div className="relative w-full sm:max-w-xl mx-0 sm:mx-4 bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[95vh] overflow-hidden animate-in slide-in-from-bottom duration-300">
         {/* Header */}
         <div className="relative px-4 pt-4 pb-3 sm:px-6 sm:pt-5 sm:pb-4 border-b border-stone-100 dark:border-stone-800">
           <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-stone-300 dark:bg-stone-700 rounded-full sm:hidden" />
-          
+
           <div className="flex items-center justify-between mt-2 sm:mt-0">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center">
                 <Share2 size={16} className="sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white">Share Quote</h2>
-                <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400">Adjust position & download</p>
+                <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white">
+                  Share Quote
+                </h2>
+                <p className="text-[10px] sm:text-xs text-stone-500 dark:text-stone-400">
+                  Adjust position & download
+                </p>
               </div>
             </div>
             <button
@@ -2389,32 +2609,31 @@ export default function ShareModal({
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <ImageIcon size={14} className="text-stone-400" />
-                <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Preview</span>
+                <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
+                  Preview
+                </span>
               </div>
-              
+
               {/* Format Selector */}
-              <FormatSelector 
-                selectedFormat={selectedFormat.id} 
-                onChange={setSelectedFormat} 
-              />
+              <FormatSelector selectedFormat={selectedFormat.id} onChange={setSelectedFormat} />
             </div>
 
             {/* Preview Card Container */}
-            <div 
+            <div
               ref={previewRef}
               className="flex justify-center items-center p-4 sm:p-6 bg-gradient-to-br from-stone-100 via-stone-50 to-stone-200 dark:from-stone-800 dark:via-stone-850 dark:to-stone-900 rounded-2xl transition-all duration-300"
               style={{ minHeight: `${selectedFormat.height * PREVIEW_SCALE + 48}px` }}
             >
-              <div 
+              <div
                 className="relative shadow-2xl rounded-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10 transition-all duration-300"
-                style={{ 
-                  width: `${selectedFormat.width * PREVIEW_SCALE}px`, 
-                  height: `${selectedFormat.height * PREVIEW_SCALE}px` 
+                style={{
+                  width: `${selectedFormat.width * PREVIEW_SCALE}px`,
+                  height: `${selectedFormat.height * PREVIEW_SCALE}px`,
                 }}
               >
-                <div 
+                <div
                   className="origin-top-left transition-all duration-300"
-                  style={{ 
+                  style={{
                     transform: `scale(${PREVIEW_SCALE})`,
                     width: `${selectedFormat.width}px`,
                     height: `${selectedFormat.height}px`,
@@ -2449,7 +2668,7 @@ export default function ShareModal({
             <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 {/* Position Toggle */}
-            <button
+                <button
                   onClick={() => {
                     setShowPositionControl(!showPositionControl);
                     if (!showPositionControl) {
@@ -2465,17 +2684,17 @@ export default function ShareModal({
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                    showPositionControl 
-                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' 
+                    showPositionControl
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
                       : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <MoveVertical size={12} />
                   <span className="hidden sm:inline">Position</span>
-            </button>
+                </button>
 
                 {/* Font Size Toggle */}
-            <button
+                <button
                   onClick={() => {
                     setShowFontSizeControl(!showFontSizeControl);
                     if (!showFontSizeControl) {
@@ -2491,17 +2710,17 @@ export default function ShareModal({
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                    showFontSizeControl 
-                      ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' 
+                    showFontSizeControl
+                      ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
                       : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <Type size={12} />
                   <span className="hidden sm:inline">Size</span>
-            </button>
+                </button>
 
                 {/* Text Alignment Toggle */}
-            <button
+                <button
                   onClick={() => {
                     setShowAlignmentControl(!showAlignmentControl);
                     if (!showAlignmentControl) {
@@ -2517,8 +2736,8 @@ export default function ShareModal({
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                    showAlignmentControl 
-                      ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' 
+                    showAlignmentControl
+                      ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
                       : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
@@ -2530,7 +2749,7 @@ export default function ShareModal({
                   {textAlign === 'end' && <AlignEndVertical size={12} />}
                   <span className="hidden sm:inline">Align</span>
                 </button>
-                
+
                 {/* Background Zoom Toggle - Only show when there's a background image */}
                 {hasBackgroundImage && (
                   <button
@@ -2549,21 +2768,23 @@ export default function ShareModal({
                       }
                     }}
                     className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                      showZoomControl 
-                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' 
+                      showZoomControl
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
                         : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                     }`}
                   >
                     <ZoomIn size={12} />
                     <span className="hidden sm:inline">Zoom</span>
                     {bgZoom > 1 && (
-                      <span className="text-[9px] bg-emerald-500 text-white px-1 rounded">{bgZoom.toFixed(1)}x</span>
+                      <span className="text-[9px] bg-emerald-500 text-white px-1 rounded">
+                        {bgZoom.toFixed(1)}x
+                      </span>
                     )}
-            </button>
+                  </button>
                 )}
 
                 {/* Text Editor Toggle - Add Line Breaks */}
-            <button
+                <button
                   onClick={() => {
                     setShowTextEditor(!showTextEditor);
                     if (!showTextEditor) {
@@ -2579,18 +2800,16 @@ export default function ShareModal({
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                    showTextEditor 
-                      ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' 
+                    showTextEditor
+                      ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
                       : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <WrapText size={12} />
                   <span className="hidden sm:inline">Edit</span>
-                  {isTextEdited && (
-                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                  )}
-            </button>
-            
+                  {isTextEdited && <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />}
+                </button>
+
                 {/* Font Style Toggle */}
                 <button
                   onClick={() => {
@@ -2608,15 +2827,15 @@ export default function ShareModal({
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                    showFontStyleControl 
-                      ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' 
+                    showFontStyleControl
+                      ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
                       : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <Type size={12} />
                   <span className="hidden sm:inline">Style</span>
                 </button>
-                
+
                 {/* Text Color Toggle */}
                 <button
                   onClick={() => {
@@ -2634,21 +2853,21 @@ export default function ShareModal({
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                    showTextColorControl 
-                      ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400' 
+                    showTextColorControl
+                      ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400'
                       : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <Palette size={12} />
                   <span className="hidden sm:inline">Color</span>
                   {customTextColor && (
-                    <span 
+                    <span
                       className="w-2.5 h-2.5 rounded-full border border-white/50"
                       style={{ backgroundColor: customTextColor }}
                     />
                   )}
                 </button>
-                
+
                 {/* Line Height Toggle */}
                 <button
                   onClick={() => {
@@ -2666,15 +2885,15 @@ export default function ShareModal({
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                    showLineHeightControl 
-                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' 
+                    showLineHeightControl
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
                       : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
                   <LineChart size={12} />
                   <span className="hidden sm:inline">Space</span>
                 </button>
-                
+
                 {/* Text Format Toggle (Bold, Italic, Underline) */}
                 <button
                   onClick={() => {
@@ -2692,8 +2911,8 @@ export default function ShareModal({
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                    showTextFormatControl 
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' 
+                    showTextFormatControl
+                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
                       : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
@@ -2707,7 +2926,7 @@ export default function ShareModal({
                     </span>
                   )}
                 </button>
-                
+
                 {/* Container Size Toggle */}
                 <button
                   onClick={() => {
@@ -2725,8 +2944,8 @@ export default function ShareModal({
                     }
                   }}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-colors ${
-                    showContainerSizeControl 
-                      ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400' 
+                    showContainerSizeControl
+                      ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400'
                       : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
                   }`}
                 >
@@ -2738,8 +2957,8 @@ export default function ShareModal({
                     </span>
                   )}
                 </button>
-          </div>
-              
+              </div>
+
               {/* Output size indicator */}
               <span className="text-[10px] text-stone-400 dark:text-stone-500 font-mono">
                 {selectedFormat.id === 'story' && '1080×1920'}
@@ -2747,7 +2966,7 @@ export default function ShareModal({
                 {selectedFormat.id === 'square' && '1080×1080'}
               </span>
             </div>
-            
+
             {/* Text Position Control Panel */}
             {showPositionControl && (
               <TextPositionControl
@@ -2767,15 +2986,12 @@ export default function ShareModal({
                 autoSize={autoFontSize}
               />
             )}
-            
+
             {/* Text Alignment Control Panel */}
             {showAlignmentControl && (
-              <TextAlignmentControl
-                value={textAlign}
-                onChange={setTextAlign}
-              />
+              <TextAlignmentControl value={textAlign} onChange={setTextAlign} />
             )}
-            
+
             {/* Background Zoom Control Panel */}
             {showZoomControl && hasBackgroundImage && (
               <BackgroundZoomControl
@@ -2788,7 +3004,7 @@ export default function ShareModal({
                 onReset={handleResetZoom}
               />
             )}
-            
+
             {/* Text Editor Control Panel */}
             {showTextEditor && (
               <TextEditorControl
@@ -2799,7 +3015,7 @@ export default function ShareModal({
                 isEdited={isTextEdited}
               />
             )}
-            
+
             {/* Font Style Control Panel */}
             {showFontStyleControl && (
               <FontStyleSelector
@@ -2807,7 +3023,7 @@ export default function ShareModal({
                 onFontChange={setSelectedFontStyle}
               />
             )}
-            
+
             {/* Text Color Control Panel */}
             {showTextColorControl && (
               <TextColorPicker
@@ -2816,7 +3032,7 @@ export default function ShareModal({
                 onChange={setCustomTextColor}
               />
             )}
-            
+
             {/* Line Height Control Panel */}
             {showLineHeightControl && (
               <LineHeightControl
@@ -2825,7 +3041,7 @@ export default function ShareModal({
                 onChange={setCustomLineHeight}
               />
             )}
-            
+
             {/* Text Format Control Panel (Bold, Italic, Underline) */}
             {showTextFormatControl && (
               <TextFormatControl
@@ -2837,7 +3053,7 @@ export default function ShareModal({
                 onUnderlineChange={setIsUnderline}
               />
             )}
-            
+
             {/* Container Size Control Panel */}
             {showContainerSizeControl && (
               <ContainerSizeControl
@@ -2846,14 +3062,10 @@ export default function ShareModal({
                 onReset={handleResetContainerSize}
               />
             )}
-            </div>
+          </div>
 
           {/* Caption & Hashtags Section */}
-          <CaptionSection 
-            quote={quote} 
-            copied={captionCopied} 
-            onCopy={handleCopyCaption} 
-          />
+          <CaptionSection quote={quote} copied={captionCopied} onCopy={handleCopyCaption} />
 
           {/* Copy Link / Private Notice */}
           {isPublicQuote ? (
@@ -2879,10 +3091,12 @@ export default function ShareModal({
             className="w-full mt-3 sm:mt-4 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 bg-stone-100 dark:bg-stone-800 rounded-xl sm:rounded-2xl hover:bg-stone-200 dark:hover:bg-stone-700 transition-all active:scale-[0.98] disabled:opacity-50"
           >
             <Share2 size={14} className="sm:w-4 sm:h-4 text-stone-600 dark:text-stone-400" />
-            <span className="text-xs sm:text-sm font-semibold text-stone-700 dark:text-stone-300">More sharing options</span>
+            <span className="text-xs sm:text-sm font-semibold text-stone-700 dark:text-stone-300">
+              More sharing options
+            </span>
           </button>
-          </div>
         </div>
+      </div>
 
       {/* Quote Reel Modal */}
       <QuoteReelModal

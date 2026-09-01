@@ -83,20 +83,20 @@ export default function AuthModal({
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
-    
+
     if (authMode === 'register') {
       const nameError = validateName(formData.name);
       if (nameError) errors.name = nameError;
     }
-    
+
     const emailError = validateEmail(formData.email);
     if (emailError) errors.email = emailError;
-    
+
     if (authMode !== 'forgot-password') {
       const passwordError = validatePassword(formData.password, authMode === 'register');
       if (passwordError) errors.password = passwordError;
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -108,10 +108,10 @@ export default function AuthModal({
       [name]: value,
     });
     setError('');
-    
+
     if (touched[name]) {
       const fieldError = validateField(name, value);
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
         [name]: fieldError,
       }));
@@ -120,10 +120,10 @@ export default function AuthModal({
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setTouched(prev => ({ ...prev, [name]: true }));
-    
+    setTouched((prev) => ({ ...prev, [name]: true }));
+
     const fieldError = validateField(name, value);
-    setValidationErrors(prev => ({
+    setValidationErrors((prev) => ({
       ...prev,
       [name]: fieldError,
     }));
@@ -131,13 +131,13 @@ export default function AuthModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     setTouched({ name: true, email: true, password: true });
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
@@ -158,7 +158,7 @@ export default function AuthModal({
 
         const data = await response.json();
         if (response.ok) {
-          const message = data.instructions 
+          const message = data.instructions
             ? `${data.message}\n\n${data.instructions}`
             : data.message;
           setSuccessMessage(message);
@@ -195,20 +195,20 @@ export default function AuthModal({
       <div className="text-center mb-4 sm:mb-6">
         <div className="relative inline-block">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-rose-500 rounded-2xl blur-xl opacity-30 scale-110" />
-          <Image 
-            src="/logo.svg" 
-            alt="QuoteSwipe" 
+          <Image
+            src="/logo.svg"
+            alt="QuoteSwipe"
             width={72}
             height={72}
             className="relative w-12 h-12 sm:w-16 sm:h-16 mx-auto"
           />
         </div>
-        
+
         <h2 className="mt-3 sm:mt-4 text-xl sm:text-2xl md:text-3xl font-bold text-stone-800 dark:text-stone-100">
-          {authMode === 'forgot-password' 
-            ? 'Reset Password' 
-            : swipeCount >= 5 
-              ? 'Loving the quotes?' 
+          {authMode === 'forgot-password'
+            ? 'Reset Password'
+            : swipeCount >= 5
+              ? 'Loving the quotes?'
               : 'Welcome Back!'}
         </h2>
         <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-stone-500 dark:text-stone-400 px-2">
@@ -257,8 +257,13 @@ export default function AuthModal({
       {successMessage && (
         <div className="mb-3 sm:mb-4 p-2.5 sm:p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 rounded-lg sm:rounded-xl">
           <div className="flex items-start gap-2">
-            <Check size={16} className="sm:w-[18px] sm:h-[18px] text-emerald-500 mt-0.5 flex-shrink-0" />
-            <p className="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm whitespace-pre-line">{successMessage}</p>
+            <Check
+              size={16}
+              className="sm:w-[18px] sm:h-[18px] text-emerald-500 mt-0.5 flex-shrink-0"
+            />
+            <p className="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm whitespace-pre-line">
+              {successMessage}
+            </p>
           </div>
         </div>
       )}
@@ -272,7 +277,10 @@ export default function AuthModal({
               Full Name
             </label>
             <div className="relative">
-              <User size={16} className="sm:w-[18px] sm:h-[18px] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+              <User
+                size={16}
+                className="sm:w-[18px] sm:h-[18px] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+              />
               <input
                 type="text"
                 name="name"
@@ -280,9 +288,10 @@ export default function AuthModal({
                 onChange={handleInputChange}
                 onBlur={handleBlur}
                 className={`w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 text-sm sm:text-base
-                  ${touched.name && validationErrors.name 
-                    ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200' 
-                    : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
+                  ${
+                    touched.name && validationErrors.name
+                      ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200'
+                      : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
                   }
                   bg-white/50 dark:bg-stone-800/50 text-stone-800 dark:text-stone-100 
                   placeholder-stone-400 focus:ring-2 focus:outline-none transition-all`}
@@ -291,7 +300,9 @@ export default function AuthModal({
               />
             </div>
             {touched.name && validationErrors.name && (
-              <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-red-500">{validationErrors.name}</p>
+              <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-red-500">
+                {validationErrors.name}
+              </p>
             )}
           </div>
         )}
@@ -302,7 +313,10 @@ export default function AuthModal({
             Email Address
           </label>
           <div className="relative">
-            <Mail size={16} className="sm:w-[18px] sm:h-[18px] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+            <Mail
+              size={16}
+              className="sm:w-[18px] sm:h-[18px] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+            />
             <input
               type="email"
               name="email"
@@ -310,9 +324,10 @@ export default function AuthModal({
               onChange={handleInputChange}
               onBlur={handleBlur}
               className={`w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 text-sm sm:text-base
-                ${touched.email && validationErrors.email 
-                  ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200' 
-                  : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
+                ${
+                  touched.email && validationErrors.email
+                    ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200'
+                    : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
                 }
                 bg-white/50 dark:bg-stone-800/50 text-stone-800 dark:text-stone-100 
                 placeholder-stone-400 focus:ring-2 focus:outline-none transition-all`}
@@ -321,7 +336,9 @@ export default function AuthModal({
             />
           </div>
           {touched.email && validationErrors.email && (
-            <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-red-500">{validationErrors.email}</p>
+            <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-red-500">
+              {validationErrors.email}
+            </p>
           )}
         </div>
 
@@ -332,7 +349,10 @@ export default function AuthModal({
               Password
             </label>
             <div className="relative">
-              <Lock size={16} className="sm:w-[18px] sm:h-[18px] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+              <Lock
+                size={16}
+                className="sm:w-[18px] sm:h-[18px] absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+              />
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -340,9 +360,10 @@ export default function AuthModal({
                 onChange={handleInputChange}
                 onBlur={handleBlur}
                 className={`w-full pl-9 sm:pl-11 pr-10 sm:pr-12 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 text-sm sm:text-base
-                  ${touched.password && validationErrors.password 
-                    ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200' 
-                    : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
+                  ${
+                    touched.password && validationErrors.password
+                      ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-200'
+                      : 'border-stone-200 dark:border-stone-700 focus:border-amber-500 focus:ring-amber-200 dark:focus:ring-amber-800'
                   }
                   bg-white/50 dark:bg-stone-800/50 text-stone-800 dark:text-stone-100 
                   placeholder-stone-400 focus:ring-2 focus:outline-none transition-all`}
@@ -355,11 +376,17 @@ export default function AuthModal({
                 className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Eye size={16} className="sm:w-[18px] sm:h-[18px]" />}
+                {showPassword ? (
+                  <EyeOff size={16} className="sm:w-[18px] sm:h-[18px]" />
+                ) : (
+                  <Eye size={16} className="sm:w-[18px] sm:h-[18px]" />
+                )}
               </button>
             </div>
             {touched.password && validationErrors.password && (
-              <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-red-500">{validationErrors.password}</p>
+              <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-red-500">
+                {validationErrors.password}
+              </p>
             )}
             {!validationErrors.password && authMode === 'register' && (
               <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-stone-400">
@@ -387,7 +414,10 @@ export default function AuthModal({
               {authMode === 'login' && 'Sign In'}
               {authMode === 'register' && 'Create Account'}
               {authMode === 'forgot-password' && 'Send Reset Link'}
-              <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] group-hover:translate-x-1 transition-transform" />
+              <ArrowRight
+                size={16}
+                className="sm:w-[18px] sm:h-[18px] group-hover:translate-x-1 transition-transform"
+              />
             </>
           )}
         </button>
@@ -460,9 +490,16 @@ export default function AuthModal({
       {authMode !== 'forgot-password' && (
         <p className="mt-3 sm:mt-4 text-center text-[10px] sm:text-xs text-stone-400 px-2">
           By continuing, you agree to our{' '}
-          <a href="/terms-of-service" className="text-amber-600 dark:text-amber-400 hover:underline">Terms</a>
-          {' '}and{' '}
-          <a href="/privacy-policy" className="text-amber-600 dark:text-amber-400 hover:underline">Privacy Policy</a>
+          <a
+            href="/terms-of-service"
+            className="text-amber-600 dark:text-amber-400 hover:underline"
+          >
+            Terms
+          </a>{' '}
+          and{' '}
+          <a href="/privacy-policy" className="text-amber-600 dark:text-amber-400 hover:underline">
+            Privacy Policy
+          </a>
         </p>
       )}
     </Modal>

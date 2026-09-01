@@ -23,7 +23,9 @@ export interface EmailOptions {
 }
 
 // Send email function
-export async function sendEmail(options: EmailOptions): Promise<{ success: boolean; error?: string }> {
+export async function sendEmail(
+  options: EmailOptions
+): Promise<{ success: boolean; error?: string }> {
   try {
     if (!emailConfig.auth.user || !emailConfig.auth.pass) {
       console.warn('Email not configured. Set SMTP_USER and SMTP_PASS environment variables.');
@@ -41,9 +43,9 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
     return { success: true };
   } catch (error) {
     console.error('Email send error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to send email' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send email',
     };
   }
 }
@@ -59,7 +61,7 @@ export async function sendBulkEmails(
 
   for (let i = 0; i < emails.length; i++) {
     const result = await sendEmail(emails[i]);
-    
+
     if (result.success) {
       sent++;
     } else {
@@ -69,7 +71,7 @@ export async function sendBulkEmails(
 
     // Rate limiting: wait 100ms between emails to avoid spam filters
     if (i < emails.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     // Progress callback
@@ -93,4 +95,3 @@ export async function verifyEmailConfig(): Promise<boolean> {
     return false;
   }
 }
-

@@ -1,7 +1,20 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Search, Sparkles, Trash2, Share2, Loader2, X, Edit3, Globe, Lock, Plus, ArrowLeft, MoreVertical } from 'lucide-react';
+import {
+  Search,
+  Sparkles,
+  Trash2,
+  Share2,
+  Loader2,
+  X,
+  Edit3,
+  Globe,
+  Lock,
+  Plus,
+  ArrowLeft,
+  MoreVertical,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import ThematicLoader from './ThematicLoader';
 import { isQuotePublic } from '@/lib/helpers';
@@ -54,49 +67,56 @@ export default function MyQuotesView({
   const filteredQuotes = useMemo(() => {
     if (!searchQuery.trim()) return quotes;
     const q = searchQuery.toLowerCase();
-    return quotes.filter(quote =>
-      quote.text.toLowerCase().includes(q) ||
-      quote.author.toLowerCase().includes(q) ||
-      (quote.category && quote.category.toLowerCase().includes(q))
+    return quotes.filter(
+      (quote) =>
+        quote.text.toLowerCase().includes(q) ||
+        quote.author.toLowerCase().includes(q) ||
+        (quote.category && quote.category.toLowerCase().includes(q))
     );
   }, [quotes, searchQuery]);
 
   // Handle delete
-  const handleDelete = useCallback(async (quoteId: string | number) => {
-    setDeletingId(quoteId);
-    setActiveActionsId(null);
-    try {
-      const response = await fetch(`/api/user/quotes/${quoteId}`, {
-        method: 'DELETE',
-      });
+  const handleDelete = useCallback(
+    async (quoteId: string | number) => {
+      setDeletingId(quoteId);
+      setActiveActionsId(null);
+      try {
+        const response = await fetch(`/api/user/quotes/${quoteId}`, {
+          method: 'DELETE',
+        });
 
-      if (response.ok) {
-        onDeleteQuote(quoteId);
-        toast.success('Quote deleted');
-      } else {
+        if (response.ok) {
+          onDeleteQuote(quoteId);
+          toast.success('Quote deleted');
+        } else {
+          toast.error('Failed to delete quote');
+        }
+      } catch (error) {
         toast.error('Failed to delete quote');
+      } finally {
+        setDeletingId(null);
       }
-    } catch (error) {
-      toast.error('Failed to delete quote');
-    } finally {
-      setDeletingId(null);
-    }
-  }, [onDeleteQuote]);
+    },
+    [onDeleteQuote]
+  );
 
   // Toggle actions menu (for mobile)
   const toggleActions = useCallback((e: React.MouseEvent, quoteId: string | number) => {
     e.stopPropagation();
-    setActiveActionsId(prev => prev === quoteId ? null : quoteId);
+    setActiveActionsId((prev) => (prev === quoteId ? null : quoteId));
   }, []);
 
   // Handle card click - on mobile with actions shown, close actions; otherwise navigate
-  const handleCardClick = useCallback((quote: UserQuote) => {
-    if (activeActionsId === quote.id) {
-      setActiveActionsId(null);
-    } else {
-      onViewQuote(quote);
-    }
-  }, [activeActionsId, onViewQuote]);
+  const handleCardClick = useCallback(
+    (quote: UserQuote) => {
+      if (activeActionsId === quote.id) {
+        setActiveActionsId(null);
+      } else {
+        onViewQuote(quote);
+      }
+    },
+    [activeActionsId, onViewQuote]
+  );
 
   // Format date
   const formatDate = (dateString?: string) => {
@@ -106,9 +126,9 @@ export default function MyQuotesView({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-30 bg-[#FFFBF7] dark:bg-[#0C0A09] flex flex-col"
-      style={{ 
+      style={{
         paddingTop: 'env(safe-area-inset-top, 0px)',
         overscrollBehavior: 'none',
       }}
@@ -123,13 +143,15 @@ export default function MyQuotesView({
             >
               <ArrowLeft size={18} className="sm:w-5 sm:h-5 text-stone-600 dark:text-stone-400" />
             </button>
-            
+
             <div className="flex-1 min-w-0">
               <h1 className="text-base sm:text-lg md:text-xl font-bold text-stone-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
                 <Sparkles size={18} className="sm:w-5 sm:h-5 text-rose-500 shrink-0" />
                 <span className="truncate">My Quotes</span>
               </h1>
-              <p className="text-[10px] sm:text-xs text-stone-500">{quotes.length} quotes created</p>
+              <p className="text-[10px] sm:text-xs text-stone-500">
+                {quotes.length} quotes created
+              </p>
             </div>
 
             {/* Create Button */}
@@ -144,7 +166,10 @@ export default function MyQuotesView({
 
           {/* Search Bar */}
           <div className="mt-2.5 sm:mt-3 relative">
-            <Search size={14} className="sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+            <Search
+              size={14}
+              className="sm:w-4 sm:h-4 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-stone-400"
+            />
             <input
               type="text"
               placeholder="Search your quotes..."
@@ -165,7 +190,7 @@ export default function MyQuotesView({
       </header>
 
       {/* Content */}
-      <main 
+      <main
         className="flex-1 overflow-y-auto"
         style={{
           paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
@@ -182,7 +207,9 @@ export default function MyQuotesView({
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-3 sm:mb-4">
                 <Sparkles size={28} className="sm:w-9 sm:h-9 text-rose-500" />
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-1.5 sm:mb-2">No quotes yet</h2>
+              <h2 className="text-base sm:text-lg font-bold text-stone-900 dark:text-white mb-1.5 sm:mb-2">
+                No quotes yet
+              </h2>
               <p className="text-xs sm:text-sm text-stone-500 max-w-xs mb-4 sm:mb-6">
                 Create your first quote and share your thoughts with the world
               </p>
@@ -211,10 +238,10 @@ export default function MyQuotesView({
                 const isPublic = isQuotePublic(quote.is_public);
                 const hasCustomBg = !!quote.custom_background;
                 // Get preset background URL if background_id is set
-                const presetBg = quote.background_id 
-                  ? BACKGROUND_IMAGES.find(bg => bg.id === quote.background_id)?.url 
+                const presetBg = quote.background_id
+                  ? BACKGROUND_IMAGES.find((bg) => bg.id === quote.background_id)?.url
                   : null;
-                
+
                 // Default backgrounds for quotes without custom background
                 const defaultBgs = [
                   'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80',
@@ -224,11 +251,14 @@ export default function MyQuotesView({
                   'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&q=80',
                   'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&q=80',
                 ];
-                const bgIndex = typeof quote.id === 'string' ? quote.id.charCodeAt(0) % defaultBgs.length : Number(quote.id) % defaultBgs.length;
+                const bgIndex =
+                  typeof quote.id === 'string'
+                    ? quote.id.charCodeAt(0) % defaultBgs.length
+                    : Number(quote.id) % defaultBgs.length;
                 const backgroundUrl = quote.custom_background || presetBg || defaultBgs[bgIndex];
-                
+
                 const isActionsVisible = activeActionsId === quote.id;
-                
+
                 return (
                   <div
                     key={quote.id}
@@ -236,26 +266,30 @@ export default function MyQuotesView({
                     className="group relative aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform duration-200 shadow-sm"
                   >
                     {/* Background Image */}
-                    <div 
+                    <div
                       className="absolute inset-0 bg-cover bg-center"
                       style={{ backgroundImage: `url(${backgroundUrl})` }}
                     />
-                    
+
                     {/* Dark Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    
+
                     {/* Top Icons Row */}
                     <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
                       {/* Visibility Badge */}
-                      <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 backdrop-blur-sm ${
-                        isPublic
-                          ? 'bg-green-500/30 text-green-200'
-                          : 'bg-black/30 text-white/80'
-                      }`}>
-                        {isPublic ? <Globe size={9} className="sm:w-[10px] sm:h-[10px]" /> : <Lock size={9} className="sm:w-[10px] sm:h-[10px]" />}
+                      <span
+                        className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-0.5 backdrop-blur-sm ${
+                          isPublic ? 'bg-green-500/30 text-green-200' : 'bg-black/30 text-white/80'
+                        }`}
+                      >
+                        {isPublic ? (
+                          <Globe size={9} className="sm:w-[10px] sm:h-[10px]" />
+                        ) : (
+                          <Lock size={9} className="sm:w-[10px] sm:h-[10px]" />
+                        )}
                         <span className="hidden sm:inline">{isPublic ? 'Public' : 'Private'}</span>
                       </span>
-                      
+
                       {/* Mobile Menu Button (hidden when actions shown) + Sparkle Icon */}
                       <div className="flex items-center gap-1">
                         {!isActionsVisible && (
@@ -271,13 +305,15 @@ export default function MyQuotesView({
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Action Buttons - Shows instantly on mobile when active, with transition on desktop hover */}
-                    <div className={`absolute top-10 right-2 flex flex-col gap-1 z-10 ${
-                      isActionsVisible 
-                        ? 'flex' 
-                        : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
-                    }`}>
+                    <div
+                      className={`absolute top-10 right-2 flex flex-col gap-1 z-10 ${
+                        isActionsVisible
+                          ? 'flex'
+                          : 'hidden sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:pointer-events-none sm:group-hover:pointer-events-auto sm:transition-opacity'
+                      }`}
+                    >
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -310,13 +346,16 @@ export default function MyQuotesView({
                         title="Delete"
                       >
                         {deletingId === quote.id ? (
-                          <Loader2 size={16} className="sm:w-3.5 sm:h-3.5 text-white animate-spin" />
+                          <Loader2
+                            size={16}
+                            className="sm:w-3.5 sm:h-3.5 text-white animate-spin"
+                          />
                         ) : (
                           <Trash2 size={16} className="sm:w-3.5 sm:h-3.5 text-white" />
                         )}
                       </button>
                     </div>
-                    
+
                     {/* Quote Content */}
                     <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 z-10">
                       <p className="text-white text-xs sm:text-sm leading-snug line-clamp-3 drop-shadow-md">

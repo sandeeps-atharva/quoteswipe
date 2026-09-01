@@ -38,16 +38,13 @@ export default function ViewUserQuoteModal({
         categoryText: '#ffffff',
       }
     : quote.background_id
-      ? BACKGROUND_IMAGES.find(bg => bg.id === quote.background_id) || backgroundImage
+      ? BACKGROUND_IMAGES.find((bg) => bg.id === quote.background_id) || backgroundImage
       : backgroundImage;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop with warm gradient */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
-        onClick={onClose}
-      >
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose}>
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
       </div>
 

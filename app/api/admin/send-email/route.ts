@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection, toObjectId } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
-import { festivalEmailTemplate, festivalEmailText, customEmailTemplate, customEmailText } from '@/lib/email-templates';
+import {
+  festivalEmailTemplate,
+  festivalEmailText,
+  customEmailTemplate,
+  customEmailText,
+} from '@/lib/email-templates';
 
 interface User {
   _id: any;
@@ -18,22 +23,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { 
-      userIds, 
-      festivalId, 
-      quoteId, 
-      subject, 
+    const {
+      userIds,
+      festivalId,
+      quoteId,
+      subject,
       customMessage,
       sendToAll = false,
-      emailType = 'festival'
+      emailType = 'festival',
     } = await request.json();
 
     // Validate inputs
     if (!subject) {
-      return NextResponse.json(
-        { error: 'Subject is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Subject is required' }, { status: 400 });
     }
 
     // For festival emails, require festival and quote
@@ -46,10 +48,7 @@ export async function POST(request: NextRequest) {
 
     // For custom emails, require message
     if (emailType === 'custom' && !customMessage) {
-      return NextResponse.json(
-        { error: 'Message is required for custom emails' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Message is required for custom emails' }, { status: 400 });
     }
 
     if (!sendToAll && (!userIds || !Array.isArray(userIds) || userIds.length === 0)) {
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
       const categoriesCollection = await getCollection('categories');
 
       festival = await festivalsCollection.findOne({
-        $or: [{ id: festivalId }, { _id: toObjectId(festivalId) as any }]
+        $or: [{ id: festivalId }, { _id: toObjectId(festivalId) as any }],
       });
 
       if (!festival) {
@@ -82,7 +81,7 @@ export async function POST(request: NextRequest) {
       }
 
       quote = await quotesCollection.findOne({
-        $or: [{ id: quoteId }, { _id: toObjectId(quoteId) as any }]
+        $or: [{ id: quoteId }, { _id: toObjectId(quoteId) as any }],
       });
 
       if (!quote) {
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
       // Get category name
       if (quote.category_id) {
         const category: any = await categoriesCollection.findOne({
-          $or: [{ id: quote.category_id }, { _id: quote.category_id }]
+          $or: [{ id: quote.category_id }, { _id: quote.category_id }],
         });
         categoryName = category?.name || '';
       }
@@ -101,11 +100,13 @@ export async function POST(request: NextRequest) {
     // Get users
     let users: User[];
     if (sendToAll) {
-      users = await usersCollection.find({ role: { $ne: 'admin' } }).toArray() as any[];
+      users = (await usersCollection.find({ role: { $ne: 'admin' } }).toArray()) as any[];
     } else {
-      users = await usersCollection.find({
-        _id: { $in: userIds.map((id: string) => toObjectId(id) as any) }
-      }).toArray() as any[];
+      users = (await usersCollection
+        .find({
+          _id: { $in: userIds.map((id: string) => toObjectId(id) as any) },
+        })
+        .toArray()) as any[];
     }
 
     if (users.length === 0) {
@@ -113,9 +114,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create email campaign record
-    const campaignName = emailType === 'festival' 
-      ? `${festival?.name} Campaign - ${new Date().toISOString().split('T')[0]}`
-      : `Custom Email - ${new Date().toISOString().split('T')[0]}`;
+    const campaignName =
+      emailType === 'festival'
+        ? `${festival?.name} Campaign - ${new Date().toISOString().split('T')[0]}`
+        : `Custom Email - ${new Date().toISOString().split('T')[0]}`;
 
     const campaignResult = await campaignsCollection.insertOne({
       name: campaignName,
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
       sent_by: authResult.user.userId,
       total_recipients: users.length,
       status: 'sending',
-      created_at: new Date()
+      created_at: new Date(),
     } as any);
 
     const campaignId = campaignResult.insertedId.toString();
@@ -191,7 +193,7 @@ export async function POST(request: NextRequest) {
         status: result.success ? 'sent' : 'failed',
         error_message: result.error || null,
         sent_at: result.success ? new Date() : null,
-        created_at: new Date()
+        created_at: new Date(),
       } as any);
 
       if (result.success) {
@@ -202,7 +204,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Rate limiting - wait 100ms between emails
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     // Update campaign status
@@ -213,8 +215,8 @@ export async function POST(request: NextRequest) {
           sent_count: sentCount,
           failed_count: failedCount,
           status: failedCount === users.length ? 'failed' : 'completed',
-          completed_at: new Date()
-        }
+          completed_at: new Date(),
+        },
       }
     );
 
@@ -230,10 +232,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Send email error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -250,49 +249,48 @@ export async function GET(request: NextRequest) {
     const quotesCollection = await getCollection('quotes');
     const usersCollection = await getCollection('users');
 
-    const campaigns = await campaignsCollection
+    const campaigns = (await campaignsCollection
       .find({})
       .sort({ created_at: -1 })
       .limit(50)
-      .toArray() as any[];
+      .toArray()) as any[];
 
     // Get related data
-    const formattedCampaigns = await Promise.all(campaigns.map(async (campaign) => {
-      let festival: any = null;
-      if (campaign.festival_id) {
-        festival = await festivalsCollection.findOne({
-          $or: [{ id: campaign.festival_id }, { _id: toObjectId(campaign.festival_id) as any }]
-        });
-      }
+    const formattedCampaigns = await Promise.all(
+      campaigns.map(async (campaign) => {
+        let festival: any = null;
+        if (campaign.festival_id) {
+          festival = await festivalsCollection.findOne({
+            $or: [{ id: campaign.festival_id }, { _id: toObjectId(campaign.festival_id) as any }],
+          });
+        }
 
-      let quote: any = null;
-      if (campaign.quote_id) {
-        quote = await quotesCollection.findOne({
-          $or: [{ id: campaign.quote_id }, { _id: toObjectId(campaign.quote_id) as any }]
-        });
-      }
+        let quote: any = null;
+        if (campaign.quote_id) {
+          quote = await quotesCollection.findOne({
+            $or: [{ id: campaign.quote_id }, { _id: toObjectId(campaign.quote_id) as any }],
+          });
+        }
 
-      let sentByUser: any = null;
-      if (campaign.sent_by) {
-        sentByUser = await usersCollection.findOne({ _id: toObjectId(campaign.sent_by) as any });
-      }
+        let sentByUser: any = null;
+        if (campaign.sent_by) {
+          sentByUser = await usersCollection.findOne({ _id: toObjectId(campaign.sent_by) as any });
+        }
 
-      return {
-        ...campaign,
-        id: campaign.id || campaign._id?.toString(),
-        festival_name: festival?.name || null,
-        quote_text: quote?.text || null,
-        quote_author: quote?.author || null,
-        sent_by_name: sentByUser?.name || null
-      };
-    }));
+        return {
+          ...campaign,
+          id: campaign.id || campaign._id?.toString(),
+          festival_name: festival?.name || null,
+          quote_text: quote?.text || null,
+          quote_author: quote?.author || null,
+          sent_by_name: sentByUser?.name || null,
+        };
+      })
+    );
 
     return NextResponse.json({ campaigns: formattedCampaigns });
   } catch (error) {
     console.error('Get campaigns error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

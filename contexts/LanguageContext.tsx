@@ -32,7 +32,7 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'pl', name: 'Polish', nativeName: 'Polski', flag: '🇵🇱' },
   { code: 'uk', name: 'Ukrainian', nativeName: 'Українська', flag: '🇺🇦' },
   { code: 'nl', name: 'Dutch', nativeName: 'Nederlands', flag: '🇳🇱' },
-  
+
   // Indian Languages
   { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', flag: '🇮🇳' },
   { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', flag: '🇮🇳' },
@@ -46,7 +46,7 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'ur', name: 'Urdu', nativeName: 'اردو', flag: '🇵🇰' },
   { code: 'ne', name: 'Nepali', nativeName: 'नेपाली', flag: '🇳🇵' },
   { code: 'si', name: 'Sinhala', nativeName: 'සිංහල', flag: '🇱🇰' },
-  
+
   // Southeast Asian Languages
   { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia', flag: '🇮🇩' },
   { code: 'ms', name: 'Malay', nativeName: 'Bahasa Melayu', flag: '🇲🇾' },
@@ -54,7 +54,7 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'my', name: 'Myanmar (Burmese)', nativeName: 'မြန်မာ', flag: '🇲🇲' },
   { code: 'km', name: 'Khmer', nativeName: 'ខ្មែរ', flag: '🇰🇭' },
   { code: 'lo', name: 'Lao', nativeName: 'ລາວ', flag: '🇱🇦' },
-  
+
   // European Languages
   { code: 'sv', name: 'Swedish', nativeName: 'Svenska', flag: '🇸🇪' },
   { code: 'da', name: 'Danish', nativeName: 'Dansk', flag: '🇩🇰' },
@@ -85,7 +85,7 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'ca', name: 'Catalan', nativeName: 'Català', flag: '🇪🇸' },
   { code: 'gl', name: 'Galician', nativeName: 'Galego', flag: '🇪🇸' },
   { code: 'lb', name: 'Luxembourgish', nativeName: 'Lëtzebuergesch', flag: '🇱🇺' },
-  
+
   // Middle Eastern & Central Asian Languages
   { code: 'fa', name: 'Persian', nativeName: 'فارسی', flag: '🇮🇷' },
   { code: 'he', name: 'Hebrew', nativeName: 'עברית', flag: '🇮🇱' },
@@ -100,7 +100,7 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'mn', name: 'Mongolian', nativeName: 'Монгол', flag: '🇲🇳' },
   { code: 'ps', name: 'Pashto', nativeName: 'پښتو', flag: '🇦🇫' },
   { code: 'ku', name: 'Kurdish', nativeName: 'Kurdî', flag: '🇮🇶' },
-  
+
   // African Languages
   { code: 'sw', name: 'Swahili', nativeName: 'Kiswahili', flag: '🇰🇪' },
   { code: 'am', name: 'Amharic', nativeName: 'አማርኛ', flag: '🇪🇹' },
@@ -115,7 +115,7 @@ export const SUPPORTED_LANGUAGES: Language[] = [
   { code: 'mg', name: 'Malagasy', nativeName: 'Malagasy', flag: '🇲🇬' },
   { code: 'sn', name: 'Shona', nativeName: 'chiShona', flag: '🇿🇼' },
   { code: 'ny', name: 'Chichewa', nativeName: 'Chichewa', flag: '🇲🇼' },
-  
+
   // Other Languages
   { code: 'eo', name: 'Esperanto', nativeName: 'Esperanto', flag: '🌍' },
   { code: 'la', name: 'Latin', nativeName: 'Latina', flag: '🏛️' },
@@ -148,14 +148,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const savedLang = localStorage.getItem('preferredLanguage');
     if (savedLang) {
-      const lang = SUPPORTED_LANGUAGES.find(l => l.code === savedLang);
+      const lang = SUPPORTED_LANGUAGES.find((l) => l.code === savedLang);
       if (lang) {
         setLanguageState(lang);
       }
     } else {
       // Try to detect browser language
       const browserLang = navigator.language.split('-')[0];
-      const detectedLang = SUPPORTED_LANGUAGES.find(l => l.code === browserLang);
+      const detectedLang = SUPPORTED_LANGUAGES.find((l) => l.code === browserLang);
       if (detectedLang) {
         setLanguageState(detectedLang);
       }
@@ -183,4 +183,3 @@ export function useLanguage() {
   }
   return context;
 }
-

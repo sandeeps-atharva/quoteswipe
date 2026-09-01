@@ -6,12 +6,9 @@ import { getUserIdFromRequest } from '@/lib/auth';
 export async function GET(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const usersCollection = await getCollection('users');
@@ -23,10 +20,7 @@ export async function GET(request: NextRequest) {
     const user: any = await usersCollection.findOne({ _id: toObjectId(userId) as any });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Format user response
@@ -57,10 +51,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Get user profile error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -68,12 +59,9 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -81,17 +69,11 @@ export async function PUT(request: NextRequest) {
 
     // Validate name
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
-      return NextResponse.json(
-        { error: 'Name must be at least 2 characters' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Name must be at least 2 characters' }, { status: 400 });
     }
 
     if (name.length > 100) {
-      return NextResponse.json(
-        { error: 'Name must be less than 100 characters' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Name must be less than 100 characters' }, { status: 400 });
     }
 
     const usersCollection = await getCollection('users');
@@ -121,9 +103,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error('Update user profile error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

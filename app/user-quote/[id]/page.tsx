@@ -25,12 +25,9 @@ async function getUserQuote(id: string): Promise<UserQuote | null> {
     const usersCollection = await getCollection('users');
 
     // Find public user quote by id or _id
-    const quote = await userQuotesCollection.findOne({
-      $and: [
-        { $or: [{ id: id }, { _id: toObjectId(id) as any }] },
-        { is_public: true }
-      ]
-    }) as any;
+    const quote = (await userQuotesCollection.findOne({
+      $and: [{ $or: [{ id: id }, { _id: toObjectId(id) as any }] }, { is_public: true }],
+    })) as any;
 
     if (!quote) {
       return null;
@@ -39,15 +36,15 @@ async function getUserQuote(id: string): Promise<UserQuote | null> {
     // Get category
     let category: any = null;
     if (quote.category_id) {
-      category = await categoriesCollection.findOne({
-        $or: [{ id: quote.category_id }, { _id: quote.category_id }]
-      }) as any;
+      category = (await categoriesCollection.findOne({
+        $or: [{ id: quote.category_id }, { _id: quote.category_id }],
+      })) as any;
     }
 
     // Get creator name
     let creator: any = null;
     if (quote.user_id) {
-      creator = await usersCollection.findOne({ _id: toObjectId(quote.user_id) as any }) as any;
+      creator = (await usersCollection.findOne({ _id: toObjectId(quote.user_id) as any })) as any;
     }
 
     return {
@@ -98,7 +95,7 @@ export async function generateMetadata({ params }: UserQuotePageProps): Promise<
   const category = quote.category || 'Personal';
   const hasAuthor = Boolean(quote.author);
   const fullTitle = hasAuthor ? `"${truncatedQuote}" — ${quote.author}` : `"${truncatedQuote}"`;
-  const description = hasAuthor 
+  const description = hasAuthor
     ? `Read this ${category.toLowerCase()} quote by ${quote.author}. Created by ${quote.creator_name} on QuoteSwipe.`
     : `Read this ${category.toLowerCase()} quote. Created by ${quote.creator_name} on QuoteSwipe.`;
 

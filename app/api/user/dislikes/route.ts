@@ -16,10 +16,7 @@ export async function POST(request: NextRequest) {
 
     const { quoteId, customBackground } = await request.json();
     if (!quoteId) {
-      return NextResponse.json(
-        { error: 'Quote ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Quote ID is required' }, { status: 400 });
     }
 
     const userDislikesCollection = await getCollection('user_dislikes');
@@ -27,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     const existingDislike: any = await userDislikesCollection.findOne({
       user_id: userId,
-      quote_id: quoteId
+      quote_id: quoteId,
     });
 
     if (existingDislike) {
@@ -46,14 +43,14 @@ export async function POST(request: NextRequest) {
     // Remove like if exists (mutual exclusivity)
     await userLikesCollection.deleteOne({
       user_id: userId,
-      quote_id: quoteId
+      quote_id: quoteId,
     });
 
     await userDislikesCollection.insertOne({
       user_id: userId,
       quote_id: quoteId,
       custom_background: customBackground || null,
-      created_at: new Date()
+      created_at: new Date(),
     } as any);
 
     return NextResponse.json({ message: 'Quote disliked' }, { status: 200 });
@@ -65,16 +62,13 @@ export async function POST(request: NextRequest) {
       );
     }
     console.error('Dislike quote error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function GET(request: NextRequest) {
   const endTimer = startTimer();
-  
+
   try {
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -85,17 +79,14 @@ export async function GET(request: NextRequest) {
     const [userDislikesCollection, quotesCollection, categoriesCollection] = await Promise.all([
       getCollection('user_dislikes'),
       getCollection('quotes'),
-      getCollection('categories')
+      getCollection('categories'),
     ]);
 
     // Step 1: Get user's dislikes - handle both string and ObjectId user_id formats
     const userObjId = toObjectId(userId);
     const userDislikes = await userDislikesCollection
-      .find({ 
-        $or: [
-          { user_id: userId },
-          { user_id: userObjId }
-        ]
+      .find({
+        $or: [{ user_id: userId }, { user_id: userObjId }],
       })
       .project({ quote_id: 1, custom_background: 1, created_at: 1, _id: 0 })
       .sort({ created_at: -1 })
@@ -110,12 +101,12 @@ export async function GET(request: NextRequest) {
     // Step 2: Build quote ID queries - handle multiple formats
     const quoteQueries: any[] = [];
     const bgMap = new Map<string, any>();
-    
+
     for (const dislike of userDislikes) {
       const qid = dislike.quote_id;
       const normalizedId = normalizeId(qid);
       bgMap.set(normalizedId, dislike.custom_background);
-      
+
       if (typeof qid === 'string') {
         try {
           const objId = toObjectId(qid);
@@ -134,10 +125,7 @@ export async function GET(request: NextRequest) {
         .find({ $or: quoteQueries })
         .project({ _id: 1, text: 1, author: 1, category_id: 1 })
         .toArray(),
-      categoriesCollection
-        .find({})
-        .project({ _id: 1, name: 1, icon: 1 })
-        .toArray()
+      categoriesCollection.find({}).project({ _id: 1, name: 1, icon: 1 }).toArray(),
     ]);
 
     // Step 4: Create lookup maps
@@ -145,7 +133,7 @@ export async function GET(request: NextRequest) {
     for (const q of quotes) {
       quoteMap.set(normalizeId(q._id), q);
     }
-    
+
     const categoryMap = new Map<string, any>();
     for (const c of categories) {
       categoryMap.set(normalizeId(c._id), c);
@@ -157,33 +145,33 @@ export async function GET(request: NextRequest) {
       const qid = normalizeId(dislike.quote_id);
       const quote = quoteMap.get(qid);
       if (!quote) continue;
-      
+
       const catId = normalizeId(quote.category_id);
       const category = categoryMap.get(catId);
-      
+
       result.push({
         id: normalizeId(quote._id),
         text: quote.text,
         author: quote.author,
         category: category?.name || 'Unknown',
         category_icon: category?.icon || '📚',
-        custom_background: bgMap.get(qid) || null
+        custom_background: bgMap.get(qid) || null,
       });
     }
 
     const duration = endTimer();
     recordMetric('/api/user/dislikes', duration, duration < 50, userId);
 
-    return NextResponse.json({ 
-      quotes: result,
-      _meta: { responseTime: duration, count: result.length }
-    }, { status: 200 });
+    return NextResponse.json(
+      {
+        quotes: result,
+        _meta: { responseTime: duration, count: result.length },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Get disliked quotes error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -196,32 +184,23 @@ export async function DELETE(request: NextRequest) {
 
     const { quoteId } = await request.json();
     if (!quoteId) {
-      return NextResponse.json(
-        { error: 'Quote ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Quote ID is required' }, { status: 400 });
     }
 
     const userDislikesCollection = await getCollection('user_dislikes');
 
     const result = await userDislikesCollection.deleteOne({
       user_id: userId,
-      quote_id: quoteId
+      quote_id: quoteId,
     });
 
     if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { message: 'Dislike not found', notFound: true },
-        { status: 200 }
-      );
+      return NextResponse.json({ message: 'Dislike not found', notFound: true }, { status: 200 });
     }
 
     return NextResponse.json({ message: 'Dislike removed' }, { status: 200 });
   } catch (error) {
     console.error('Remove dislike error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

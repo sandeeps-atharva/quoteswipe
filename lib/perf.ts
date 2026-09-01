@@ -35,7 +35,7 @@ const SLOW_THRESHOLDS: Record<string, number> = {
   '/api/user/likes': 200,
   '/api/user/saved': 200,
   '/api/user/dislikes': 200,
-  'default': 200,
+  default: 200,
 };
 
 /**
@@ -52,7 +52,7 @@ export function recordMetric(
   if (metrics.length >= MAX_METRICS) {
     metrics.shift();
   }
-  
+
   metrics.push({
     route,
     duration,
@@ -60,11 +60,13 @@ export function recordMetric(
     cached,
     userId,
   });
-  
+
   // Log slow requests in production
   const threshold = SLOW_THRESHOLDS[route] || SLOW_THRESHOLDS.default;
   if (duration > threshold) {
-    console.warn(`[PERF] SLOW ${route}: ${duration}ms (threshold: ${threshold}ms)${userId ? ` user: ${userId.slice(0, 8)}...` : ''}`);
+    console.warn(
+      `[PERF] SLOW ${route}: ${duration}ms (threshold: ${threshold}ms)${userId ? ` user: ${userId.slice(0, 8)}...` : ''}`
+    );
   }
 }
 
@@ -82,8 +84,8 @@ function getPercentile(sorted: number[], percentile: number): number {
  */
 export function getMetrics(windowMs: number = 60000): AggregatedMetrics {
   const now = Date.now();
-  const recent = metrics.filter(m => now - m.timestamp < windowMs);
-  
+  const recent = metrics.filter((m) => now - m.timestamp < windowMs);
+
   if (recent.length === 0) {
     return {
       avgResponseTime: 0,
@@ -95,14 +97,14 @@ export function getMetrics(windowMs: number = 60000): AggregatedMetrics {
       totalRequests: 0,
     };
   }
-  
-  const durations = recent.map(m => m.duration).sort((a, b) => a - b);
-  const cachedCount = recent.filter(m => m.cached).length;
-  const slowCount = recent.filter(m => {
+
+  const durations = recent.map((m) => m.duration).sort((a, b) => a - b);
+  const cachedCount = recent.filter((m) => m.cached).length;
+  const slowCount = recent.filter((m) => {
     const threshold = SLOW_THRESHOLDS[m.route] || SLOW_THRESHOLDS.default;
     return m.duration > threshold;
   }).length;
-  
+
   return {
     avgResponseTime: Math.round(durations.reduce((a, b) => a + b, 0) / durations.length),
     p50: getPercentile(durations, 50),
@@ -119,25 +121,25 @@ export function getMetrics(windowMs: number = 60000): AggregatedMetrics {
  */
 export function getMetricsByRoute(windowMs: number = 60000): Record<string, AggregatedMetrics> {
   const now = Date.now();
-  const recent = metrics.filter(m => now - m.timestamp < windowMs);
-  
+  const recent = metrics.filter((m) => now - m.timestamp < windowMs);
+
   const byRoute: Record<string, PerfMetric[]> = {};
-  
-  recent.forEach(m => {
+
+  recent.forEach((m) => {
     if (!byRoute[m.route]) {
       byRoute[m.route] = [];
     }
     byRoute[m.route].push(m);
   });
-  
+
   const result: Record<string, AggregatedMetrics> = {};
-  
+
   Object.entries(byRoute).forEach(([route, routeMetrics]) => {
-    const durations = routeMetrics.map(m => m.duration).sort((a, b) => a - b);
-    const cachedCount = routeMetrics.filter(m => m.cached).length;
+    const durations = routeMetrics.map((m) => m.duration).sort((a, b) => a - b);
+    const cachedCount = routeMetrics.filter((m) => m.cached).length;
     const threshold = SLOW_THRESHOLDS[route] || SLOW_THRESHOLDS.default;
-    const slowCount = routeMetrics.filter(m => m.duration > threshold).length;
-    
+    const slowCount = routeMetrics.filter((m) => m.duration > threshold).length;
+
     result[route] = {
       avgResponseTime: Math.round(durations.reduce((a, b) => a + b, 0) / durations.length),
       p50: getPercentile(durations, 50),
@@ -148,7 +150,7 @@ export function getMetricsByRoute(windowMs: number = 60000): Record<string, Aggr
       totalRequests: routeMetrics.length,
     };
   });
-  
+
   return result;
 }
 
@@ -171,16 +173,16 @@ export function withPerf<T extends (...args: any[]) => Promise<Response>>(
   return (async (...args: Parameters<T>): Promise<Response> => {
     const start = performance.now();
     let cached = false;
-    
+
     try {
       const response = await handler(...args);
-      
+
       // Check if response was from cache (by checking timing)
       const duration = Math.round(performance.now() - start);
       cached = duration < 50; // Likely cached if under 50ms
-      
+
       recordMetric(route, duration, cached);
-      
+
       return response;
     } catch (error) {
       const duration = Math.round(performance.now() - start);

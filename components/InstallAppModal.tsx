@@ -25,8 +25,9 @@ export default function InstallAppModal() {
     }
 
     // Check if already installed
-    const standalone = window.matchMedia('(display-mode: standalone)').matches 
-      || (window.navigator as any).standalone === true;
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
     setIsStandalone(standalone);
     if (standalone) return;
 
@@ -34,7 +35,7 @@ export default function InstallAppModal() {
     const userAgent = navigator.userAgent.toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
     const isAndroid = /android/.test(userAgent);
-    
+
     if (isIOS) {
       setPlatform('ios');
     } else if (isAndroid) {
@@ -76,7 +77,7 @@ export default function InstallAppModal() {
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     setIsInstalling(true);
-    
+
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
@@ -101,14 +102,13 @@ export default function InstallAppModal() {
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={handleDismiss}
       />
-      
+
       {/* Modal - Bottom sheet on mobile, centered on desktop */}
       <div className="relative w-full sm:max-w-[360px] bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
-        
         {/* Close button */}
         <button
           onClick={handleDismiss}
@@ -124,38 +124,43 @@ export default function InstallAppModal() {
             <div className="absolute -top-10 -left-10 w-40 h-40 border-2 border-white rounded-full" />
             <div className="absolute -bottom-10 -right-10 w-32 h-32 border-2 border-white rounded-full" />
           </div>
-          
+
           {/* App icon */}
           <div className="relative inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-[18px] sm:rounded-2xl shadow-xl mb-3 sm:mb-4">
             <span className="text-3xl sm:text-4xl">💭</span>
           </div>
-          
+
           <h2 className="text-lg sm:text-xl font-bold mb-0.5 sm:mb-1">Install QuoteSwipe</h2>
           <p className="text-white/80 text-xs sm:text-sm">Get the full app experience</p>
         </div>
 
         {/* Content */}
         <div className="px-4 py-4 sm:px-6 sm:py-5 -mt-5 sm:-mt-6 bg-white dark:bg-stone-900 rounded-t-[24px] relative">
-          
           {/* Benefits - Horizontal on mobile, vertical on desktop */}
           <div className="flex sm:flex-col gap-2 sm:gap-3 mb-4 sm:mb-5 overflow-x-auto pb-1 sm:pb-0 -mx-1 px-1 sm:mx-0 sm:px-0">
             <div className="flex items-center gap-2 sm:gap-3 bg-stone-50 dark:bg-stone-800 rounded-xl px-3 py-2 sm:py-2.5 flex-shrink-0 min-w-[120px] sm:min-w-0">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
                 <Zap size={14} className="sm:w-4 sm:h-4 text-amber-600" />
               </div>
-              <span className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 whitespace-nowrap">Quick access</span>
+              <span className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 whitespace-nowrap">
+                Quick access
+              </span>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 bg-stone-50 dark:bg-stone-800 rounded-xl px-3 py-2 sm:py-2.5 flex-shrink-0 min-w-[120px] sm:min-w-0">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
                 <Smartphone size={14} className="sm:w-4 sm:h-4 text-orange-600" />
               </div>
-              <span className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 whitespace-nowrap">Native feel</span>
+              <span className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 whitespace-nowrap">
+                Native feel
+              </span>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 bg-stone-50 dark:bg-stone-800 rounded-xl px-3 py-2 sm:py-2.5 flex-shrink-0 min-w-[120px] sm:min-w-0">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center flex-shrink-0">
                 <Rocket size={14} className="sm:w-4 sm:h-4 text-rose-600" />
               </div>
-              <span className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 whitespace-nowrap">No store</span>
+              <span className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 whitespace-nowrap">
+                No store
+              </span>
             </div>
           </div>
 
@@ -167,14 +172,18 @@ export default function InstallAppModal() {
               </p>
               <div className="flex gap-4 sm:gap-0 sm:flex-col sm:space-y-2">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0">1</div>
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0">
+                    1
+                  </div>
                   <div className="flex items-center gap-1.5 text-xs sm:text-sm text-stone-700 dark:text-stone-300">
                     <span>Tap</span>
                     <Share size={14} className="text-amber-500" />
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0">2</div>
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0">
+                    2
+                  </div>
                   <div className="flex items-center gap-1.5 text-xs sm:text-sm text-stone-700 dark:text-stone-300">
                     <Plus size={14} className="text-amber-500" />
                     <span className="truncate">Add to Home</span>
@@ -192,14 +201,18 @@ export default function InstallAppModal() {
               </p>
               <div className="flex gap-4 sm:gap-0 sm:flex-col sm:space-y-2">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0">1</div>
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0">
+                    1
+                  </div>
                   <div className="flex items-center gap-1.5 text-xs sm:text-sm text-stone-700 dark:text-stone-300">
                     <span>Tap</span>
                     <MoreVertical size={14} className="text-stone-500" />
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0">2</div>
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold flex-shrink-0">
+                    2
+                  </div>
                   <div className="flex items-center gap-1.5 text-xs sm:text-sm text-stone-700 dark:text-stone-300">
                     <Download size={14} className="text-emerald-500" />
                     <span className="truncate">Install app</span>
@@ -217,7 +230,7 @@ export default function InstallAppModal() {
             >
               Not now
             </button>
-            
+
             {(platform === 'android' || platform === 'desktop') && deferredPrompt ? (
               <button
                 onClick={handleInstall}

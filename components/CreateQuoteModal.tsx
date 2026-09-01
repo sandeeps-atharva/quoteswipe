@@ -1,7 +1,21 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Sparkles, PenLine, User, Tag, Loader2, Check, Globe, Lock, Image as ImageIcon, Type, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  X,
+  Sparkles,
+  PenLine,
+  User,
+  Tag,
+  Loader2,
+  Check,
+  Globe,
+  Lock,
+  Image as ImageIcon,
+  Type,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { isQuotePublic } from '@/lib/helpers';
@@ -50,7 +64,7 @@ export default function CreateQuoteModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [charCount, setCharCount] = useState(0);
-  
+
   // Customization states
   const [showCustomization, setShowCustomization] = useState(false);
   const [selectedFontId, setSelectedFontId] = useState<string>('elegant');
@@ -115,10 +129,8 @@ export default function CreateQuoteModal({
     setError('');
 
     try {
-      const endpoint = isEditing 
-        ? `/api/user/quotes/${editQuote.id}` 
-        : '/api/user/quotes';
-      
+      const endpoint = isEditing ? `/api/user/quotes/${editQuote.id}` : '/api/user/quotes';
+
       const method = isEditing ? 'PUT' : 'POST';
 
       const response = await fetch(endpoint, {
@@ -151,34 +163,34 @@ export default function CreateQuoteModal({
   };
 
   // Get selected font
-  const selectedFont = FONT_STYLES.find(f => f.id === selectedFontId) || FONT_STYLES[0];
-  
+  const selectedFont = FONT_STYLES.find((f) => f.id === selectedFontId) || FONT_STYLES[0];
+
   // Get background for preview
-  const previewBackground = (customBackground && customBackground.length > 0 ? customBackground : null) 
-    || (selectedBackgroundId ? BACKGROUND_IMAGES.find(b => b.id === selectedBackgroundId)?.url : null) 
-    || null;
+  const previewBackground =
+    (customBackground && customBackground.length > 0 ? customBackground : null) ||
+    (selectedBackgroundId
+      ? BACKGROUND_IMAGES.find((b) => b.id === selectedBackgroundId)?.url
+      : null) ||
+    null;
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop with warm gradient */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-md"
-        onClick={onClose}
-      >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-md" onClick={onClose}>
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-rose-500/10" />
       </div>
-      
+
       {/* Modal */}
       <div className="relative w-full sm:max-w-lg mx-0 sm:mx-4 bg-white dark:bg-stone-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col border border-stone-200/50 dark:border-stone-700/50">
         {/* Decorative gradient orbs */}
         <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl pointer-events-none" />
-        
+
         {/* Gradient top bar */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
-        
+
         {/* Handle bar (mobile) */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-8 h-1 bg-stone-300 dark:bg-stone-700 rounded-full" />
@@ -211,8 +223,8 @@ export default function CreateQuoteModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5 space-y-4 custom-scrollbar relative">
-           {/* Visibility Toggle */}
-           <div>
+          {/* Visibility Toggle */}
+          <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">
               {isPublic ? (
                 <Globe size={14} className="text-emerald-500" />
@@ -265,13 +277,15 @@ export default function CreateQuoteModal({
                 autoFocus
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                <span className={`text-xs font-medium ${
-                  charCount < minChars 
-                    ? 'text-red-500' 
-                    : charCount > maxChars - 50 
-                      ? 'text-orange-500' 
-                      : 'text-stone-400'
-                }`}>
+                <span
+                  className={`text-xs font-medium ${
+                    charCount < minChars
+                      ? 'text-red-500'
+                      : charCount > maxChars - 50
+                        ? 'text-orange-500'
+                        : 'text-stone-400'
+                  }`}
+                >
                   {charCount}/{maxChars}
                 </span>
               </div>
@@ -323,10 +337,12 @@ export default function CreateQuoteModal({
               {(previewBackground || text) && (
                 <div className="mb-4">
                   <p className="text-xs font-medium text-stone-500 mb-2">Preview</p>
-                  <div 
+                  <div
                     className="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-lg transition-all duration-500"
                     style={{
-                      background: previewBackground ? undefined : 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #e11d48 100%)',
+                      background: previewBackground
+                        ? undefined
+                        : 'linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #e11d48 100%)',
                     }}
                   >
                     {previewBackground && previewBackground.length > 0 && (
@@ -353,7 +369,7 @@ export default function CreateQuoteModal({
                       </>
                     )}
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                      <p 
+                      <p
                         className="text-white text-center text-sm leading-relaxed drop-shadow-lg"
                         style={{
                           fontFamily: selectedFont.fontFamily,
@@ -387,13 +403,15 @@ export default function CreateQuoteModal({
                           : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600'
                       }`}
                     >
-                      <span 
+                      <span
                         className="text-lg text-stone-800 dark:text-stone-200"
                         style={{ fontFamily: font.fontFamily, fontWeight: font.fontWeight }}
                       >
                         {font.sample}
                       </span>
-                      <p className="text-[9px] text-stone-500 mt-0.5 whitespace-nowrap">{font.name}</p>
+                      <p className="text-[9px] text-stone-500 mt-0.5 whitespace-nowrap">
+                        {font.name}
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -405,7 +423,7 @@ export default function CreateQuoteModal({
                   <ImageIcon size={14} className="text-rose-500" />
                   Background
                 </label>
-                
+
                 {/* Image Uploader Component - Show ALL uploaded images */}
                 <ImageUploader
                   selectedCustomBackground={customBackground}
@@ -420,9 +438,11 @@ export default function CreateQuoteModal({
 
                 {/* Preset backgrounds */}
                 <div>
-                  <p className="text-xs text-stone-500 mb-2">Presets ({BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).length})</p>
+                  <p className="text-xs text-stone-500 mb-2">
+                    Presets ({BACKGROUND_IMAGES.filter((bg) => bg.url && bg.url.length > 0).length})
+                  </p>
                   <div className="grid grid-cols-3 gap-2.5 sm:gap-3 max-h-64 sm:max-h-72 overflow-y-auto">
-                    {BACKGROUND_IMAGES.filter(bg => bg.url && bg.url.length > 0).map((bg) => (
+                    {BACKGROUND_IMAGES.filter((bg) => bg.url && bg.url.length > 0).map((bg) => (
                       <button
                         key={bg.id}
                         onClick={() => {
@@ -488,8 +508,6 @@ export default function CreateQuoteModal({
               ))}
             </div>
           </div>
-
-         
 
           {/* Error Message */}
           {error && (
